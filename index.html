@@ -522,6 +522,56 @@ const store={
   set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));sessionStorage.setItem(k,JSON.stringify(v));}catch(e){}},
   del:k=>{localStorage.removeItem(k);sessionStorage.removeItem(k);}
 };
+
+const GAS_HEADERS={'Content-Type':'text/plain;charset=utf-8'};
+const CACHE_TTL_MS=5*60*1000;
+const _memCache={};
+const _inflight={};
+
+async function apiPost(payload){
+  const res=await fetch(SHEETS_URL,{method:'POST',headers:GAS_HEADERS,body:JSON.stringify(payload)});
+  return res.json();
+}
+function _cacheKey(action){return 'ec_cache_'+action;}
+function cacheGet(action){
+  const key=_cacheKey(action);
+  const mem=_memCache[key];
+  if(mem&&(Date.now()-mem.t)<CACHE_TTL_MS)return mem.v;
+  try{
+    const raw=sessionStorage.getItem(key);
+    if(!raw)return null;
+    const rec=JSON.parse(raw);
+    if(rec&&(Date.now()-rec.t)<CACHE_TTL_MS){_memCache[key]=rec;return rec.v;}
+  }catch(e){}
+  return null;
+}
+function cacheSet(action,v){
+  const key=_cacheKey(action);
+  const rec={t:Date.now(),v};
+  _memCache[key]=rec;
+  try{sessionStorage.setItem(key,JSON.stringify(rec));}catch(e){}
+}
+function cacheInvalidate(action){
+  const key=_cacheKey(action);
+  delete _memCache[key];
+  try{sessionStorage.removeItem(key);}catch(e){}
+}
+async function apiGetCached(action,extra,force){
+  if(!force){
+    const hit=cacheGet(action);
+    if(hit)return hit;
+  }
+  if(_inflight[action])return _inflight[action];
+  _inflight[action]=(async()=>{
+    try{
+      const data=await apiPost(Object.assign({action:action},extra||{}));
+      if(data&&data.success)cacheSet(action,data);
+      return data;
+    }finally{delete _inflight[action];}
+  })();
+  return _inflight[action];
+}
+
 function syncStorage(){for(let i=0;i<sessionStorage.length;i++){const k=sessionStorage.key(i);if(!localStorage.getItem(k))localStorage.setItem(k,sessionStorage.getItem(k));}}
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),50);}
 function openModal(id){document.getElementById(id).classList.add('show');}
@@ -565,7 +615,7 @@ async function doSignup(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'signup',username:user,password:pass,name,email})});
     const data=await res.json();
-    if(data.success){const u=store.get('cg_users')||{};u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);currentUser={username:user,name};store.set('cg_session',currentUser);err.style.display='none';showScreen('locationScreen');}
+    if(data.success){cacheInvalidate('get_users');const u=store.get('cg_users')||{};u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);currentUser={username:user,name};store.set('cg_session',currentUser);err.style.display='none';showScreen('locationScreen');}
     else{err.textContent=data.error||'Username taken.';err.style.display='block';}
   }catch(e){
     const u=store.get('cg_users')||{};
@@ -588,6 +638,7 @@ function afterLogin(){
   // Check location on every login
   checkLocationOnLogin();
   checkISNotif();
+  apiGetCached('get_clients').catch(()=>{});
 }
 
 function checkLocationOnLogin(){
@@ -1057,7 +1108,7 @@ async function verifyReset(){
 async function doResetPassword(){
   const user=document.getElementById('reset_user').value.trim().toLowerCase(),newpwd=document.getElementById('reset_newpwd').value;
   if(!newpwd){alert('Enter new password.');return;}
-  try{await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'reset_password',username:user,password:newpwd})});}catch(e){}
+  try{await apiPost({action:'reset_password',username:user,password:newpwd});cacheInvalidate('get_users');}catch(e){}
   closeModal('resetModal');showTempMsg('✅ Password reset! Please log in.','var(--success)');
 }
 
@@ -1568,8 +1619,7 @@ let myClients=[];
 
 async function loadMyClients(){
   try{
-    const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'get_clients'})});
-    const data=await res.json();
+    const data=await apiGetCached('get_clients');
     if(data.success&&data.data){
       myClients=data.data.filter(c=>(c.assignedAides||[]).includes(currentUser.username));
     }
@@ -1661,8 +1711,7 @@ function saveISData(data){store.set('is_'+currentUser.username,data);}
 
 async function getAssignedIS(){
   try{
-    const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'get_assigned_topic'})});
-    const data=await res.json();
+    const data=await apiGetCached('get_assigned_topic');
     return data.success?data.topicId:null;
   }catch(e){
     return null;
@@ -1670,19 +1719,23 @@ async function getAssignedIS(){
 }
 
 async function checkISNotif(){
-  const assigned=await getAssignedIS();
   const isData=getISData();
   const banner=document.getElementById('isNotifBanner');
   if(!banner)return;
+  let assigned=null, reminderData=null;
+  try{
+    const results=await Promise.all([
+      getAssignedIS(),
+      apiPost({action:'get_is_reminder',username:currentUser.username}).catch(()=>null)
+    ]);
+    assigned=results[0];
+    reminderData=results[1];
+  }catch(e){}
   if(!assigned||isData['completed_'+assigned]){banner.style.display='none';return;}
 
   // Check if admin sent a specific reminder to this aide (from Google Sheets)
   let myReminder=null;
-  try{
-    const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'get_is_reminder',username:currentUser.username})});
-    const data=await res.json();
-    if(data.success)myReminder=data.reminder;
-  }catch(e){}
+  if(reminderData&&reminderData.success)myReminder=reminderData.reminder;
 
   if(myReminder&&myReminder.topicId==assigned){
     banner.innerHTML=`&#128226; <strong>Reminder from your office:</strong> Please complete this month's inservice training. Tap here to complete it.`;
