@@ -379,6 +379,10 @@ else setupEverCarePWA();
         <div class="card-title"><span class="ico">📝</span> Notes / Comments</div>
         <textarea id="cg_notes" placeholder="Any incidents, concerns or additional notes..."></textarea>
       </div>
+      <div style="padding:4px 0 8px">
+        <button class="btn btn-teal btn-full" id="cgBackupBtn" onclick="askCloudBackup()">☁️ Backup to office</button>
+        <p style="font-size:0.74rem;color:var(--muted);margin-top:8px;line-height:1.5">Back it up if you're changing phones or about to reset or clear your phone.</p>
+      </div>
       <div style="display:flex;gap:10px;padding:8px 0 20px">
         <button class="btn btn-ghost btn-full" onclick="backToTSHome()">&#8592; Back</button>
         <button class="btn btn-navy btn-full" onclick="askFinalSubmit()">🔒 Submit This Timesheet</button>
@@ -472,6 +476,19 @@ else setupEverCarePWA();
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" onclick="closeModal('areYouSureModal')">No, Go Back</button>
       <button class="mbtn mbtn-confirm" onclick="showFullPreview()">Yes, Preview →</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="backupConfirmModal">
+  <div class="modal">
+    <div class="mico">☁️</div>
+    <h3>Backup to office?</h3>
+    <p style="font-size:0.82rem;line-height:1.55;color:var(--muted)">Back it up if you're changing phones or about to reset or clear your phone.</p>
+    <p style="font-size:0.88rem;font-weight:600;margin-top:10px;color:var(--navy)">Are you sure?</p>
+    <div class="modal-btns">
+      <button class="mbtn mbtn-cancel" onclick="closeModal('backupConfirmModal')">Cancel</button>
+      <button class="mbtn mbtn-confirm" onclick="doCloudBackup()">Yes, backup</button>
     </div>
   </div>
 </div>
@@ -759,6 +776,8 @@ function afterLogin(){
   checkLocationOnLogin();
   checkISNotif();
   apiGetCached('get_clients').catch(()=>{});
+  // Cloud backups restore runs again from loadCaregiverScreen once home UI is ready
+  window._cgPendingBackupRestore=true;
 }
 
 function checkLocationOnLogin(){
@@ -873,8 +892,16 @@ async function loadCaregiverScreen(){
   document.getElementById('cgHomeView').style.display='block';
   document.getElementById('cgFormView').style.display='none';
   document.getElementById('cgSuccessView').style.display='none';
-  renderTSHome();
   correctionMode=false;correctionData=null;
+  if(window._cgPendingBackupRestore!==false){
+    window._cgPendingBackupRestore=false;
+    try{
+      const rr=await restoreCloudBackups();
+      if(rr&&rr.restored>0)showTempMsg('Restored '+rr.restored+' backup(s) from the office','var(--teal)');
+      else if(rr&&rr.kept>0)showTempMsg('Local timesheet kept — Backup available','var(--teal)');
+    }catch(e){}
+  }
+  renderTSHome();
 
   // Sandata reminder once per day
   const today=new Date().toLocaleDateString();
@@ -1104,8 +1131,20 @@ function saveDayData(i,dayObj){
   showTempMsg(`✅ ${DAYS[i]} saved!`,'var(--success)');window.scrollTo(0,0);
 }
 
-function getUserWeekData(){if(!currentUser)return{};return store.get(`wd_${currentUser.username}`)||{};}
-function saveUserWeekData(data){if(!currentUser)return;store.set(`wd_${currentUser.username}`,data);}
+function getUserWeekData(){
+  if(!currentUser)return{};
+  if(currentTS){
+    const keyed=store.get(`wd_${currentUser.username}_${currentTS}`);
+    if(keyed!=null)return keyed;
+    return store.get(`wd_${currentUser.username}`)||{};
+  }
+  return store.get(`wd_${currentUser.username}`)||{};
+}
+function saveUserWeekData(data){
+  if(!currentUser)return;
+  if(currentTS){store.set(`wd_${currentUser.username}_${currentTS}`,data);return;}
+  store.set(`wd_${currentUser.username}`,data);
+}
 
 function loadSavedWeek(){
   const wd=getUserWeekData();
@@ -1689,6 +1728,183 @@ function getAllTimesheets(){
 function saveAllTimesheets(list){
   if(!currentUser)return;
   store.set('ts_list_'+currentUser.username,list);
+}
+
+
+function askCloudBackup(){
+  if(!currentUser||!currentTS){showTempMsg('Open a timesheet first.','var(--danger)');return;}
+  openModal('backupConfirmModal');
+}
+
+async function doCloudBackup(){
+  closeModal('backupConfirmModal');
+  if(!currentUser||!currentTS){showTempMsg('Open a timesheet first.','var(--danger)');return;}
+  const clientSel=document.getElementById('cg_client');
+  const clientId=clientSel?clientSel.value:'';
+  const clientName=(clientSel&&clientSel.selectedIndex>=0)?(clientSel.options[clientSel.selectedIndex].text||''):'';
+  if(!clientId||!clientName||clientName.indexOf('Select Client')!==-1){
+    showTempMsg('Please select a client before backing up.','var(--danger)');
+    return;
+  }
+  const weekStart=document.getElementById('cg_weekstart').value||'';
+  const notes=document.getElementById('cg_notes').value||'';
+  const svcType=document.getElementById('cg_svctype').value||'Personal Care/Home Making';
+  const totalHrs=document.getElementById('cg_total').textContent||'0:00';
+  const weekData=getUserWeekData()||{};
+  updateTSMeta(currentTS,{clientName,clientId,weekStart,notes,svcType});
+  const list=getAllTimesheets();
+  const ts=list.find(t=>t.id===currentTS);
+  const payload={
+    action:'save_timesheet_backup',
+    username:currentUser.username,
+    emp_name:currentUser.name,
+    client_name:clientName,
+    client_id:clientId,
+    svc_type:svcType,
+    week_start:weekStart,
+    total_hours:totalHrs,
+    notes:notes,
+    days:weekData
+  };
+  if(ts&&ts.cloudBackupId)payload.id=ts.cloudBackupId;
+  try{
+    showTempMsg('Backing up to office...','var(--teal)');
+    const data=await apiPost(payload);
+    if(data&&data.success){
+      if(data.id!=null)updateTSMeta(currentTS,{cloudBackupId:data.id});
+      showTempMsg('✅ Backed up to office!','var(--success)');
+    }else{
+      showTempMsg((data&&data.error)||'Backup failed. Try again.','var(--danger)');
+    }
+  }catch(e){
+    showTempMsg('Backup failed — check connection.','var(--danger)');
+  }
+}
+
+function _wdIsEmpty(wd){
+  if(!wd||typeof wd!=='object')return true;
+  return !Object.keys(wd).some(k=>{
+    const d=wd[k];
+    return d&&(d.tin||d.in||d.tout||d.out||d.hrs||(d.svcs&&d.svcs.length)||d.aideSig||d.clientSig);
+  });
+}
+
+function _normalizeBackupDays(days){
+  if(!days||typeof days!=='object')return {};
+  // Accept numeric keys or Sun/Mon labels; keep caregiver tin/tout shape
+  const out={};
+  const nameToIdx={sun:0,sunday:0,mon:1,monday:1,tue:2,tues:2,tuesday:2,wed:3,wednesday:3,thu:4,thur:4,thursday:4,fri:5,friday:5,sat:6,saturday:6};
+  Object.keys(days).forEach(k=>{
+    let idx=k;
+    if(!(String(k) in {0:1,1:1,2:1,3:1,4:1,5:1,6:1}) && isNaN(Number(k))){
+      const mapped=nameToIdx[String(k).toLowerCase()];
+      if(mapped===undefined)return;
+      idx=mapped;
+    }else{
+      idx=String(Number(k));
+    }
+    const d=days[k]||{};
+    out[idx]={
+      ...d,
+      tin:d.tin||d.in||'',
+      tout:d.tout||d.out||'',
+      hrs:d.hrs||'',
+      date:d.date||'',
+      svcs:d.svcs||[],
+      aideSig:d.aideSig||'',
+      clientSig:d.clientSig||'',
+      location:d.location||''
+    };
+  });
+  return out;
+}
+
+function _weekKey(clientName,weekStart){
+  return String(clientName||'').trim().toLowerCase()+'|'+String(weekStart||'').trim();
+}
+function _localHasUnfinishedFor(list,clientName,weekStart){
+  const key=_weekKey(clientName,weekStart);
+  return list.some(t=>{
+    if(t.status&&t.status!=='active')return false;
+    if(_weekKey(t.clientName,t.weekStart)!==key)return false;
+    const wd=store.get('wd_'+currentUser.username+'_'+t.id)||{};
+    // unfinished = has any day data OR client/week already started
+    return !_wdIsEmpty(wd) || !!(t.clientName||'').trim();
+  });
+}
+/** Returns {restored, kept} per Friday rule: restore only if no local unfinished for client/week; else keep local. */
+async function restoreCloudBackups(){
+  if(!currentUser)return {restored:0,kept:0};
+  let data;
+  try{
+    data=await apiPost({action:'get_my_backups',username:currentUser.username});
+  }catch(e){return {restored:0,kept:0};}
+  if(!data||!data.success||!Array.isArray(data.data)||!data.data.length)return {restored:0,kept:0};
+  const list=getAllTimesheets();
+  let restored=0,kept=0;
+  data.data.forEach(bak=>{
+    const cloudId=bak.id;
+    if(cloudId==null)return;
+    const days=_normalizeBackupDays(bak.days||{});
+    const clientName=bak.clientName||'';
+    const weekStart=bak.weekStart||'';
+    // Already linked to this cloud backup with local data → keep
+    const byCloud=list.find(t=>String(t.cloudBackupId)===String(cloudId));
+    if(byCloud){
+      const wd=store.get('wd_'+currentUser.username+'_'+byCloud.id)||{};
+      if(!_wdIsEmpty(wd)||(byCloud.clientName||'').trim()){kept++;return;}
+    }
+    // Local unfinished for same client+week → keep local, do not auto-wipe
+    if(_localHasUnfinishedFor(list,clientName,weekStart)){
+      kept++;
+      return;
+    }
+    // Restore into empty existing cloud-linked TS or create new
+    if(byCloud){
+      Object.assign(byCloud,{
+        clientName:clientName||byCloud.clientName||'',
+        weekStart:weekStart||byCloud.weekStart||'',
+        notes:bak.notes||'',
+        svcType:bak.svcType||byCloud.svcType||'',
+        status:'active',
+        cloudBackupId:cloudId
+      });
+      store.set('wd_'+currentUser.username+'_'+byCloud.id,days);
+      restored++;
+      return;
+    }
+    const id='ts_bak_'+cloudId;
+    const existingId=list.find(t=>t.id===id);
+    if(existingId){
+      const wd=store.get('wd_'+currentUser.username+'_'+existingId.id)||{};
+      if(!_wdIsEmpty(wd)||(existingId.clientName||'').trim()){kept++;return;}
+      Object.assign(existingId,{
+        clientName:clientName,
+        weekStart:weekStart,
+        notes:bak.notes||'',
+        svcType:bak.svcType||'',
+        status:'active',
+        cloudBackupId:cloudId
+      });
+      store.set('wd_'+currentUser.username+'_'+existingId.id,days);
+      restored++;
+      return;
+    }
+    list.push({
+      id:id,
+      clientName:clientName,
+      weekStart:weekStart,
+      notes:bak.notes||'',
+      svcType:bak.svcType||'',
+      created:bak.backedUpAt||new Date().toLocaleDateString(),
+      status:'active',
+      cloudBackupId:cloudId
+    });
+    store.set('wd_'+currentUser.username+'_'+id,days);
+    restored++;
+  });
+  saveAllTimesheets(list);
+  return {restored,kept};
 }
 
 function createNewTimesheet(){
