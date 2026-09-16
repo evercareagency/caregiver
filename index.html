@@ -623,6 +623,39 @@ const _memCache={};
 const _inflight={};
 
 
+function formatDateTimeLabel(val){
+  if(val==null||val==='')return '—';
+  const s=String(val).trim();
+  if(!/\d{4}-\d{2}-\d{2}T/.test(s) && !/^\d{4}-\d{2}-\d{2}/.test(s) && !/Z$/i.test(s))return s;
+  const plain=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(plain){
+    const d=new Date(Number(plain[1]),Number(plain[2])-1,Number(plain[3]));
+    return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric'}).format(d);
+  }
+  const d=(val instanceof Date)?val:new Date(s);
+  if(isNaN(d.getTime()))return s;
+  return new Intl.DateTimeFormat('en-US',{
+    timeZone:'America/New_York',
+    month:'short',day:'numeric',year:'numeric',
+    hour:'numeric',minute:'2-digit'
+  }).format(d);
+}
+
+function formatWeekOfLabel(val){
+  if(val==null||val===''||val==='Not set')return val||'Not set';
+  if(typeof formatWeekLabel==='function')return formatWeekLabel(val);
+  const s=String(val).trim();
+  if(/^Week of /i.test(s))return s;
+  const plain=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(plain)return `Week of ${plain[2]}/${plain[3]}/${plain[1]}`;
+  const d=new Date(s);
+  if(isNaN(d.getTime()))return s;
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'2-digit',day:'2-digit',year:'numeric'}).formatToParts(d);
+  const get=t=>(parts.find(p=>p.type===t)||{}).value;
+  return `Week of ${get('month')}/${get('day')}/${get('year')}`;
+}
+
+
 function warmUpSheets(){
   if(window._sheetsWarmUpStarted)return;
   window._sheetsWarmUpStarted=true;
@@ -934,7 +967,7 @@ async function checkForCorrection(){
     if(data.success&&data.data&&data.data.length>0){
       correctionData=data.data[0];
       const banner=document.getElementById('correctionBanner');
-      banner.textContent=`⚠️ Your timesheet for week of ${correctionData.weekStart} needs corrections. Tap here to fix it.`;
+      banner.textContent=`⚠️ Your timesheet for ${formatWeekOfLabel(correctionData.weekStart)} needs corrections. Tap here to fix it.`;
       banner.classList.add('show');
     }
   }catch(e){}
@@ -1184,7 +1217,7 @@ function showFullPreview(){
   const totalHrs=document.getElementById('cg_total').textContent;
   const notes=document.getElementById('cg_notes').value||'';
   let html=`<div class="card"><div class="card-title"><span class="ico">👤</span> Summary</div>
-    <p style="font-size:0.82rem"><strong>Aide:</strong> ${currentUser.name}<br><strong>Client:</strong> ${clientName}<br><strong>Week of:</strong> ${weekStart}<br><strong>Total Hours:</strong> <span style="color:var(--teal);font-weight:700">${totalHrs}</span></p>
+    <p style="font-size:0.82rem"><strong>Aide:</strong> ${currentUser.name}<br><strong>Client:</strong> ${clientName}<br><strong>${formatWeekOfLabel(weekStart)}</strong><br><strong>Total Hours:</strong> <span style="color:var(--teal);font-weight:700">${totalHrs}</span></p>
     ${notes?`<p style="font-size:0.78rem;color:var(--muted);margin-top:8px"><strong>Notes:</strong> ${notes}</p>`:''}
   </div>`;
   DAYS.forEach((day,i)=>{
@@ -1938,7 +1971,7 @@ function renderTSHome(){
     return '<div class="card" style="margin-bottom:10px;cursor:pointer;border:1.5px solid var(--teal)" onclick="openTS(&quot;'+ts.id+'&quot;)">'+
       '<div style="display:flex;align-items:center;justify-content:space-between">'+
       '<div><p style="font-weight:600;color:var(--navy);font-size:0.9rem">'+( ts.clientName||'No client name yet')+'</p>'+
-      '<p style="font-size:0.72rem;color:var(--muted);margin-top:2px">Week of '+( ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; '+daysSaved+' day'+(daysSaved!==1?'s':'')+' saved</p></div>'+
+      '<p style="font-size:0.72rem;color:var(--muted);margin-top:2px">'+formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; '+daysSaved+' day'+(daysSaved!==1?'s':'')+' saved</p></div>'+
       '<div style="color:var(--teal);font-size:18px">&#8250;</div>'+
       '</div></div>';
   }).join('');
