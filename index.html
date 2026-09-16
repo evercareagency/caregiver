@@ -200,7 +200,7 @@ function installPWA(){
     </div>
     <div id="loginForm">
       <div class="field"><label>Username</label><input type="text" id="l_user" placeholder="Your username" autocomplete="username"></div>
-      <div class="field"><label>Password</label><input type="password" id="l_pass" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="field"><label>Password</label><div style="position:relative"><input type="password" id="l_pass" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:64px"><button type="button" onclick="togglePasswordVisibility('l_pass',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted,#6b7a90);font-size:0.78rem;font-weight:600;cursor:pointer;padding:4px 6px;font-family:inherit">Show</button></div></div>
       <button class="btn btn-teal btn-full" onclick="doLogin()" id="loginBtn">Sign In →</button>
       <div class="auth-err" id="loginErr">Incorrect username or password.</div>
       <div style="text-align:center;margin-top:10px"><button onclick="showResetModal()" style="background:none;border:none;color:var(--teal);font-size:0.76rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div>
@@ -584,6 +584,15 @@ function switchTab(tab){
 }
 
 // AUTH
+
+function togglePasswordVisibility(id,btn){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const show=el.type==='password';
+  el.type=show?'text':'password';
+  if(btn)btn.textContent=show?'Hide':'Show';
+}
+
 async function doLogin(){
   const user=document.getElementById('l_user').value.trim().toLowerCase();
   const pass=document.getElementById('l_pass').value;
