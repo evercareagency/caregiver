@@ -153,33 +153,92 @@ footer{text-align:center;padding:11px;font-size:0.7rem;color:var(--muted);border
 <meta name="theme-color" content="#2a7f7f">
 <script>
 let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();deferredPrompt=e;
-  const banner=document.getElementById('pwaBanner');
-  if(banner)banner.style.display='flex';
-});
-window.addEventListener('appinstalled',()=>{
+function isEverCareStandalone(){
+  return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||(!!window.navigator.standalone);
+}
+function hideEverCareInstallUI(){
   const banner=document.getElementById('pwaBanner');
   if(banner)banner.style.display='none';
-});
+  document.querySelectorAll('.ec-install-cta').forEach(el=>{el.style.display='none';});
+}
+function setInstallCtaReady(ready){
+  document.querySelectorAll('.ec-install-cta-label').forEach(el=>{
+    el.textContent=ready?'📲 Tap Install':'📱 Add to Home Screen';
+  });
+  document.querySelectorAll('.ec-install-cta-sub').forEach(el=>{
+    el.textContent=ready?'One tap to add EverCare to your phone':'Quick access — no App Store needed';
+  });
+  const banBtn=document.getElementById('pwaBannerInstallBtn');
+  if(banBtn)banBtn.textContent=ready?'Tap Install':'Install';
+}
+function showIosInstallModal(){
+  const m=document.getElementById('iosInstallModal');
+  if(!m)return;
+  if(typeof openModal==='function')openModal('iosInstallModal');
+  else{m.classList.add('show');}
+}
 function installPWA(){
   if(deferredPrompt){
     deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(()=>{deferredPrompt=null;const b=document.getElementById('pwaBanner');if(b)b.style.display='none';});
-  } else {
-    const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-    const msg=isIOS
-      ? 'To install on iPhone:\n\n1. Tap the Share button (square with arrow) at the bottom of Safari\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right'
-      : 'To install on Android:\n\n1. Tap the menu (⋮) in your browser\n2. Tap "Add to Home Screen" or "Install App"\n3. Tap "Install" or "Add"';
-    alert(msg);
+    deferredPrompt.userChoice.then(()=>{
+      deferredPrompt=null;
+      hideEverCareInstallUI();
+      setInstallCtaReady(false);
+    });
+    return;
   }
+  showIosInstallModal();
 }
+function setupEverCarePWA(){
+  if(isEverCareStandalone()){hideEverCareInstallUI();return;}
+  // Build manifest + apple-touch-icon from the embedded login logo
+  const logoImg=document.querySelector('#loginScreen img[src^="data:image"], #authScreen img[src^="data:image"], .login-box img[src^="data:image"], .auth-logo img[src^="data:image"]');
+  const iconSrc=logoImg&&logoImg.src?logoImg.src:null;
+  if(iconSrc){
+    let apple=document.querySelector('link[rel="apple-touch-icon"]');
+    if(!apple){apple=document.createElement('link');apple.rel='apple-touch-icon';document.head.appendChild(apple);}
+    apple.href=iconSrc;
+    const manifest={
+      name:'EverCare Home Agency',
+      short_name:'EverCare',
+      start_url:'.',
+      display:'standalone',
+      background_color:'#2a7f7f',
+      theme_color:'#2a7f7f',
+      icons:[
+        {src:iconSrc,sizes:'192x192',type:'image/jpeg',purpose:'any'},
+        {src:iconSrc,sizes:'512x512',type:'image/jpeg',purpose:'any'}
+      ]
+    };
+    const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    let link=document.querySelector('link[rel="manifest"]');
+    if(link)link.href=url;
+  }
+  // iOS: show banner by default (no beforeinstallprompt)
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const banner=document.getElementById('pwaBanner');
+  if(isIOS&&banner)banner.style.display='flex';
+}
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  if(isEverCareStandalone())return;
+  const banner=document.getElementById('pwaBanner');
+  if(banner)banner.style.display='flex';
+  setInstallCtaReady(true);
+});
+window.addEventListener('appinstalled',()=>{
+  deferredPrompt=null;
+  hideEverCareInstallUI();
+});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupEverCarePWA);
+else setupEverCarePWA();
 </script>
 </head>
-<body><div id="pwaBanner" style="display:none;background:var(--navy);color:white;padding:10px 14px;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:200">
-  <p style="font-size:0.78rem">&#128241; Add EverCare to your home screen for quick access!</p>
-  <button onclick="installPWA()" style="background:var(--teal);border:none;color:white;padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap">Install</button>
-  <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:16px;cursor:pointer">&#10005;</button>
+<body><div id="pwaBanner" style="display:none;background:var(--navy);color:white;padding:12px 14px;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:200">
+  <p style="font-size:0.82rem;line-height:1.35;flex:1">📱 Add EverCare to your <strong>Home Screen</strong> for one-tap login.</p>
+  <button id="pwaBannerInstallBtn" onclick="installPWA()" style="background:var(--teal);border:none;color:white;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap">Install</button>
+  <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:16px;cursor:pointer" aria-label="Dismiss">&#10005;</button>
 </div>
 
 
@@ -188,12 +247,13 @@ function installPWA(){
   <div class="auth-logo"><img src="data:image/jpeg;base64,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" alt="EverCare Home Agency" style="width:120px;height:120px;object-fit:cover;border-radius:50%;border:3px solid rgba(255,255,255,0.3);margin-bottom:16px;"></div>
   <div class="auth-title">EverCare Home Agency</div>
   <div class="auth-sub">CAREGIVER TIMESHEET PORTAL</div>
-  <button onclick="installPWA()" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.4);color:white;padding:8px 18px;border-radius:20px;font-size:0.78rem;font-weight:600;cursor:pointer;margin-bottom:20px;display:flex;align-items:center;gap:6px">
-    📱 Add App to Home Screen
-  </button>
   <div class="auth-box">
     <h2>Welcome</h2>
     <p>Sign in or create your caregiver account</p>
+    <button type="button" class="ec-install-cta" onclick="installPWA()" style="width:100%;background:linear-gradient(135deg,#e8f4f4 0%,#d4ecec 100%);border:2px solid var(--teal);color:var(--navy);padding:14px 16px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(42,127,127,0.15)">
+      <span class="ec-install-cta-label" style="font-size:1.05rem">📱 Add to Home Screen</span>
+      <span class="ec-install-cta-sub" style="font-size:0.72rem;font-weight:500;color:var(--muted)">Quick access — no App Store needed</span>
+    </button>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
       <button class="auth-tab" id="tabSignup" onclick="switchTab('signup')">Sign Up</button>
@@ -352,6 +412,23 @@ function installPWA(){
       <button class="btn btn-ghost btn-full" onclick="showScreen('caregiverScreen')">← Go Back & Edit</button>
       <button class="btn btn-navy btn-full" onclick="doFinalSubmit()">✅ Confirm & Submit</button>
     </div>
+  </div>
+</div>
+
+
+<!-- iOS / Add to Home Screen help -->
+<div class="modal-bg" id="iosInstallModal">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div class="mico">📱</div>
+    <h3>Add EverCare to Home Screen</h3>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;line-height:1.55">On iPhone, you add this from Safari — there is no one-tap Install button. Follow these easy steps:</p>
+    <ol style="text-align:left;font-size:0.86rem;color:var(--navy);line-height:1.7;padding-left:22px;margin:0 0 16px">
+      <li style="margin-bottom:8px"><strong>Tap Share</strong> — the square with an arrow pointing up (usually at the bottom of Safari).</li>
+      <li style="margin-bottom:8px"><strong>Tap “Add to Home Screen”</strong> — scroll the list if you don’t see it right away.</li>
+      <li><strong>Tap “Add”</strong> in the top right. Done — EverCare appears on your home screen.</li>
+    </ol>
+    <p style="font-size:0.72rem;color:var(--muted);margin-bottom:14px;line-height:1.5">Using Android Chrome? If Install didn’t pop up, open the browser menu (⋮) → <strong>Install app</strong> or <strong>Add to Home Screen</strong>.</p>
+    <div class="modal-btns"><button class="mbtn mbtn-confirm" onclick="closeModal('iosInstallModal')">Got it ✓</button></div>
   </div>
 </div>
 
