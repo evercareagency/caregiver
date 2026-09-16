@@ -528,6 +528,17 @@ const CACHE_TTL_MS=5*60*1000;
 const _memCache={};
 const _inflight={};
 
+
+function warmUpSheets(){
+  if(window._sheetsWarmUpStarted)return;
+  window._sheetsWarmUpStarted=true;
+  fetch(SHEETS_URL,{method:'GET',mode:'cors',cache:'no-store'}).catch(()=>{});
+  fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'ping'}),mode:'cors',cache:'no-store'}).catch(()=>{});
+}
+
+
+document.addEventListener('DOMContentLoaded',function(){ warmUpSheets(); });
+
 async function apiPost(payload){
   const res=await fetch(SHEETS_URL,{method:'POST',headers:GAS_HEADERS,body:JSON.stringify(payload)});
   return res.json();
@@ -622,11 +633,11 @@ async function doLogin(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
-    if(data.success){currentUser={username:user,name:data.name};store.set('cg_session',currentUser);document.getElementById('loginErr').style.display='none';afterLogin();}
+    if(data.success){currentUser={username:user,name:data.name};store.set('cg_session',currentUser);document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(afterLogin,0);});return;}
     else{document.getElementById('loginErr').style.display='block';}
   }catch(e){
     const users=store.get('cg_users')||{};
-    if(users[user]&&users[user].password===pass){currentUser={username:user,name:users[user].name};store.set('cg_session',currentUser);afterLogin();}
+    if(users[user]&&users[user].password===pass){currentUser={username:user,name:users[user].name};store.set('cg_session',currentUser);if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(afterLogin,0);});return;}
     else{document.getElementById('loginErr').style.display='block';}
   }finally{
     window._cgLoginInFlight=false;
