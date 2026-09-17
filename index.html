@@ -1142,6 +1142,9 @@ function loadCorrectionMode(){
 // DAY BLOCKS
 function buildDayBlocks(fixDays=[]){
   const container=document.getElementById('dayBlocks');container.innerHTML='';
+  // Day canvases are replaced; drop stale wired flags so touch listeners reattach.
+  // Keep header week sig pads (sp_hdr_*) — those nodes are not rebuilt here.
+  DAYS.forEach((_,i)=>{delete sigPads[`sp_aide_${i}`];delete sigPads[`sp_client_${i}`];});
   DAYS.forEach((day,i)=>{
     const needsFix=fixDays.includes(i);
     const isLocked=correctionMode&&!needsFix;
@@ -1255,7 +1258,34 @@ function clearServiceMatrix(){
   updateOtherSpecifyVisibility();
 }
 
-function toggleDay(i){document.getElementById(`dhdr_${i}`).classList.toggle('open');document.getElementById(`dbody_${i}`).classList.toggle('open');}
+function toggleDay(i){
+  document.getElementById(`dhdr_${i}`).classList.toggle('open');
+  const body=document.getElementById(`dbody_${i}`);
+  body.classList.toggle('open');
+  if(body.classList.contains('open')){
+    requestAnimationFrame(()=>{
+      resizeSigCanvas(`sp_aide_${i}`);
+      resizeSigCanvas(`sp_client_${i}`);
+    });
+  }
+}
+function resizeSigCanvas(id){
+  const c=document.getElementById(id);if(!c)return;
+  const keep=isCanvasInk(c)?c.toDataURL():null;
+  const w=Math.max(1,c.offsetWidth||280),h=Math.max(110,c.offsetHeight||110);
+  if(c.width===w&&c.height===h){
+    if(!keep)refreshSigFromStore(id);
+    return;
+  }
+  c.width=w;c.height=h;
+  if(keep){
+    const img=new Image();
+    img.onload=()=>{c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};
+    img.src=keep;
+  }else{
+    refreshSigFromStore(id);
+  }
+}
 function fillDates(){/* no longer used - dates are picked individually per day */}
 
 function updateDayName(i){
@@ -1532,8 +1562,9 @@ function setSigHint(id,signed){
 }
 function initSig(id){
   const c=document.getElementById(id);if(!c)return;
-  // Avoid stacking duplicate listeners if already wired
-  if(sigPads[id]&&sigPads[id].wired){
+  // Avoid stacking duplicate listeners if already wired to THIS canvas.
+  // After day-block rebuild the node is new but sigPads[id].wired can still be true.
+  if(sigPads[id]&&sigPads[id].wired&&sigPads[id].ctx&&sigPads[id].ctx.canvas===c){
     refreshSigFromStore(id);
     return;
   }
