@@ -2470,8 +2470,10 @@ function getISData(){return store.get('is_'+currentUser.username)||{};}
 function saveISData(data){store.set('is_'+currentUser.username,data);}
 
 async function getAssignedIS(){
+  const username=currentUser&&currentUser.username;
+  if(!username)return null;
   try{
-    const data=await apiGetCached('get_assigned_topic');
+    const data=await apiPost({action:'get_assigned_topic',username:username});
     return data.success?data.topicId:null;
   }catch(e){
     return null;
