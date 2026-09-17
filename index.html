@@ -112,7 +112,6 @@ textarea{resize:vertical;min-height:68px;}
 .matrix-table td.mtx-label{text-align:left;position:sticky;left:0;background:white;z-index:1;font-weight:500;padding:6px 8px;min-width:150px;max-width:200px;line-height:1.3;}
 .matrix-table tr:nth-child(even) td.mtx-label{background:#f8fafc;}
 .matrix-table tr:nth-child(even) td{background:#f8fafc;}
-.matrix-table input[type="checkbox"]{width:18px;height:18px;accent-color:var(--teal);cursor:pointer;}
 .matrix-other{padding:8px 10px;border:1.5px solid var(--border);border-top:none;border-radius:0 0 8px 8px;background:var(--off);display:none;}
 .matrix-other.show{display:block;}
 .form-legal{font-size:0.7rem;color:var(--muted);line-height:1.7;text-align:center;padding:12px 8px;border-top:1px solid var(--border);margin-top:4px;}
@@ -121,10 +120,33 @@ textarea{resize:vertical;min-height:68px;}
 .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:11px;}
 @media(max-width:420px){.sig-row{grid-template-columns:1fr;}}
 .sig-lbl{font-size:0.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;}
-canvas.sigpad{display:block;width:100%;height:85px;border:1.5px solid var(--border);border-radius:8px;background:#fafcfe;touch-action:none;cursor:crosshair;}
-canvas.sigpad.signed{border-color:var(--success);}
-.sig-clear{margin-top:3px;background:none;border:1px solid var(--border);padding:3px 9px;border-radius:5px;font-size:0.68rem;cursor:pointer;color:var(--muted);}
+.sig-clear{margin-top:4px;background:none;border:1.5px solid var(--border);padding:8px 14px;min-height:36px;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;color:var(--muted);}
 .sig-clear:hover{border-color:var(--danger);color:var(--danger);}
+/* Phone UX polish — thumb-friendly targets */
+#cg_client, .day-body input[type="date"], .day-body input[type="time"]{min-height:44px;font-size:1rem;padding:11px 12px;}
+.day-hdr{padding:14px 14px;min-height:48px;}
+.day-body{padding:14px;}
+.hrs-row{gap:10px;margin-bottom:12px;}
+.hrs-total{min-height:44px;padding:10px;font-size:0.95rem;}
+.matrix-table th,.matrix-table td{padding:10px 6px;min-height:44px;}
+.matrix-table thead th{width:44px;font-size:0.72rem;padding:10px 4px;}
+.matrix-table td.mtx-label{padding:10px 10px;font-size:0.78rem;}
+.matrix-table input[type="checkbox"]{width:28px;height:28px;min-width:28px;min-height:28px;accent-color:var(--teal);cursor:pointer;}
+.matrix-wrap{border-radius:0 0 8px 8px;}
+.client-err{display:none;color:var(--danger);font-size:0.78rem;font-weight:600;margin-top:4px;line-height:1.4;}
+.client-err.show{display:block;}
+#cg_client.invalid{border-color:var(--danger);box-shadow:0 0 0 2px rgba(192,57,43,0.15);}
+.sig-wrap{position:relative;}
+canvas.sigpad{display:block;width:100%;height:110px;min-height:110px;border:1.5px solid var(--border);border-radius:8px;background:#fafcfe;touch-action:none;cursor:crosshair;}
+canvas.sigpad.signed{border-color:var(--success);}
+.sig-hint{font-size:0.78rem;font-weight:600;color:var(--muted);margin-top:4px;min-height:1.2em;}
+.sig-hint.signed{color:var(--success);}
+.action-stack{padding:4px 0 8px;}
+.action-stack .btn{min-height:48px;font-size:0.92rem;padding:14px 18px;}
+.action-row{display:flex;gap:10px;padding:8px 0 20px;}
+.action-row .btn{min-height:48px;font-size:0.9rem;padding:14px 16px;}
+.backup-help,.submit-help{font-size:0.74rem;color:var(--muted);margin-top:8px;line-height:1.5;}
+.submit-help{margin-top:0;margin-bottom:6px;}
 .loc-tag{font-size:0.7rem;color:var(--teal);background:var(--teal-light);border:1px solid var(--border);border-radius:6px;padding:5px 9px;margin-bottom:9px;display:flex;align-items:center;gap:5px;}
 .total-bar{background:var(--teal);color:white;padding:12px 15px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .total-bar .tl{font-size:0.67rem;opacity:0.7;text-transform:uppercase;letter-spacing:1px;}
@@ -378,12 +400,12 @@ else setupEverCarePWA();
       <div class="card">
         <div class="card-title"><span class="ico">📋</span> Caregiver Timesheet</div>
         <div class="hdr-names">
-          <div class="field"><label>Client Name <span style="color:var(--danger)">*</span></label><select id="cg_client" onchange="onClientSelected()"><option value="">-- Select Client --</option></select></div>
+          <div class="field"><label>Client Name <span style="color:var(--danger)">*</span></label><select id="cg_client" onchange="onClientSelected()"><option value="">-- Select Client --</option></select><div class="client-err" id="cg_client_err" role="alert">Please select a client before continuing.</div></div>
           <div class="field"><label>Caregiver / HHA Name</label><div class="aide-name-display" id="cg_aide_name">—</div></div>
         </div>
         <div class="hdr-sig-row">
-          <div><div class="sig-lbl">Client Signature</div><canvas class="sigpad" id="sp_hdr_client" height="85"></canvas><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_client')">Clear</button></div>
-          <div><div class="sig-lbl">Caregiver / HHA Signature</div><canvas class="sigpad" id="sp_hdr_aide" height="85"></canvas><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_aide')">Clear</button></div>
+          <div><div class="sig-lbl">Client Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_client" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_client">Tap to sign</div><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_client')">Clear</button></div>
+          <div><div class="sig-lbl">Caregiver / HHA Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_aide" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_aide">Tap to sign</div><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_aide')">Clear</button></div>
         </div>
         <div class="fg" style="margin-top:12px">
           <div class="field"><label>Service Type</label>
@@ -421,13 +443,14 @@ else setupEverCarePWA();
         This is a legal document: signing confirms the hours and services above are accurate.<br>
         <strong>5510 Pearl Rd Ste 200, Cleveland, OH 44129</strong>
       </div>
-      <div style="padding:4px 0 8px">
+      <div class="action-stack">
         <button class="btn btn-teal btn-full" id="cgBackupBtn" onclick="askCloudBackup()">☁️ Backup to office</button>
-        <p style="font-size:0.74rem;color:var(--muted);margin-top:8px;line-height:1.5">Back it up if you're changing phones or about to reset or clear your phone.</p>
+        <p class="backup-help">Saves a copy at the office — <strong>not</strong> a final submit. Use if you're changing phones or about to reset/clear this phone.</p>
       </div>
-      <div style="display:flex;gap:10px;padding:8px 0 20px">
+      <p class="submit-help">When the week is done, review and <strong>submit</strong> below. You cannot edit after submit.</p>
+      <div class="action-row">
         <button class="btn btn-ghost btn-full" onclick="backToTSHome()">&#8592; Back</button>
-        <button class="btn btn-navy btn-full" onclick="askFinalSubmit()">🔒 Submit This Timesheet</button>
+        <button class="btn btn-navy btn-full" id="cgSubmitBtn" onclick="askFinalSubmit()">🔒 Submit timesheet</button>
       </div>
     </div>
   </div>
@@ -1097,8 +1120,8 @@ function loadCorrectionMode(){
     updateDayName(i);
     if(he){he.textContent=d.hrs||'—';he.dataset.mins=minsFromHrs(d.hrs);}
     applySvcsToMatrix(i,d.svcs);if(d.otherSpecify){const o=document.getElementById('cg_other_specify');if(o&&!o.value)o.value=d.otherSpecify;}
-    if(d.aideSig&&d.aideSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_aide_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');}};img.src=d.aideSig;}
-    if(d.clientSig&&d.clientSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_client_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');}};img.src=d.clientSig;}
+    if(d.aideSig&&d.aideSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_aide_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(c.id,true);}};img.src=d.aideSig;}
+    if(d.clientSig&&d.clientSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_client_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(c.id,true);}};img.src=d.clientSig;}
     if(d.location){
       const locEl=document.getElementById(`loc_${i}`);
       if(locEl){
@@ -1146,8 +1169,8 @@ function buildDayBlocks(fixDays=[]){
         </div>
         <div class="loc-tag" id="loc_${i}"><span>📍</span><span id="loc_txt_${i}">Location captured when you save</span></div>
         <div class="sig-row">
-          <div><div class="sig-lbl">HHA Signature</div><canvas class="sigpad" id="sp_aide_${i}" height="85"></canvas><button class="sig-clear" onclick="clearSig('sp_aide_${i}')">Clear</button></div>
-          <div><div class="sig-lbl">Client Signature</div><canvas class="sigpad" id="sp_client_${i}" height="85"></canvas><button class="sig-clear" onclick="clearSig('sp_client_${i}')">Clear</button></div>
+          <div><div class="sig-lbl">HHA Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_aide_${i}" height="110"></canvas></div><div class="sig-hint" id="hint_sp_aide_${i}">Tap to sign</div><button class="sig-clear" onclick="clearSig('sp_aide_${i}')">Clear</button></div>
+          <div><div class="sig-lbl">Client Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_client_${i}" height="110"></canvas></div><div class="sig-hint" id="hint_sp_client_${i}">Tap to sign</div><button class="sig-clear" onclick="clearSig('sp_client_${i}')">Clear</button></div>
         </div>
         <button class="btn btn-teal btn-full" style="margin-top:11px" id="sbtn_${i}" onclick="previewDay(${i})">✓ Save This Day</button>
       </div>`;
@@ -1274,15 +1297,7 @@ function isSigned(id){const c=document.getElementById(id);if(!c)return false;con
 function minsFromHrs(hrs){if(!hrs||hrs==='—')return 0;const[h,m]=hrs.split(':').map(Number);return h*60+(m||0);}
 
 function previewDay(i){
-  const clientSel=document.getElementById('cg_client');
-  const clientId=clientSel.value;
-  if(!clientId){
-    showTempMsg('Please select a client before saving!','var(--danger)');
-    clientSel.focus();
-    clientSel.style.borderColor='var(--danger)';
-    setTimeout(()=>clientSel.style.borderColor='var(--border)',3000);
-    return;
-  }
+  if(!requireClientSelected())return;
   const client=getSelectedClient();
   const clientName=client?client.name:'';
   // Save client info to ts meta
@@ -1357,8 +1372,8 @@ function loadSavedWeek(){
     updateDayName(i);
     if(he){he.textContent=d.hrs||'—';he.dataset.mins=minsFromHrs(d.hrs);}
     applySvcsToMatrix(i,d.svcs);if(d.otherSpecify){const o=document.getElementById('cg_other_specify');if(o&&!o.value)o.value=d.otherSpecify;}
-    if(d.aideSig&&d.aideSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_aide_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');}};img.src=d.aideSig;}
-    if(d.clientSig&&d.clientSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_client_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');}};img.src=d.clientSig;}
+    if(d.aideSig&&d.aideSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_aide_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(c.id,true);}};img.src=d.aideSig;}
+    if(d.clientSig&&d.clientSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_client_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(c.id,true);}};img.src=d.clientSig;}
     if(d.location){
       const locEl=document.getElementById(`loc_${i}`);
       if(locEl){
@@ -1411,10 +1426,30 @@ function buildDaysPayload(){
 }
 
 // FULL PREVIEW BEFORE SUBMIT
-function askFinalSubmit(){openModal('areYouSureModal');}
+function requireClientSelected(){
+  const sel=document.getElementById('cg_client');
+  const err=document.getElementById('cg_client_err');
+  const clientId=sel?String(sel.value||'').trim():'';
+  const text=(sel&&sel.selectedIndex>=0)?String(sel.options[sel.selectedIndex].text||'').trim():'';
+  const bad=!clientId||!text||/select client/i.test(text)||text==='-- Select Client --';
+  if(bad){
+    if(err){err.textContent='Please select a client before continuing.';err.classList.add('show');}
+    if(sel){sel.classList.add('invalid');sel.focus();try{sel.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}}
+    showTempMsg('Please select a client first.','var(--danger)');
+    return false;
+  }
+  if(err)err.classList.remove('show');
+  if(sel)sel.classList.remove('invalid');
+  return true;
+}
+function askFinalSubmit(){
+  if(!requireClientSelected())return;
+  openModal('areYouSureModal');
+}
 
 function showFullPreview(){
   closeModal('areYouSureModal');
+  if(!requireClientSelected()){showScreen('caregiverScreen');return;}
   const weekData=buildDaysPayload();
   const clientSel=document.getElementById('cg_client');
   const clientName=clientSel.options[clientSel.selectedIndex]?.text||'(not provided)';
@@ -1441,6 +1476,7 @@ function showFullPreview(){
 }
 
 async function doFinalSubmit(){
+  if(!requireClientSelected()){showScreen('caregiverScreen');return;}
   const weekData=buildDaysPayload();
   const clientSel=document.getElementById('cg_client');
   const clientName=clientSel.options[clientSel.selectedIndex]?.text||'(not provided)';
@@ -1472,19 +1508,28 @@ function cgNewWeek(){
 }
 
 // SIGNATURES
+function setSigHint(id,signed){
+  const hint=document.getElementById('hint_'+id);
+  if(!hint)return;
+  if(signed){hint.textContent='Signed ✓';hint.classList.add('signed');}
+  else{hint.textContent='Tap to sign';hint.classList.remove('signed');}
+}
 function initSig(id){
   const c=document.getElementById(id);if(!c)return;
-  const ctx=c.getContext('2d');c.width=c.offsetWidth||280;c.height=85;sigPads[id]={ctx,drawing:false};
+  const ctx=c.getContext('2d');
+  const h=Math.max(110,c.offsetHeight||110);
+  c.width=c.offsetWidth||280;c.height=h;sigPads[id]={ctx,drawing:false};
+  setSigHint(id,false);
   const pos=e=>{const r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)};};
-  const start=e=>{const p=pos(e);sigPads[id].drawing=true;ctx.beginPath();ctx.moveTo(p.x,p.y);c.classList.add('signed');};
-  const move=e=>{if(!sigPads[id].drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1a2744';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();};
+  const start=e=>{const p=pos(e);sigPads[id].drawing=true;ctx.beginPath();ctx.moveTo(p.x,p.y);c.classList.add('signed');setSigHint(id,true);};
+  const move=e=>{if(!sigPads[id].drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1a2744';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();};
   const stop=()=>sigPads[id].drawing=false;
   c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);c.addEventListener('mouseup',stop);c.addEventListener('mouseleave',stop);
   c.addEventListener('touchstart',e=>{e.preventDefault();start(e);},{passive:false});
   c.addEventListener('touchmove',e=>{e.preventDefault();move(e);},{passive:false});
   c.addEventListener('touchend',stop);
 }
-function clearSig(id){const c=document.getElementById(id);if(!c)return;c.getContext('2d').clearRect(0,0,c.width,c.height);c.classList.remove('signed');}
+function clearSig(id){const c=document.getElementById(id);if(!c)return;c.getContext('2d').clearRect(0,0,c.width,c.height);c.classList.remove('signed');setSigHint(id,false);}
 function captureHdrSigs(){
   const out={};
   const a=document.getElementById('sp_hdr_aide'),c=document.getElementById('sp_hdr_client');
@@ -1497,7 +1542,7 @@ function restoreHdrSigs(ts){
   [['sp_hdr_aide',ts.headerAideSig],['sp_hdr_client',ts.headerClientSig]].forEach(([id,src])=>{
     if(!src||src.length<100)return;
     const img=new Image();
-    img.onload=()=>{const c=document.getElementById(id);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');}};
+    img.onload=()=>{const c=document.getElementById(id);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);}};
     img.src=src;
   });
 }
@@ -1988,19 +2033,17 @@ function saveAllTimesheets(list){
 
 function askCloudBackup(){
   if(!currentUser||!currentTS){showTempMsg('Open a timesheet first.','var(--danger)');return;}
+  if(!requireClientSelected())return;
   openModal('backupConfirmModal');
 }
 
 async function doCloudBackup(){
   closeModal('backupConfirmModal');
   if(!currentUser||!currentTS){showTempMsg('Open a timesheet first.','var(--danger)');return;}
+  if(!requireClientSelected())return;
   const clientSel=document.getElementById('cg_client');
   const clientId=clientSel?clientSel.value:'';
   const clientName=(clientSel&&clientSel.selectedIndex>=0)?(clientSel.options[clientSel.selectedIndex].text||''):'';
-  if(!clientId||!clientName||clientName.indexOf('Select Client')!==-1){
-    showTempMsg('Please select a client before backing up.','var(--danger)');
-    return;
-  }
   const weekStart=document.getElementById('cg_weekstart').value||'';
   const notes=document.getElementById('cg_notes').value||'';
   const svcType=document.getElementById('cg_svctype').value||'Personal Care/Home Making';
@@ -2229,10 +2272,16 @@ async function loadMyClients(){
 
 function onClientSelected(){
   const sel=document.getElementById('cg_client');
+  const err=document.getElementById('cg_client_err');
   const clientId=sel.value;
   const client=myClients.find(c=>String(c.id)===String(clientId));
   if(client){
+    if(err)err.classList.remove('show');
+    if(sel)sel.classList.remove('invalid');
     updateTSMeta(currentTS,{clientName:client.name,clientId:client.id,clientLat:client.lat,clientLng:client.lng});
+  }else{
+    if(err){err.textContent='Please select a client before continuing.';err.classList.add('show');}
+    if(sel)sel.classList.add('invalid');
   }
 }
 
