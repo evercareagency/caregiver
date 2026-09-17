@@ -1290,6 +1290,20 @@ function calcDay(i){
   if(tin&&tout){const[ih,im]=tin.split(':').map(Number),[oh,om]=tout.split(':').map(Number);let mins=(oh*60+om)-(ih*60+im);if(mins<0)mins+=1440;cell.textContent=`${Math.floor(mins/60)}:${String(mins%60).padStart(2,'0')}`;cell.dataset.mins=mins;}
   else{cell.textContent='—';cell.dataset.mins=0;}
   updateTotal();
+  // Preserve signatures when times change (Mo bug: Client Signed ✓ vanishing)
+  if(currentUser){
+    const wd=getUserWeekData();
+    const cur=wd[i]?{...wd[i]}:{};
+    cur.tin=tin;cur.tout=tout;cur.hrs=cell.textContent;
+    const dateEl=document.getElementById(`d${i}_date`);
+    if(dateEl)cur.date=dateEl.value||cur.date||'';
+    // Keep existing aideSig/clientSig unless pads explicitly cleared
+    const a=document.getElementById(`sp_aide_${i}`),c=document.getElementById(`sp_client_${i}`);
+    if(a&&isCanvasInk(a))cur.aideSig=a.toDataURL();
+    if(c&&isCanvasInk(c))cur.clientSig=c.toDataURL();
+    wd[i]=cur;saveUserWeekData(wd);
+  }
+  refreshDaySigs(i);
 }
 function updateTotal(){let t=0;DAYS.forEach((_,i)=>t+=parseInt(document.getElementById(`d${i}_hrs`).dataset.mins||0));document.getElementById('cg_total').textContent=`${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;}
 function getCheckedSvcs(i){return ALL_SERVICE_LABELS.filter(s=>document.getElementById(`sm_${svcSlug(s)}_${i}`)?.checked);}
@@ -1312,7 +1326,9 @@ function confirmSaveDay(){
   closeModal('previewModal');const i=pendingDayIdx;
   const date=document.getElementById(`d${i}_date`).value,tin=document.getElementById(`d${i}_in`).value,tout=document.getElementById(`d${i}_out`).value,hrs=document.getElementById(`d${i}_hrs`).textContent,svcs=getCheckedSvcs(i);
   const otherSpecify=svcs.includes('Other (specify)')?(document.getElementById('cg_other_specify')?.value||'').trim():'';
-  const aideSig=document.getElementById(`sp_aide_${i}`).toDataURL(),clientSig=document.getElementById(`sp_client_${i}`).toDataURL();
+  const _prev=getUserWeekData()[i]||{};
+  const aideSig=(isCanvasInk(document.getElementById(`sp_aide_${i}`))?document.getElementById(`sp_aide_${i}`).toDataURL():(_prev.aideSig||''));
+  const clientSig=(isCanvasInk(document.getElementById(`sp_client_${i}`))?document.getElementById(`sp_client_${i}`).toDataURL():(_prev.clientSig||''));
   const client=getSelectedClient();
   const base={date,tin,tout,hrs,svcs,aideSig,clientSig};
   if(otherSpecify)base.otherSpecify=otherSpecify;
@@ -1516,20 +1532,87 @@ function setSigHint(id,signed){
 }
 function initSig(id){
   const c=document.getElementById(id);if(!c)return;
+  // Avoid stacking duplicate listeners if already wired
+  if(sigPads[id]&&sigPads[id].wired){
+    refreshSigFromStore(id);
+    return;
+  }
   const ctx=c.getContext('2d');
+  const prev=(c.width>0&&isCanvasInk(c))?c.toDataURL():null;
   const h=Math.max(110,c.offsetHeight||110);
-  c.width=c.offsetWidth||280;c.height=h;sigPads[id]={ctx,drawing:false};
-  setSigHint(id,false);
+  const w=Math.max(1,c.offsetWidth||280);
+  c.width=w;c.height=h;
+  sigPads[id]={ctx,drawing:false,wired:true};
+  if(prev){const img=new Image();img.onload=()=>{ctx.drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};img.src=prev;setSigHint(id,true);}
+  else setSigHint(id,false);
   const pos=e=>{const r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)};};
   const start=e=>{const p=pos(e);sigPads[id].drawing=true;ctx.beginPath();ctx.moveTo(p.x,p.y);c.classList.add('signed');setSigHint(id,true);};
-  const move=e=>{if(!sigPads[id].drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1a2744';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();};
-  const stop=()=>sigPads[id].drawing=false;
+  const move=e=>{if(!sigPads[id]||!sigPads[id].drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1a2744';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();};
+  const stop=()=>{if(!sigPads[id])return;sigPads[id].drawing=false;persistPadSig(id);};
   c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);c.addEventListener('mouseup',stop);c.addEventListener('mouseleave',stop);
   c.addEventListener('touchstart',e=>{e.preventDefault();start(e);},{passive:false});
   c.addEventListener('touchmove',e=>{e.preventDefault();move(e);},{passive:false});
   c.addEventListener('touchend',stop);
 }
-function clearSig(id){const c=document.getElementById(id);if(!c)return;c.getContext('2d').clearRect(0,0,c.width,c.height);c.classList.remove('signed');setSigHint(id,false);}
+function isCanvasInk(c){
+  try{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;return d.some(v=>v!==0);}catch(e){return false;}
+}
+function persistPadSig(id){
+  // Map sp_aide_N / sp_client_N → weekData; header pads → ts meta
+  const m=String(id).match(/^sp_(aide|client)_(\d+)$/);
+  if(m){
+    const role=m[1],i=parseInt(m[2],10);
+    const c=document.getElementById(id);if(!c||!currentUser)return;
+    const wd=getUserWeekData();
+    const cur=wd[i]?{...wd[i]}:{};
+    const key=role==='aide'?'aideSig':'clientSig';
+    if(isCanvasInk(c)){cur[key]=c.toDataURL();c.classList.add('signed');setSigHint(id,true);}
+    else{/* keep existing stored sig unless Clear was used */}
+    wd[i]=cur;saveUserWeekData(wd);
+    return;
+  }
+  if(id==='sp_hdr_aide'||id==='sp_hdr_client'){
+    if(!currentTS||!currentUser)return;
+    const c=document.getElementById(id);if(!c||!isCanvasInk(c))return;
+    const patch={};patch[id==='sp_hdr_aide'?'headerAideSig':'headerClientSig']=c.toDataURL();
+    updateTSMeta(currentTS,patch);
+  }
+}
+function refreshSigFromStore(id){
+  const c=document.getElementById(id);if(!c)return;
+  if(isCanvasInk(c)){c.classList.add('signed');setSigHint(id,true);return;}
+  let src='';
+  const m=String(id).match(/^sp_(aide|client)_(\d+)$/);
+  if(m){
+    const wd=getUserWeekData()[parseInt(m[2],10)]||{};
+    src=m[1]==='aide'?(wd.aideSig||''):(wd.clientSig||'');
+  }else if(id==='sp_hdr_aide'||id==='sp_hdr_client'){
+    const list=getAllTimesheets();const ts=list.find(x=>x.id===currentTS)||{};
+    src=id==='sp_hdr_aide'?(ts.headerAideSig||''):(ts.headerClientSig||'');
+  }
+  if(src&&src.length>100){
+    const img=new Image();
+    img.onload=()=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};
+    img.src=src;
+  }
+}
+function refreshDaySigs(i){
+  refreshSigFromStore(`sp_aide_${i}`);
+  refreshSigFromStore(`sp_client_${i}`);
+}
+function clearSig(id){
+  const c=document.getElementById(id);if(!c)return;
+  c.getContext('2d').clearRect(0,0,c.width,c.height);c.classList.remove('signed');setSigHint(id,false);
+  const m=String(id).match(/^sp_(aide|client)_(\d+)$/);
+  if(m&&currentUser){
+    const role=m[1],i=parseInt(m[2],10);const wd=getUserWeekData();if(!wd[i])return;
+    const cur={...wd[i]};delete cur[role==='aide'?'aideSig':'clientSig'];wd[i]=cur;saveUserWeekData(wd);
+  }
+  if((id==='sp_hdr_aide'||id==='sp_hdr_client')&&currentTS){
+    const patch={};patch[id==='sp_hdr_aide'?'headerAideSig':'headerClientSig']='';
+    updateTSMeta(currentTS,patch);
+  }
+}
 function captureHdrSigs(){
   const out={};
   const a=document.getElementById('sp_hdr_aide'),c=document.getElementById('sp_hdr_client');
@@ -2483,7 +2566,23 @@ window.addEventListener('load',()=>{
   const sess=store.get('cg_session');
   if(sess){currentUser=sess;afterLogin();}
 });
-window.addEventListener('resize',()=>Object.keys(sigPads).forEach(id=>{const c=document.getElementById(id);if(c){c.width=c.offsetWidth||280;c.height=85;}}));
+window.addEventListener('resize',()=>{
+  Object.keys(sigPads).forEach(id=>{
+    const c=document.getElementById(id);if(!c)return;
+    // Snapshot ink BEFORE resizing — mobile time pickers fire resize and used to wipe Client Signed ✓
+    const keep=isCanvasInk(c)?c.toDataURL():null;
+    const w=c.offsetWidth||280,h=Math.max(85,c.offsetHeight||85);
+    if(c.width===w&&c.height===h)return; // no real size change
+    c.width=w;c.height=h;
+    if(keep){
+      const img=new Image();
+      img.onload=()=>{c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};
+      img.src=keep;
+    }else{
+      refreshSigFromStore(id);
+    }
+  });
+});
 </script>
 </body>
 </html>
