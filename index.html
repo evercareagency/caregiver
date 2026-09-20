@@ -1525,6 +1525,11 @@ function requirePaperSignatures(){
   }
   return true;
 }
+function aceRejectMessage(data){
+  if(!data||typeof data!=='object')return 'Submit rejected.';
+  const s=[data.error,data.message,data.reason].find(v=>v!=null&&String(v).trim());
+  return s?String(s).trim():'Submit rejected.';
+}
 function askFinalSubmit(){
   if(!requireClientSelected())return;
   if(!requirePaperSignatures())return;
@@ -1563,6 +1568,8 @@ function showFullPreview(){
 async function doFinalSubmit(){
   if(!requireClientSelected()){showScreen('caregiverScreen');return;}
   if(!requirePaperSignatures()){showScreen('caregiverScreen');return;}
+  if(window._cgSubmitInFlight)return;
+  window._cgSubmitInFlight=true;
   const weekData=buildDaysPayload();
   const clientSel=document.getElementById('cg_client');
   const clientName=clientSel.options[clientSel.selectedIndex]?.text||'(not provided)';
@@ -1572,16 +1579,29 @@ async function doFinalSubmit(){
   const notes=document.getElementById('cg_notes').value||'';
   const hdr=captureHdrSigs();
   if(currentTS)updateTSMeta(currentTS,hdr);
-  const record={id:Date.now(),submitted:new Date().toLocaleString(),empName:currentUser.name,username:currentUser.username,clientName,svcType,weekStart,totalHrs,notes,days:{...weekData},...hdr};
+  const submitted=new Date().toLocaleString();
+  let data=null;
+  try{
+    if(correctionMode&&correctionData){
+      data=await apiPost({action:'resubmit',id:correctionData.id,days:weekData,total_hours:totalHrs,client_name:clientName,notes,...hdr});
+    }else{
+      data=await apiPost({action:'submit',submitted,username:currentUser.username,emp_name:currentUser.name,client_name:clientName,svc_type:svcType,week_start:weekStart,total_hours:totalHrs,notes,days:weekData,...hdr});
+    }
+  }catch(e){
+    showTempMsg('Submit failed — check connection.','var(--danger)');
+    window._cgSubmitInFlight=false;
+    return;
+  }
+  if(!data||data.success!==true){
+    showTempMsg(aceRejectMessage(data),'var(--danger)');
+    window._cgSubmitInFlight=false;
+    return;
+  }
+  const record={id:Date.now(),submitted,empName:currentUser.name,username:currentUser.username,clientName,svcType,weekStart,totalHrs,notes,days:{...weekData},...hdr};
   const all=store.get('all_timesheets')||[];all.push(record);store.set('all_timesheets',all);
   store.del(`wd_${currentUser.username}_${currentTS}`);
-  
-  if(correctionMode&&correctionData){
-    fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'resubmit',id:correctionData.id,days:weekData,total_hours:totalHrs,client_name:clientName,notes,...hdr})}).catch(()=>{});
-    correctionMode=false;correctionData=null;
-  }else{
-    fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'submit',submitted:record.submitted,username:currentUser.username,emp_name:currentUser.name,client_name:clientName,svc_type:svcType,week_start:weekStart,total_hours:totalHrs,notes,days:weekData,...hdr})}).catch(()=>{});
-  }
+  if(correctionMode){correctionMode=false;correctionData=null;}
+  window._cgSubmitInFlight=false;
   showScreen('caregiverScreen');
   document.getElementById('cgFormView').style.display='none';
   document.getElementById('cgSuccessView').style.display='block';
