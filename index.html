@@ -1489,28 +1489,41 @@ function padHasInk(id){
   const c=document.getElementById(id);
   return !!(c&&isCanvasInk(c));
 }
-// Paper timesheet: HHA + client ink on header pads and/or day pads
-function hasPaperRoleInk(role){
-  const hdrId=role==='aide'?'sp_hdr_aide':'sp_hdr_client';
-  const hdrKey=role==='aide'?'headerAideSig':'headerClientSig';
-  const dayKey=role==='aide'?'aideSig':'clientSig';
-  if(padHasInk(hdrId))return true;
-  const ts=(currentTS&&getAllTimesheets().find(x=>x.id===currentTS))||{};
-  if(hasSigInkData(ts[hdrKey]))return true;
-  const captured=captureHdrSigs();
-  if(hasSigInkData(captured[hdrKey]))return true;
+function dayFieldVal(id,fallback){
+  const el=document.getElementById(id);
+  if(el){
+    const v=String((el.value!=null&&el.tagName!=='DIV'?el.value:el.textContent)||'').trim();
+    if(v)return v;
+  }
+  return String(fallback||'').trim();
+}
+function isWorkedDay(i,d){
+  const tin=dayFieldVal(`d${i}_in`,d&&(d.tin||d.in));
+  const tout=dayFieldVal(`d${i}_out`,d&&(d.tout||d.out));
+  const hrs=dayFieldVal(`d${i}_hrs`,d&&d.hrs);
+  return !!(tin&&tout&&hrs&&hrs!=='—');
+}
+function dayHasBothSigs(i,d){
+  const aide=padHasInk(`sp_aide_${i}`)||hasSigInkData(d&&d.aideSig);
+  const client=padHasInk(`sp_client_${i}`)||hasSigInkData(d&&d.clientSig);
+  return !!(aide&&client);
+}
+// Ace lock: every worked day (tin/tout/hrs) needs aideSig + clientSig
+function requirePaperSignatures(){
+  for(let i=0;i<=6;i++){
+    persistPadSig(`sp_aide_${i}`);
+    persistPadSig(`sp_client_${i}`);
+  }
   const wd=getUserWeekData()||{};
   for(let i=0;i<=6;i++){
-    if(padHasInk(`sp_${role}_${i}`))return true;
     const d=wd[i]||wd[String(i)]||{};
-    if(hasSigInkData(d[dayKey]))return true;
+    if(!isWorkedDay(i,d))continue;
+    if(!dayHasBothSigs(i,d)){
+      showTempMsg('Client and HHA signatures are required before submit','var(--danger)');
+      return false;
+    }
   }
-  return false;
-}
-function requirePaperSignatures(){
-  if(hasPaperRoleInk('aide')&&hasPaperRoleInk('client'))return true;
-  showTempMsg('Client and HHA signatures are required before submit','var(--danger)');
-  return false;
+  return true;
 }
 function askFinalSubmit(){
   if(!requireClientSelected())return;
@@ -1560,6 +1573,7 @@ async function doFinalSubmit(){
   const hdr=captureHdrSigs();
   if(currentTS)updateTSMeta(currentTS,hdr);
   const record={id:Date.now(),submitted:new Date().toLocaleString(),empName:currentUser.name,username:currentUser.username,clientName,svcType,weekStart,totalHrs,notes,days:{...weekData},...hdr};
+  const all=store.get('all_timesheets')||[];all.push(record);store.set('all_timesheets',all);
   store.del(`wd_${currentUser.username}_${currentTS}`);
   
   if(correctionMode&&correctionData){
