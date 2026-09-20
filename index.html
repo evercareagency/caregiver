@@ -1125,9 +1125,7 @@ function loadCorrectionMode(){
     if(d.location){
       const locEl=document.getElementById(`loc_${i}`);
       if(locEl){
-        let badge='';
-        if(d.verified===true)badge=`<span style="color:var(--success);font-weight:700">&#10003; At Client Location</span>`;
-        else if(d.verified===false)badge=`<span style="color:var(--danger);font-weight:700">&#10007; ${d.distanceFt}ft from client address</span>`;
+        const badge=locDistanceBadge(d.verified,d.distanceFt);
         locEl.innerHTML=`<span>📍</span><span id="loc_txt_${i}">${d.location}</span> ${badge}`;
       }
     }
@@ -1382,12 +1380,10 @@ function saveDayData(i,dayObj){
   const wd=getUserWeekData();wd[i]={...dayObj,savedAt:new Date().toLocaleString()};saveUserWeekData(wd);
   const btn=document.getElementById(`sbtn_${i}`);if(btn){btn.textContent='✅ Day Saved — Tap to Edit';btn.style.background='var(--success)';}
   const stat=document.getElementById(`dstat_${i}`);if(stat){stat.textContent=`✅ ${dayObj.hrs}`;stat.classList.add('saved');}
-  // Show verification badge
+  // Show verification badge (miles in UI; 500ft radius stays internal)
   const locEl=document.getElementById(`loc_${i}`);
   if(locEl&&dayObj.verified!==null){
-    const badge=dayObj.verified
-      ? `<span style="color:var(--success);font-weight:700">&#10003; At Client Location</span>`
-      : `<span style="color:var(--danger);font-weight:700">&#10007; ${dayObj.distanceFt}ft from client address</span>`;
+    const badge=locDistanceBadge(dayObj.verified,dayObj.distanceFt);
     locEl.innerHTML=`<span>📍</span><span id="loc_txt_${i}">${dayObj.location}</span> ${badge}`;
   }
   document.getElementById(`dhdr_${i}`)?.classList.remove('open');document.getElementById(`dbody_${i}`)?.classList.remove('open');
@@ -1423,9 +1419,7 @@ function loadSavedWeek(){
     if(d.location){
       const locEl=document.getElementById(`loc_${i}`);
       if(locEl){
-        let badge='';
-        if(d.verified===true)badge=`<span style="color:var(--success);font-weight:700">&#10003; At Client Location</span>`;
-        else if(d.verified===false)badge=`<span style="color:var(--danger);font-weight:700">&#10007; ${d.distanceFt}ft from client address</span>`;
+        const badge=locDistanceBadge(d.verified,d.distanceFt);
         locEl.innerHTML=`<span>📍</span><span id="loc_txt_${i}">${d.location}</span> ${badge}`;
       }
     }
@@ -1488,14 +1482,46 @@ function requireClientSelected(){
   if(sel)sel.classList.remove('invalid');
   return true;
 }
+function hasSigInkData(src){
+  return !!(src&&String(src).length>100);
+}
+function padHasInk(id){
+  const c=document.getElementById(id);
+  return !!(c&&isCanvasInk(c));
+}
+// Paper timesheet: HHA + client ink on header pads and/or day pads
+function hasPaperRoleInk(role){
+  const hdrId=role==='aide'?'sp_hdr_aide':'sp_hdr_client';
+  const hdrKey=role==='aide'?'headerAideSig':'headerClientSig';
+  const dayKey=role==='aide'?'aideSig':'clientSig';
+  if(padHasInk(hdrId))return true;
+  const ts=(currentTS&&getAllTimesheets().find(x=>x.id===currentTS))||{};
+  if(hasSigInkData(ts[hdrKey]))return true;
+  const captured=captureHdrSigs();
+  if(hasSigInkData(captured[hdrKey]))return true;
+  const wd=getUserWeekData()||{};
+  for(let i=0;i<=6;i++){
+    if(padHasInk(`sp_${role}_${i}`))return true;
+    const d=wd[i]||wd[String(i)]||{};
+    if(hasSigInkData(d[dayKey]))return true;
+  }
+  return false;
+}
+function requirePaperSignatures(){
+  if(hasPaperRoleInk('aide')&&hasPaperRoleInk('client'))return true;
+  showTempMsg('Client and HHA signatures are required before submit','var(--danger)');
+  return false;
+}
 function askFinalSubmit(){
   if(!requireClientSelected())return;
+  if(!requirePaperSignatures())return;
   openModal('areYouSureModal');
 }
 
 function showFullPreview(){
   closeModal('areYouSureModal');
   if(!requireClientSelected()){showScreen('caregiverScreen');return;}
+  if(!requirePaperSignatures()){showScreen('caregiverScreen');return;}
   const weekData=buildDaysPayload();
   const clientSel=document.getElementById('cg_client');
   const clientName=clientSel.options[clientSel.selectedIndex]?.text||'(not provided)';
@@ -1523,6 +1549,7 @@ function showFullPreview(){
 
 async function doFinalSubmit(){
   if(!requireClientSelected()){showScreen('caregiverScreen');return;}
+  if(!requirePaperSignatures()){showScreen('caregiverScreen');return;}
   const weekData=buildDaysPayload();
   const clientSel=document.getElementById('cg_client');
   const clientName=clientSel.options[clientSel.selectedIndex]?.text||'(not provided)';
@@ -1530,15 +1557,16 @@ async function doFinalSubmit(){
   const weekStart=document.getElementById('cg_weekstart').value;
   const totalHrs=document.getElementById('cg_total').textContent;
   const notes=document.getElementById('cg_notes').value||'';
-  const record={id:Date.now(),submitted:new Date().toLocaleString(),empName:currentUser.name,username:currentUser.username,clientName,svcType,weekStart,totalHrs,notes,days:{...weekData}};
-  const all=store.get('all_timesheets')||[];all.push(record);store.set('all_timesheets',all);
+  const hdr=captureHdrSigs();
+  if(currentTS)updateTSMeta(currentTS,hdr);
+  const record={id:Date.now(),submitted:new Date().toLocaleString(),empName:currentUser.name,username:currentUser.username,clientName,svcType,weekStart,totalHrs,notes,days:{...weekData},...hdr};
   store.del(`wd_${currentUser.username}_${currentTS}`);
   
   if(correctionMode&&correctionData){
-    fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'resubmit',id:correctionData.id,days:weekData,total_hours:totalHrs,client_name:clientName,notes})}).catch(()=>{});
+    fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'resubmit',id:correctionData.id,days:weekData,total_hours:totalHrs,client_name:clientName,notes,...hdr})}).catch(()=>{});
     correctionMode=false;correctionData=null;
   }else{
-    fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'submit',submitted:record.submitted,username:currentUser.username,emp_name:currentUser.name,client_name:clientName,svc_type:svcType,week_start:weekStart,total_hours:totalHrs,notes,days:weekData})}).catch(()=>{});
+    fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'submit',submitted:record.submitted,username:currentUser.username,emp_name:currentUser.name,client_name:clientName,svc_type:svcType,week_start:weekStart,total_hours:totalHrs,notes,days:weekData,...hdr})}).catch(()=>{});
   }
   showScreen('caregiverScreen');
   document.getElementById('cgFormView').style.display='none';
@@ -1685,7 +1713,7 @@ async function doResetPassword(){
   closeModal('resetModal');showTempMsg('✅ Password reset! Please log in.','var(--success)');
 }
 
-function showTempMsg(msg,color){const el=document.createElement('div');el.style.cssText=`position:fixed;top:65px;left:50%;transform:translateX(-50%);background:${color};color:white;padding:9px 18px;border-radius:8px;font-weight:600;font-size:0.82rem;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.2);white-space:nowrap`;el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),3000);}
+function showTempMsg(msg,color){const el=document.createElement('div');el.style.cssText=`position:fixed;top:65px;left:50%;transform:translateX(-50%);background:${color};color:white;padding:9px 18px;border-radius:8px;font-weight:600;font-size:0.82rem;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.2);white-space:normal;max-width:min(90vw,420px);text-align:center`;el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),3000);}
 
 
 // ─── INSERVICE DATA ─────────────────────────────────────
@@ -2413,6 +2441,16 @@ function calcDistance(lat1,lng1,lat2,lng2){
   const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
   const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
   return R*c;
+}
+function formatDistanceMi(distanceFt){
+  const ft=Number(distanceFt);
+  const mi=isFinite(ft)?ft/5280:0;
+  return mi.toFixed(2)+' mi';
+}
+function locDistanceBadge(verified,distanceFt){
+  if(verified===true)return `<span style="color:var(--success);font-weight:700">&#10003; At Client Location</span>`;
+  if(verified===false)return `<span style="color:var(--danger);font-weight:700">&#10007; ${formatDistanceMi(distanceFt)} from client address</span>`;
+  return '';
 }
 
 function openTS(id){
