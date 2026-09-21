@@ -1230,7 +1230,8 @@ async function checkForCorrection(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'get_correction',username:currentUser.username})});
     const data=await res.json();
-    const rows=(data&&data.success&&Array.isArray(data.data))?data.data:[];
+    if(!data||data.success!==true||!Array.isArray(data.data))return;
+    const rows=data.data;
     syncCorrectionsFromAdmin(rows);
     const banner=document.getElementById('correctionBanner');
     if(rows.length>0){
