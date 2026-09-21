@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-21-day-sig-real-ink">
-<!-- caregiver-build: 2026-09-21-day-sig-real-ink — Save This Day requires real Aide+Client ink, not blank PNGs -->
+<meta name="caregiver-build" content="2026-09-21-aide-first-login-setup">
+<!-- caregiver-build: 2026-09-21-aide-first-login-setup — first-login mustChangePassword/needsEmail gate -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -18,11 +18,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);color:var(--text);ma
 .screen{display:none !important;min-height:100vh;min-height:100dvh;}
 .screen.active{display:block !important;}
 #authScreen.active{display:flex !important;}
+#aideSetupScreen.active{display:flex !important;}
 #locationScreen.active{display:flex !important;}
 #locDeniedScreen.active{display:flex !important;}
 #isSuccessScreen.active{display:block !important;}
 /* AUTH */
-#authScreen.active{flex-direction:column;align-items:center;justify-content:center;background:var(--teal);padding:24px 16px;min-height:100vh;min-height:100dvh;}
+#authScreen.active,#aideSetupScreen.active{flex-direction:column;align-items:center;justify-content:center;background:var(--teal);padding:24px 16px;min-height:100vh;min-height:100dvh;}
 .auth-logo{font-size:48px;margin-bottom:10px;}
 .auth-title{font-family:'Playfair Display',serif;font-size:1.8rem;color:white;margin-bottom:4px;}
 .auth-sub{font-size:0.72rem;color:rgba(255,255,255,0.55);letter-spacing:2px;margin-bottom:28px;}
@@ -321,6 +322,23 @@ else setupEverCarePWA();
       <button class="btn btn-teal btn-full" onclick="doSignup()" id="signupBtn">Create Account →</button>
       <div class="auth-err" id="signupErr"></div>
     </div>
+  </div>
+</div>
+
+<!-- AIDE FIRST-LOGIN SETUP (mandatory — no Skip) -->
+<div class="screen" id="aideSetupScreen">
+  <div class="auth-title" style="margin-top:8px">EverCare Home Agency</div>
+  <div class="auth-sub">ACCOUNT SETUP REQUIRED</div>
+  <div class="auth-box">
+    <h2>Finish your account</h2>
+    <p>Office created this login with a temporary password. Set a new password and your email before using the portal. You cannot skip this step.</p>
+    <div class="field"><label>Current / temp password</label><div style="position:relative"><input type="password" id="setup_curpass" placeholder="Temporary password" autocomplete="current-password" style="padding-right:64px"><button type="button" onclick="togglePasswordVisibility('setup_curpass',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted,#6b7a90);font-size:0.78rem;font-weight:600;cursor:pointer;padding:4px 6px;font-family:inherit">Show</button></div></div>
+    <div class="field"><label>New password</label><div style="position:relative"><input type="password" id="setup_newpass" placeholder="Choose a new password" autocomplete="new-password" style="padding-right:64px"><button type="button" onclick="togglePasswordVisibility('setup_newpass',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted,#6b7a90);font-size:0.78rem;font-weight:600;cursor:pointer;padding:4px 6px;font-family:inherit">Show</button></div></div>
+    <div class="field"><label>Confirm new password</label><input type="password" id="setup_confirm" placeholder="Re-enter new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitAideSetup()"></div>
+    <div class="field"><label>Email address <span style="color:var(--danger)">*</span></label><input type="text" id="setup_email" placeholder="Your email address" autocomplete="email" onkeydown="if(event.key==='Enter')submitAideSetup()"></div>
+    <button class="btn btn-teal btn-full" onclick="submitAideSetup()" id="aideSetupBtn">Save &amp; Continue →</button>
+    <div class="auth-err" id="aideSetupErr"></div>
+    <div style="text-align:center;margin-top:12px"><button type="button" onclick="caregiverLogout()" style="background:none;border:none;color:var(--teal);font-size:0.76rem;cursor:pointer;text-decoration:underline">Log out</button></div>
   </div>
 </div>
 
@@ -809,7 +827,14 @@ function persistCgSession(sess){
   return sess;
 }
 function startCgSession(user){
-  const sess={username:user.username,name:user.name,loginAt:Date.now()};
+  const sess={
+    username:user.username,
+    name:user.name,
+    loginAt:Date.now(),
+    mustChangePassword:aideTruth(user&&user.mustChangePassword),
+    needsEmail:aideTruth(user&&user.needsEmail)
+  };
+  if(user&&user.email)sess.email=String(user.email).trim();
   return persistCgSession(sess);
 }
 function backfillCgSessionLoginAt(sess){
@@ -929,7 +954,16 @@ async function apiGetCached(action,extra,force){
 }
 
 function syncStorage(){for(let i=0;i<sessionStorage.length;i++){const k=sessionStorage.key(i);if(!localStorage.getItem(k))localStorage.setItem(k,sessionStorage.getItem(k));}}
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),50);}
+function showScreen(id){
+  if(aideSetupRequired()&&id!=='aideSetupScreen'&&id!=='authScreen'){
+    showAideSetupGate();
+    return;
+  }
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(el)el.classList.add('active');
+  window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),50);
+}
 let _modalScrollY=0;
 function lockBodyScroll(){
   if(document.body.dataset.modalLock==='1')return;
@@ -978,7 +1012,7 @@ async function doLogin(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
-    if(data.success){startCgSession({username:user,name:data.name});document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
+    if(data.success){startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
     else{document.getElementById('loginErr').style.display='block';}
   }catch(e){
     const users=store.get('cg_users')||{};
@@ -1024,7 +1058,7 @@ function headerBack(){
   confirmLogout();
 }
 
-function caregiverLogout(){store.del('cg_session');currentUser=null;correctionMode=false;correctionData=null;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
+function caregiverLogout(){store.del('cg_session');currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
 
 // SANDATA GATE + LOCATION (once after login, again on save / submit)
 const SANDATA_ACK_KEY='sandata_ack_session';
@@ -1060,16 +1094,161 @@ function ackSandata(){
   openModal('alertModal');
 }
 function requireSandataAck(){
+  if(!requireAideSetup())return false;
   if(isSandataAcked())return true;
   openModal('sandataModal');
   showTempMsg('Please tap Got It on the Sandata reminder first.','var(--warn)');
   return false;
 }
 
+function aideTruth(v){
+  if(v===true||v===1)return true;
+  const s=String(v==null?'':v).trim().toLowerCase();
+  return s==='true'||s==='1'||s==='yes'||s==='y';
+}
+function aideSetupRequired(sess){
+  const s=sess||currentUser||store.get('cg_session');
+  if(!s||!s.username)return false;
+  return aideTruth(s.mustChangePassword)||aideTruth(s.needsEmail);
+}
+function persistAideSetupFlags(flags){
+  const sess=currentUser||store.get('cg_session');
+  if(!sess)return sess;
+  if(flags){
+    if('mustChangePassword' in flags)sess.mustChangePassword=aideTruth(flags.mustChangePassword);
+    if('needsEmail' in flags)sess.needsEmail=aideTruth(flags.needsEmail);
+    if('email' in flags&&flags.email)sess.email=String(flags.email).trim();
+  }
+  return persistCgSession(sess);
+}
+function clearAideSetupGate(){
+  if(!currentUser)return;
+  currentUser.mustChangePassword=false;
+  currentUser.needsEmail=false;
+  persistCgSession(currentUser);
+}
+function aceLooksLikeUnknownAction(text){
+  return /unknown action|not implemented|stub action/i.test(String(text||''));
+}
+function aceActionError(data,err,action){
+  const raw=(data&&(data.error||data.message||data.reason))||(err&&err.message)||'Request failed.';
+  const text=String(raw);
+  if(aceLooksLikeUnknownAction(text)){
+    return 'Unknown action: '+(action||'')+(data&&data.error?(' — '+data.error):'');
+  }
+  return text;
+}
+async function postAideAction(primary,alias,payload){
+  let data=null;
+  try{
+    data=await apiPost(Object.assign({action:primary},payload));
+  }catch(e){
+    return {data:null,err:e,action:primary};
+  }
+  if(data&&data.success)return {data:data,err:null,action:primary};
+  const why=(data&&(data.error||data.message||data.reason))||'';
+  if(alias&&aceLooksLikeUnknownAction(why)){
+    try{
+      data=await apiPost(Object.assign({action:alias},payload));
+      return {data:data,err:null,action:alias};
+    }catch(e){
+      return {data:null,err:e,action:alias};
+    }
+  }
+  return {data:data,err:null,action:primary};
+}
+function aideSetupSuccess(data){
+  if(!data||typeof data!=='object')return false;
+  if(data.success===false)return false;
+  if(aideTruth(data.mustChangePassword))return false;
+  return data.success===true||data.mustChangePassword===false;
+}
+function showAideSetupGate(opts){
+  opts=opts||{};
+  const cur=document.getElementById('setup_curpass');
+  const neu=document.getElementById('setup_newpass');
+  const conf=document.getElementById('setup_confirm');
+  const email=document.getElementById('setup_email');
+  const err=document.getElementById('aideSetupErr');
+  if(cur&&opts.currentPassword&&!cur.value)cur.value=opts.currentPassword;
+  if(email&&opts.email&&!email.value)email.value=opts.email;
+  if(neu&&!opts.keepPasswords)neu.value='';
+  if(conf&&!opts.keepPasswords)conf.value='';
+  if(err){err.textContent='';err.style.display='none';}
+  document.querySelectorAll('.modal-bg.show').forEach(function(m){m.classList.remove('show');});
+  if(typeof unlockBodyScroll==='function')unlockBodyScroll();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('aideSetupScreen');
+  if(el)el.classList.add('active');
+  window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),50);
+}
+function requireAideSetup(){
+  if(!aideSetupRequired())return true;
+  showAideSetupGate();
+  showTempMsg('Finish account setup first — new password and email are required.','var(--warn)');
+  return false;
+}
+async function submitAideSetup(){
+  if(!currentUser||!currentUser.username){showTempMsg('Please log in first.','var(--danger)');return;}
+  const currentPassword=(document.getElementById('setup_curpass')||{}).value||'';
+  const newPassword=(document.getElementById('setup_newpass')||{}).value||'';
+  const confirm=(document.getElementById('setup_confirm')||{}).value||'';
+  const email=((document.getElementById('setup_email')||{}).value||'').trim().toLowerCase();
+  const err=document.getElementById('aideSetupErr');
+  const btn=document.getElementById('aideSetupBtn');
+  const showErr=function(msg){if(err){err.textContent=msg;err.style.display='block';}};
+  if(!currentPassword||!newPassword||!confirm||!email){showErr('Please fill in all fields.');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('Enter a valid email address.');return;}
+  if(newPassword!==confirm){showErr('New passwords do not match.');return;}
+  if(newPassword===currentPassword){showErr('New password must be different from the current password.');return;}
+  if(btn){btn.disabled=true;btn.textContent='Saving...';}
+  try{
+    const res=await postAideAction('complete_aide_setup','set_password',{
+      username:currentUser.username,
+      currentPassword:currentPassword,
+      newPassword:newPassword,
+      email:email
+    });
+    const data=res&&res.data;
+    if(aideSetupSuccess(data)){
+      currentUser.email=email;
+      clearAideSetupGate();
+      window._aideSetupCurrentPassword='';
+      if(err)err.style.display='none';
+      showTempMsg('Account setup complete.','var(--success)');
+      const fresh=!!window._cgFreshLogin;
+      window._cgFreshLogin=false;
+      afterLogin({freshLogin:fresh});
+      return;
+    }
+    if(data&&(('mustChangePassword' in data)||('needsEmail' in data))){
+      persistAideSetupFlags(data);
+    }
+    const msg=aceActionError(data,res&&res.err,res&&res.action||'complete_aide_setup');
+    showErr(msg);
+    showTempMsg(msg,'var(--danger)');
+  }catch(e){
+    const msg=aceActionError(null,e,'complete_aide_setup');
+    showErr(msg);
+    showTempMsg(msg,'var(--danger)');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Save & Continue →';}
+  }
+}
+
 function afterLogin(opts){
   if(opts&&opts.freshLogin){
     clearSandataAck();
     setPendingLoginLocation(true);
+    window._cgFreshLogin=true;
+  }
+  if(aideSetupRequired()){
+    showAideSetupGate({
+      currentPassword:window._aideSetupCurrentPassword||'',
+      email:(currentUser&&currentUser.email)||'',
+      freshLogin:!!(opts&&opts.freshLogin)
+    });
+    return;
   }
   // Home may render underneath, but Start timesheet stays blocked until Got It.
   // Do not request GPS until Sandata is acknowledged — Sandata must not wait on location.
@@ -1164,6 +1343,7 @@ function showInstructions(device){
 
 // CAREGIVER SCREEN
 async function loadCaregiverScreen(){
+  if(!requireAideSetup())return;
   showScreen('caregiverScreen');
   document.getElementById('hdr_name').textContent=currentUser.name;
   document.getElementById('cgHomeView').style.display='block';
@@ -1249,6 +1429,7 @@ async function checkForCorrection(){
 }
 
 function loadCorrectionMode(){
+  if(!requireAideSetup())return;
   if(!requireSandataAck())return;
   if(!correctionData)return;
   correctionMode=true;
@@ -2911,6 +3092,7 @@ function renderTSHome(){
 }
 
 function confirmNewTS(){
+  if(!requireAideSetup())return;
   if(!requireSandataAck())return;
   if(confirm('Start a new blank timesheet for a different client / week? This does not reopen your last week.')){
     const id=createNewTimesheet();
@@ -2978,6 +3160,7 @@ function locDistanceBadge(verified,distanceFt){
 }
 
 function openTS(id){
+  if(!requireAideSetup())return;
   if(!requireSandataAck())return;
   let ts=getAllTimesheets().find(t=>t.id===id);
   if(ts&&(ts.status==='submitted'||ts.status==='locked')){
@@ -3042,6 +3225,7 @@ function backToTSHome(){
 
 function goToInservices(){
   if(!currentUser)return;
+  if(!requireAideSetup())return;
   showScreen('inserviceScreen');
   document.getElementById('is_aide_name').textContent=currentUser.name;
   renderISList();
