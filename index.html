@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-21-home-ts-list">
-<!-- caregiver-build: 2026-09-21-home-ts-list — Home lists drafts + sent-back only; Start Another is a blank week -->
+<meta name="caregiver-build" content="2026-09-21-day-sig-real-ink">
+<!-- caregiver-build: 2026-09-21-day-sig-real-ink — Save This Day requires real Aide+Client ink, not blank PNGs -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -1292,8 +1292,8 @@ function loadCorrectionMode(){
     updateDayName(i);
     if(he){he.textContent=d.hrs||'—';he.dataset.mins=minsFromHrs(d.hrs);}
     applySvcsToMatrix(i,d.svcs);if(d.otherSpecify){const o=document.getElementById('cg_other_specify');if(o&&!o.value)o.value=d.otherSpecify;}
-    if(d.aideSig&&d.aideSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_aide_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(c.id,true);}};img.src=d.aideSig;}
-    if(d.clientSig&&d.clientSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_client_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(c.id,true);}};img.src=d.clientSig;}
+    applySigDataUrl(`sp_aide_${i}`,d.aideSig);
+    applySigDataUrl(`sp_client_${i}`,d.clientSig);
     if(d.location){
       const locEl=document.getElementById(`loc_${i}`);
       if(locEl){
@@ -1499,15 +1499,15 @@ function calcDay(i){
     if(dateEl)cur.date=dateEl.value||cur.date||'';
     // Keep existing aideSig/clientSig unless pads explicitly cleared
     const a=document.getElementById(`sp_aide_${i}`),c=document.getElementById(`sp_client_${i}`);
-    if(a&&isCanvasInk(a))cur.aideSig=a.toDataURL();
-    if(c&&isCanvasInk(c))cur.clientSig=c.toDataURL();
+    if(a&&isCanvasInk(a)){cur.aideSig=a.toDataURL();rememberSigInk(cur.aideSig,true);}
+    if(c&&isCanvasInk(c)){cur.clientSig=c.toDataURL();rememberSigInk(cur.clientSig,true);}
     wd[i]=cur;saveUserWeekData(wd);
   }
   refreshDaySigs(i);
 }
 function updateTotal(){let t=0;DAYS.forEach((_,i)=>t+=parseInt(document.getElementById(`d${i}_hrs`).dataset.mins||0));document.getElementById('cg_total').textContent=`${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;}
 function getCheckedSvcs(i){return ALL_SERVICE_LABELS.filter(s=>document.getElementById(`sm_${svcSlug(s)}_${i}`)?.checked);}
-function isSigned(id){const c=document.getElementById(id);if(!c)return false;const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;return d.some(v=>v!==0);}
+function isSigned(id){return padHasInk(id);}
 function minsFromHrs(hrs){if(!hrs||hrs==='—')return 0;const[h,m]=hrs.split(':').map(Number);return h*60+(m||0);}
 
 function requireDaySignatures(i){
@@ -1552,8 +1552,9 @@ function confirmSaveDay(){
   closeModal('previewModal');
   const date=document.getElementById(`d${i}_date`).value,tin=document.getElementById(`d${i}_in`).value,tout=document.getElementById(`d${i}_out`).value,hrs=document.getElementById(`d${i}_hrs`).textContent,svcs=getCheckedSvcs(i);
   const otherSpecify=svcs.includes('Other (specify)')?(document.getElementById('cg_other_specify')?.value||'').trim():'';
-  const aideSig=(isCanvasInk(document.getElementById(`sp_aide_${i}`))?document.getElementById(`sp_aide_${i}`).toDataURL():(_prev.aideSig||''));
-  const clientSig=(isCanvasInk(document.getElementById(`sp_client_${i}`))?document.getElementById(`sp_client_${i}`).toDataURL():(_prev.clientSig||''));
+  const aEl=document.getElementById(`sp_aide_${i}`),cEl=document.getElementById(`sp_client_${i}`);
+  const aideSig=(isCanvasInk(aEl)?aEl.toDataURL():(hasSigInkData(_prev.aideSig)?_prev.aideSig:''));
+  const clientSig=(isCanvasInk(cEl)?cEl.toDataURL():(hasSigInkData(_prev.clientSig)?_prev.clientSig:''));
   const base={date,tin,tout,hrs,svcs,aideSig,clientSig};
   if(otherSpecify)base.otherSpecify=otherSpecify;
   pendingDaySave={i,base};
@@ -1627,8 +1628,8 @@ function loadSavedWeek(){
     updateDayName(i);
     if(he){he.textContent=d.hrs||'—';he.dataset.mins=minsFromHrs(d.hrs);}
     applySvcsToMatrix(i,d.svcs);if(d.otherSpecify){const o=document.getElementById('cg_other_specify');if(o&&!o.value)o.value=d.otherSpecify;}
-    if(d.aideSig&&d.aideSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_aide_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(c.id,true);}};img.src=d.aideSig;}
-    if(d.clientSig&&d.clientSig.length>100){const img=new Image();img.onload=()=>{const c=document.getElementById(`sp_client_${i}`);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(c.id,true);}};img.src=d.clientSig;}
+    applySigDataUrl(`sp_aide_${i}`,d.aideSig);
+    applySigDataUrl(`sp_client_${i}`,d.clientSig);
     if(d.location){
       const locEl=document.getElementById(`loc_${i}`);
       if(locEl){
@@ -1695,8 +1696,50 @@ function requireClientSelected(){
   if(sel)sel.classList.remove('invalid');
   return true;
 }
+const SIG_INK_MIN_PX=18;
+const SIG_INK_MIN_ALPHA=40;
+const SIG_INK_NEAR_WHITE=232;
+const _sigInkCache=new Map();
+function rememberSigInk(src,ok){
+  if(src&&typeof src==='string')_sigInkCache.set(src,!!ok);
+}
+function countCanvasInkPixels(c){
+  try{
+    if(!c||!c.width||!c.height)return 0;
+    const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+    let n=0;
+    for(let i=0;i<d.length;i+=4){
+      if(d[i+3]<SIG_INK_MIN_ALPHA)continue;
+      if(d[i]>=SIG_INK_NEAR_WHITE&&d[i+1]>=SIG_INK_NEAR_WHITE&&d[i+2]>=SIG_INK_NEAR_WHITE)continue;
+      n++;
+      if(n>=SIG_INK_MIN_PX)return n;
+    }
+    return n;
+  }catch(e){return 0;}
+}
+function decodeSigDataUrlHasInk(src){
+  try{
+    const img=new Image();
+    img.src=src;
+    if(!img.complete||!img.naturalWidth||!img.naturalHeight)return null;
+    const t=document.createElement('canvas');
+    t.width=img.naturalWidth;t.height=img.naturalHeight;
+    t.getContext('2d').drawImage(img,0,0);
+    return countCanvasInkPixels(t)>=SIG_INK_MIN_PX;
+  }catch(e){return null;}
+}
+function sigDataInkState(src){
+  if(!src||typeof src!=='string')return false;
+  const s=src;
+  if(s.length<120||s.indexOf('data:image')!==0)return false;
+  if(_sigInkCache.has(s))return _sigInkCache.get(s);
+  const decoded=decodeSigDataUrlHasInk(s);
+  if(decoded===null)return null;
+  rememberSigInk(s,decoded);
+  return decoded;
+}
 function hasSigInkData(src){
-  return !!(src&&String(src).length>100);
+  return sigDataInkState(src)===true;
 }
 function padHasInk(id){
   const c=document.getElementById(id);
@@ -1807,8 +1850,8 @@ function showFullPreview(){
       <h4>📅 ${day} <span style="font-weight:400;color:var(--muted);font-size:0.78rem">${d.date||''}</span></h4>
       <div class="prow"><span>Hours:</span> ${d.tin||'—'} → ${d.tout||'—'} &nbsp;=&nbsp; <strong>${d.hrs}</strong></div>
       <div class="prow"><span>Location:</span> <span style="color:var(--teal)">📍 ${d.location||'—'}</span></div>
-      <div class="prow"><span>Aide Sig:</span> ${d.aideSig&&d.aideSig.length>100?`<img src="${d.aideSig}" class="preview-sig">`:'Not signed'}</div>
-      <div class="prow"><span>Client Sig:</span> ${d.clientSig&&d.clientSig.length>100?`<img src="${d.clientSig}" class="preview-sig">`:'Not signed'}</div>
+      <div class="prow"><span>Aide Sig:</span> ${hasSigInkData(d.aideSig)?`<img src="${d.aideSig}" class="preview-sig">`:'Not signed'}</div>
+      <div class="prow"><span>Client Sig:</span> ${hasSigInkData(d.clientSig)?`<img src="${d.clientSig}" class="preview-sig">`:'Not signed'}</div>
       <div class="preview-svcs">Services: ${(d.svcs||[]).join(', ')||'None'}</div>
     </div>`;
   });
@@ -1921,7 +1964,7 @@ function initSig(id){
   c.addEventListener('touchend',stop);
 }
 function isCanvasInk(c){
-  try{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;return d.some(v=>v!==0);}catch(e){return false;}
+  return countCanvasInkPixels(c)>=SIG_INK_MIN_PX;
 }
 function persistPadSig(id){
   // Map sp_aide_N / sp_client_N → weekData; header pads → ts meta
@@ -1932,17 +1975,39 @@ function persistPadSig(id){
     const wd=getUserWeekData();
     const cur=wd[i]?{...wd[i]}:{};
     const key=role==='aide'?'aideSig':'clientSig';
-    if(isCanvasInk(c)){cur[key]=c.toDataURL();c.classList.add('signed');setSigHint(id,true);}
-    else{/* keep existing stored sig unless Clear was used */}
+    if(isCanvasInk(c)){
+      const url=c.toDataURL();
+      rememberSigInk(url,true);
+      cur[key]=url;c.classList.add('signed');setSigHint(id,true);
+    }else{
+      // Keep a previously stored REAL signature (resize/rebuild). Drop blank PNGs.
+      if(cur[key]&&sigDataInkState(cur[key])===false){rememberSigInk(cur[key],false);delete cur[key];}
+      if(!hasSigInkData(cur[key])){c.classList.remove('signed');setSigHint(id,false);}
+    }
     wd[i]=cur;saveUserWeekData(wd);
     return;
   }
   if(id==='sp_hdr_aide'||id==='sp_hdr_client'){
     if(!currentTS||!currentUser)return;
     const c=document.getElementById(id);if(!c||!isCanvasInk(c))return;
-    const patch={};patch[id==='sp_hdr_aide'?'headerAideSig':'headerClientSig']=c.toDataURL();
+    const url=c.toDataURL();
+    rememberSigInk(url,true);
+    const patch={};patch[id==='sp_hdr_aide'?'headerAideSig':'headerClientSig']=url;
     updateTSMeta(currentTS,patch);
   }
+}
+function applySigDataUrl(id,src){
+  if(!src||typeof src!=='string'||src.indexOf('data:image')!==0||src.length<120)return;
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.getElementById(id);if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.drawImage(img,0,0,c.width,c.height);
+    if(isCanvasInk(c)){rememberSigInk(src,true);c.classList.add('signed');setSigHint(id,true);}
+    else{rememberSigInk(src,false);ctx.clearRect(0,0,c.width,c.height);c.classList.remove('signed');setSigHint(id,false);}
+  };
+  img.src=src;
 }
 function refreshSigFromStore(id){
   const c=document.getElementById(id);if(!c)return;
@@ -1956,11 +2021,7 @@ function refreshSigFromStore(id){
     const list=getAllTimesheets();const ts=list.find(x=>x.id===currentTS)||{};
     src=id==='sp_hdr_aide'?(ts.headerAideSig||''):(ts.headerClientSig||'');
   }
-  if(src&&src.length>100){
-    const img=new Image();
-    img.onload=()=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};
-    img.src=src;
-  }
+  applySigDataUrl(id,src);
 }
 function refreshDaySigs(i){
   refreshSigFromStore(`sp_aide_${i}`);
@@ -1971,8 +2032,13 @@ function clearSig(id){
   c.getContext('2d').clearRect(0,0,c.width,c.height);c.classList.remove('signed');setSigHint(id,false);
   const m=String(id).match(/^sp_(aide|client)_(\d+)$/);
   if(m&&currentUser){
-    const role=m[1],i=parseInt(m[2],10);const wd=getUserWeekData();if(!wd[i])return;
-    const cur={...wd[i]};delete cur[role==='aide'?'aideSig':'clientSig'];wd[i]=cur;saveUserWeekData(wd);
+    const role=m[1],i=parseInt(m[2],10);
+    const wd=getUserWeekData();
+    const cur=wd[i]?{...wd[i]}:{};
+    const key=role==='aide'?'aideSig':'clientSig';
+    if(cur[key])rememberSigInk(cur[key],false);
+    delete cur[key];
+    wd[i]=cur;saveUserWeekData(wd);
   }
   if((id==='sp_hdr_aide'||id==='sp_hdr_client')&&currentTS){
     const patch={};patch[id==='sp_hdr_aide'?'headerAideSig':'headerClientSig']='';
@@ -1989,10 +2055,7 @@ function captureHdrSigs(){
 function restoreHdrSigs(ts){
   if(!ts)return;
   [['sp_hdr_aide',ts.headerAideSig],['sp_hdr_client',ts.headerClientSig]].forEach(([id,src])=>{
-    if(!src||src.length<100)return;
-    const img=new Image();
-    img.onload=()=>{const c=document.getElementById(id);if(c){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);}};
-    img.src=src;
+    applySigDataUrl(id,src);
   });
 }
 
