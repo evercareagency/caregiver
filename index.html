@@ -359,7 +359,7 @@ else setupEverCarePWA();
 <!-- CAREGIVER MAIN -->
 <div class="screen" id="caregiverScreen">
   <div class="hdr">
-    <button class="hdr-back" onclick="confirmLogout()">←</button>
+    <button class="hdr-back" onclick="headerBack()">←</button>
     <div class="hdr-text">
       <h2>EverCare Home Agency</h2>
       <p id="hdr_name">Weekly Timesheet</p>
@@ -377,9 +377,10 @@ else setupEverCarePWA();
         <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a timesheet below to continue filling it out. When done for the week, tap Submit on each one.</p>
       </div>
       <div id="cgTSList"></div>
-      <button class="btn btn-ghost btn-full" onclick="confirmNewTS()" style="border-color:var(--teal);color:var(--teal);margin-bottom:14px">
-        + Start Another Timesheet
-      </button>
+      <div class="action-row" style="padding-top:0;margin-bottom:14px">
+        <button class="btn btn-ghost btn-full" onclick="confirmLogout()">&#8592; Back</button>
+        <button class="btn btn-ghost btn-full" onclick="confirmNewTS()" style="border-color:var(--teal);color:var(--teal)">+ Start Another Timesheet</button>
+      </div>
       <button class="btn btn-ghost btn-full" onclick="goToInservices()" style="border-color:var(--navy);color:var(--navy);margin-bottom:14px">
         &#128218; My Inservices
       </button>
@@ -404,8 +405,8 @@ else setupEverCarePWA();
           <div class="field"><label>Caregiver / HHA Name</label><div class="aide-name-display" id="cg_aide_name">—</div></div>
         </div>
         <div class="hdr-sig-row">
-          <div><div class="sig-lbl">Client Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_client" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_client">Tap to sign</div><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_client')">Clear</button></div>
-          <div><div class="sig-lbl">Caregiver / HHA Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_aide" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_aide">Tap to sign</div><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_aide')">Clear</button></div>
+          <div><div class="sig-lbl">Client Signature <span style="color:var(--danger)">*</span></div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_client" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_client">Tap to sign</div><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_client')">Clear</button></div>
+          <div><div class="sig-lbl">Caregiver / HHA Signature <span style="color:var(--danger)">*</span></div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_aide" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_aide">Tap to sign</div><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_aide')">Clear</button></div>
         </div>
         <div class="fg" style="margin-top:12px">
           <div class="field"><label>Service Type</label>
@@ -448,8 +449,7 @@ else setupEverCarePWA();
         <p class="backup-help">Saves a copy at the office — <strong>not</strong> a final submit. Use if you're changing phones or about to reset/clear this phone.</p>
       </div>
       <p class="submit-help">When the week is done, review and <strong>submit</strong> below. You cannot edit after submit.</p>
-      <div class="action-row">
-        <button class="btn btn-ghost btn-full" onclick="backToTSHome()">&#8592; Back</button>
+      <div class="action-stack">
         <button class="btn btn-navy btn-full" id="cgSubmitBtn" onclick="askFinalSubmit()">🔒 Submit timesheet</button>
       </div>
     </div>
@@ -946,6 +946,11 @@ function confirmLogout(){
   if(confirm('Do you want to log out?')){
     caregiverLogout();
   }
+}
+function headerBack(){
+  const form=document.getElementById('cgFormView');
+  if(form&&form.style.display==='block'){backToTSHome();return;}
+  confirmLogout();
 }
 
 function caregiverLogout(){store.del('cg_session');currentUser=null;correctionMode=false;correctionData=null;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
@@ -1567,6 +1572,35 @@ function dayHasBothSigs(i,d){
   const client=padHasInk(`sp_client_${i}`)||hasSigInkData(d&&d.clientSig);
   return !!(aide&&client);
 }
+function headerSigPresent(role){
+  const id=role==='aide'?'sp_hdr_aide':'sp_hdr_client';
+  persistPadSig(id);
+  if(padHasInk(id))return true;
+  const list=typeof getAllTimesheets==='function'?getAllTimesheets():[];
+  const ts=(list||[]).find(x=>x.id===currentTS)||{};
+  const src=role==='aide'?ts.headerAideSig:ts.headerClientSig;
+  return hasSigInkData(src);
+}
+// Ace lock: week header pads must have ink (headerAideSig / headerClientSig only)
+function requireHeaderSignatures(){
+  persistPadSig('sp_hdr_aide');
+  persistPadSig('sp_hdr_client');
+  const aide=headerSigPresent('aide');
+  const client=headerSigPresent('client');
+  if(!aide&&!client){
+    showTempMsg('Week header: Client and HHA signatures required','var(--danger)');
+    return false;
+  }
+  if(!aide){
+    showTempMsg('Week header: HHA signatures required','var(--danger)');
+    return false;
+  }
+  if(!client){
+    showTempMsg('Week header: Client signatures required','var(--danger)');
+    return false;
+  }
+  return true;
+}
 // Ace lock: every worked day (tin/tout/hrs) needs aideSig + clientSig
 function requirePaperSignatures(){
   for(let i=0;i<=6;i++){
@@ -1591,6 +1625,7 @@ function aceRejectMessage(data){
 }
 async function askFinalSubmit(){
   if(!requireClientSelected())return;
+  if(!requireHeaderSignatures())return;
   if(!requirePaperSignatures())return;
   try{
     await getGpsPosition();
@@ -1605,6 +1640,7 @@ async function askFinalSubmit(){
 function showFullPreview(){
   closeModal('areYouSureModal');
   if(!requireClientSelected()){showScreen('caregiverScreen');return;}
+  if(!requireHeaderSignatures()){showScreen('caregiverScreen');return;}
   if(!requirePaperSignatures()){showScreen('caregiverScreen');return;}
   const weekData=buildDaysPayload();
   const clientSel=document.getElementById('cg_client');
@@ -1633,6 +1669,7 @@ function showFullPreview(){
 
 async function doFinalSubmit(){
   if(!requireClientSelected()){showScreen('caregiverScreen');return;}
+  if(!requireHeaderSignatures()){showScreen('caregiverScreen');return;}
   if(!requirePaperSignatures()){showScreen('caregiverScreen');return;}
   if(window._cgSubmitInFlight)return;
   try{
