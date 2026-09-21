@@ -948,9 +948,9 @@ function confirmLogout(){
   }
 }
 
-function caregiverLogout(){store.del('cg_session');currentUser=null;correctionMode=false;correctionData=null;clearSandataAck();showScreen('authScreen');}
+function caregiverLogout(){store.del('cg_session');currentUser=null;correctionMode=false;correctionData=null;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
 
-// SANDATA GATE + LOCATION (GPS only when saving / submitting)
+// SANDATA GATE + LOCATION (once after login, again on save / submit)
 const SANDATA_ACK_KEY='sandata_ack_session';
 function isSandataAcked(){
   if(window._sandataAcked===true)return true;
@@ -964,9 +964,23 @@ function clearSandataAck(){
   window._sandataAcked=false;
   try{sessionStorage.removeItem(SANDATA_ACK_KEY);}catch(e){}
 }
+function setPendingLoginLocation(on){
+  window._pendingLoginLocation=!!on;
+  try{if(on)sessionStorage.setItem('pending_login_loc','1');else sessionStorage.removeItem('pending_login_loc');}catch(e){}
+}
+function hasPendingLoginLocation(){
+  if(window._pendingLoginLocation)return true;
+  try{return sessionStorage.getItem('pending_login_loc')==='1';}catch(e){return false;}
+}
 function ackSandata(){
   setSandataAck();
   closeModal('sandataModal');
+  // Sandata is the hard Start-timesheet gate. Location is requested once after Got It.
+  if(hasPendingLoginLocation()){
+    setPendingLoginLocation(false);
+    requestLocationOnceAfterLogin();
+    return;
+  }
   openModal('alertModal');
 }
 function requireSandataAck(){
@@ -977,14 +991,29 @@ function requireSandataAck(){
 }
 
 function afterLogin(opts){
-  if(opts&&opts.freshLogin)clearSandataAck();
-  // Home may render underneath, but Start timesheet stays blocked until Got It
+  if(opts&&opts.freshLogin){
+    clearSandataAck();
+    setPendingLoginLocation(true);
+  }
+  // Home may render underneath, but Start timesheet stays blocked until Got It.
+  // Do not request GPS until Sandata is acknowledged — Sandata must not wait on location.
   loadCaregiverScreen();
   if(!isSandataAcked())openModal('sandataModal');
   checkISNotif();
   apiGetCached('get_clients').catch(()=>{});
   // Cloud backups restore runs again from loadCaregiverScreen once home UI is ready
   window._cgPendingBackupRestore=true;
+}
+
+async function requestLocationOnceAfterLogin(){
+  try{
+    await getGpsPosition();
+    saveLocationStatus('granted');
+    openModal('alertModal');
+  }catch(err){
+    saveLocationStatus(err&&err.code===1?'denied':'unavailable');
+    showLocationRequiredHelp(requestLocationOnceAfterLogin);
+  }
 }
 
 function getGpsPosition(){
