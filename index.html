@@ -765,6 +765,41 @@ const store={
   del:k=>{localStorage.removeItem(k);sessionStorage.removeItem(k);}
 };
 
+// Session stays across opens; clock starts at loginAt only (no idle timer).
+const CG_SESSION_MS=8*60*60*1000;
+function parseLoginAt(sess){
+  if(!sess||sess.loginAt==null||sess.loginAt==='')return null;
+  const n=typeof sess.loginAt==='number'?sess.loginAt:Date.parse(sess.loginAt);
+  return Number.isFinite(n)?n:null;
+}
+function isCgSessionExpired(sess){
+  // Missing loginAt on a leftover session → expire once (force re-login).
+  const at=parseLoginAt(sess);
+  if(at==null)return true;
+  return (Date.now()-at)>CG_SESSION_MS;
+}
+function startCgSession(user){
+  const sess={username:user.username,name:user.name,loginAt:Date.now()};
+  currentUser=sess;
+  store.set('cg_session',sess);
+  return sess;
+}
+function restoreCgSession(){
+  const sess=store.get('cg_session');
+  if(!sess)return false;
+  if(isCgSessionExpired(sess)){
+    caregiverLogout();
+    return false;
+  }
+  currentUser=sess;
+  return true;
+}
+function enforceCgSessionTimeout(){
+  const sess=store.get('cg_session')||currentUser;
+  if(!sess||!sess.username)return;
+  if(isCgSessionExpired(sess))caregiverLogout();
+}
+
 const GAS_HEADERS={'Content-Type':'text/plain;charset=utf-8'};
 const CACHE_TTL_MS=5*60*1000;
 const _memCache={};
@@ -908,11 +943,11 @@ async function doLogin(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
-    if(data.success){currentUser={username:user,name:data.name};store.set('cg_session',currentUser);document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
+    if(data.success){startCgSession({username:user,name:data.name});document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
     else{document.getElementById('loginErr').style.display='block';}
   }catch(e){
     const users=store.get('cg_users')||{};
-    if(users[user]&&users[user].password===pass){currentUser={username:user,name:users[user].name};store.set('cg_session',currentUser);if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
+    if(users[user]&&users[user].password===pass){startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
     else{document.getElementById('loginErr').style.display='block';}
   }finally{
     window._cgLoginInFlight=false;
@@ -933,12 +968,12 @@ async function doSignup(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'signup',username:user,password:pass,name,email})});
     const data=await res.json();
-    if(data.success){cacheInvalidate('get_users');const u=store.get('cg_users')||{};u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);currentUser={username:user,name};store.set('cg_session',currentUser);err.style.display='none';afterLogin({freshLogin:true});}
+    if(data.success){cacheInvalidate('get_users');const u=store.get('cg_users')||{};u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);startCgSession({username:user,name});err.style.display='none';afterLogin({freshLogin:true});}
     else{err.textContent=data.error||'Username taken.';err.style.display='block';}
   }catch(e){
     const u=store.get('cg_users')||{};
     if(u[user]){err.textContent='Username taken.';err.style.display='block';btn.textContent='Create Account →';btn.disabled=false;return;}
-    u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);currentUser={username:user,name};store.set('cg_session',currentUser);afterLogin({freshLogin:true});
+    u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);startCgSession({username:user,name});afterLogin({freshLogin:true});
   }
   btn.textContent='Create Account →';btn.disabled=false;
 }
@@ -2834,8 +2869,11 @@ async function submitInservice(){
 
 window.addEventListener('load',()=>{
   syncStorage();
-  const sess=store.get('cg_session');
-  if(sess){currentUser=sess;afterLogin();}
+  if(restoreCgSession())afterLogin();
+});
+window.addEventListener('pageshow',()=>{enforceCgSessionTimeout();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')enforceCgSessionTimeout();
 });
 window.addEventListener('resize',()=>{
   Object.keys(sigPads).forEach(id=>{
