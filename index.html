@@ -760,9 +760,23 @@ function svcSlug(s){return String(s).replace(/\W+/g,'_');}
 let currentUser=null,pendingDayIdx=null,sigPads={},correctionData=null,correctionMode=false;
 
 const store={
-  get:k=>{try{return JSON.parse(localStorage.getItem(k));}catch{return null;}},
-  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));sessionStorage.setItem(k,JSON.stringify(v));}catch(e){}},
-  del:k=>{localStorage.removeItem(k);sessionStorage.removeItem(k);}
+  get:k=>{
+    try{
+      const raw=localStorage.getItem(k);
+      if(raw!=null)return JSON.parse(raw);
+    }catch(e){}
+    try{
+      const raw=sessionStorage.getItem(k);
+      if(raw!=null)return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  },
+  set:(k,v)=>{
+    const raw=JSON.stringify(v);
+    try{localStorage.setItem(k,raw);}catch(e){}
+    try{sessionStorage.setItem(k,raw);}catch(e){}
+  },
+  del:k=>{try{localStorage.removeItem(k);}catch(e){}try{sessionStorage.removeItem(k);}catch(e){}}
 };
 
 // Session stays across opens; clock starts at loginAt only (no idle timer).
@@ -773,7 +787,7 @@ function parseLoginAt(sess){
   return Number.isFinite(n)?n:null;
 }
 function isCgSessionExpired(sess){
-  // Missing loginAt on a leftover session → expire once (force re-login).
+  // 8h from loginAt. Missing loginAt is backfilled on restore/enforce (upgrade), then this clock applies.
   const at=parseLoginAt(sess);
   if(at==null)return true;
   return (Date.now()-at)>CG_SESSION_MS;
@@ -784,8 +798,15 @@ function startCgSession(user){
   store.set('cg_session',sess);
   return sess;
 }
+function backfillCgSessionLoginAt(sess){
+  if(!sess||!sess.username)return sess;
+  if(parseLoginAt(sess)!=null)return sess;
+  sess.loginAt=Date.now();
+  store.set('cg_session',sess);
+  return sess;
+}
 function restoreCgSession(){
-  const sess=store.get('cg_session');
+  const sess=backfillCgSessionLoginAt(store.get('cg_session'));
   if(!sess)return false;
   if(isCgSessionExpired(sess)){
     caregiverLogout();
@@ -795,7 +816,7 @@ function restoreCgSession(){
   return true;
 }
 function enforceCgSessionTimeout(){
-  const sess=store.get('cg_session')||currentUser;
+  const sess=backfillCgSessionLoginAt(store.get('cg_session')||currentUser);
   if(!sess||!sess.username)return;
   if(isCgSessionExpired(sess))caregiverLogout();
 }
@@ -1440,10 +1461,17 @@ function previewDay(i){
 
 let pendingDaySave=null;
 function confirmSaveDay(){
-  closeModal('previewModal');const i=pendingDayIdx;
+  const i=pendingDayIdx;
+  persistPadSig(`sp_aide_${i}`);
+  persistPadSig(`sp_client_${i}`);
+  const _prev=getUserWeekData()[i]||{};
+  if(!dayHasBothSigs(i,_prev)){
+    showTempMsg('Aide and Client signatures required to save this day','var(--danger)');
+    return;
+  }
+  closeModal('previewModal');
   const date=document.getElementById(`d${i}_date`).value,tin=document.getElementById(`d${i}_in`).value,tout=document.getElementById(`d${i}_out`).value,hrs=document.getElementById(`d${i}_hrs`).textContent,svcs=getCheckedSvcs(i);
   const otherSpecify=svcs.includes('Other (specify)')?(document.getElementById('cg_other_specify')?.value||'').trim():'';
-  const _prev=getUserWeekData()[i]||{};
   const aideSig=(isCanvasInk(document.getElementById(`sp_aide_${i}`))?document.getElementById(`sp_aide_${i}`).toDataURL():(_prev.aideSig||''));
   const clientSig=(isCanvasInk(document.getElementById(`sp_client_${i}`))?document.getElementById(`sp_client_${i}`).toDataURL():(_prev.clientSig||''));
   const base={date,tin,tout,hrs,svcs,aideSig,clientSig};
