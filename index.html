@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-21-print-cert-c2">
-<!-- caregiver-build: 2026-09-21-print-cert-c2 — Print Certificate C2 ribbon+laurel from local completions -->
+<meta name="caregiver-build" content="2026-09-21-home-ts-list">
+<!-- caregiver-build: 2026-09-21-home-ts-list — Home lists drafts + sent-back only; Start Another is a blank week -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -378,7 +378,7 @@ else setupEverCarePWA();
       </div>
       <div class="correction-banner" id="correctionBanner" onclick="loadCorrectionMode()"></div>
       <div class="card" style="background:var(--teal-light);border-color:var(--teal)">
-        <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a timesheet below to continue filling it out. When done for the week, tap Submit on each one.</p>
+        <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a card below to continue a <strong>draft</strong> or a week the office <strong>sent back</strong>. <strong>+ Start Another Timesheet</strong> always starts a <strong>new blank week and client</strong> — it does not reopen a submitted week.</p>
       </div>
       <div id="cgTSList"></div>
       <div class="action-row" style="padding-top:0;margin-bottom:14px">
@@ -1200,16 +1200,51 @@ async function loadCaregiverScreen(){
   }
 }
 
+function syncCorrectionsFromAdmin(rows){
+  const list=getAllTimesheets();
+  const incoming=Array.isArray(rows)?rows.filter(c=>c&&c.id!=null):[];
+  const keep=new Set(incoming.map(c=>'correction_'+c.id));
+  list.forEach(t=>{
+    if(t.status==='correction_requested'&&!keep.has(t.id))t.status='submitted';
+  });
+  incoming.forEach(c=>{
+    const id='correction_'+c.id;
+    const rec={
+      id,
+      clientName:c.clientName||'',
+      weekStart:c.weekStart||'',
+      status:'correction_requested',
+      correctionDays:c.correctionDays||[],
+      correctionId:c.id,
+      created:new Date().toLocaleDateString()
+    };
+    const idx=list.findIndex(t=>t.id===id);
+    if(idx===-1)list.push(rec);
+    else Object.assign(list[idx],rec);
+    if(currentUser&&c.days)store.set('wd_'+currentUser.username+'_'+id,c.days);
+  });
+  saveAllTimesheets(list);
+}
+
 async function checkForCorrection(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'get_correction',username:currentUser.username})});
     const data=await res.json();
-    if(data.success&&data.data&&data.data.length>0){
-      correctionData=data.data[0];
-      const banner=document.getElementById('correctionBanner');
-      banner.textContent=`⚠️ Your timesheet for ${formatWeekOfLabel(correctionData.weekStart)} needs corrections. Tap here to fix it.`;
-      banner.classList.add('show');
+    if(!data||data.success!==true||!Array.isArray(data.data))return;
+    const rows=data.data;
+    syncCorrectionsFromAdmin(rows);
+    const banner=document.getElementById('correctionBanner');
+    if(rows.length>0){
+      correctionData=rows[0];
+      if(banner){
+        banner.textContent=`⚠️ Your timesheet for ${formatWeekOfLabel(correctionData.weekStart)} needs corrections. Tap here to fix it.`;
+        banner.classList.add('show');
+        banner.style.display='';
+      }
+    }else if(banner){
+      banner.classList.remove('show');
     }
+    renderTSHome();
   }catch(e){}
 }
 
@@ -1218,6 +1253,21 @@ function loadCorrectionMode(){
   if(!correctionData)return;
   correctionMode=true;
   currentTS='correction_'+correctionData.id;
+  const list=getAllTimesheets();
+  if(!list.some(t=>t.id===currentTS)){
+    list.push({
+      id:currentTS,
+      clientName:correctionData.clientName||'',
+      weekStart:correctionData.weekStart||'',
+      status:'correction_requested',
+      correctionDays:correctionData.correctionDays||[],
+      correctionId:correctionData.id,
+      created:new Date().toLocaleDateString()
+    });
+    saveAllTimesheets(list);
+  }else{
+    updateTSMeta(currentTS,{status:'correction_requested',clientName:correctionData.clientName||'',weekStart:correctionData.weekStart||'',correctionDays:correctionData.correctionDays||[],correctionId:correctionData.id});
+  }
   document.getElementById('cgHomeView').style.display='none';
   document.getElementById('cgFormView').style.display='block';
   document.getElementById('cg_weekstart').value=correctionData.weekStart||'';
@@ -1557,6 +1607,7 @@ function getUserWeekData(){
   if(currentTS){
     const keyed=store.get(`wd_${currentUser.username}_${currentTS}`);
     if(keyed!=null)return keyed;
+    // Legacy unkeyed week only when this id has never been seeded (not a new blank week).
     return store.get(`wd_${currentUser.username}`)||{};
   }
   return store.get(`wd_${currentUser.username}`)||{};
@@ -1808,8 +1859,16 @@ async function doFinalSubmit(){
   }
   const record={id:Date.now(),submitted,empName:currentUser.name,username:currentUser.username,clientName,svcType,weekStart,totalHrs,notes,days:{...weekData},...hdr};
   const all=store.get('all_timesheets')||[];all.push(record);store.set('all_timesheets',all);
-  store.del(`wd_${currentUser.username}_${currentTS}`);
-  if(correctionMode){correctionMode=false;correctionData=null;}
+  if(currentTS){
+    updateTSMeta(currentTS,{status:'submitted',submittedAt:submitted,clientName,weekStart});
+    store.del(`wd_${currentUser.username}_${currentTS}`);
+  }
+  if(correctionMode){
+    const banner=document.getElementById('correctionBanner');
+    if(banner){banner.classList.remove('show');banner.style.display='none';}
+    correctionMode=false;correctionData=null;
+  }
+  currentTS=null;
   window._cgSubmitInFlight=false;
   showScreen('caregiverScreen');
   document.getElementById('cgFormView').style.display='none';
@@ -1820,8 +1879,13 @@ async function doFinalSubmit(){
 
 function cgNewWeek(){
   document.getElementById('cgSuccessView').style.display='none';
-  document.getElementById('cgHomeView').style.display='block';
-  renderTSHome();
+  if(!requireSandataAck()){
+    document.getElementById('cgHomeView').style.display='block';
+    renderTSHome();
+    return;
+  }
+  const id=createNewTimesheet();
+  openTS(id);
 }
 
 // SIGNATURES
@@ -2416,12 +2480,67 @@ function saveAllTimesheets(list){
 }
 
 
-// Draft week = an item on the home continue list (cgTSList): status==='active'
-// for the logged-in aide. Backup is shown only when that list has ≥1 item.
-// If several drafts exist, back up currentTS when it is still in the list;
-// otherwise the first unfinished week.
+// Home (#cgTSList) shows unfinished local drafts and Admin send-backs only.
+// Submitted / locked weeks stay off Home (they remain in Admin / Sheets).
+// Backup under My Inservices is draft-only (status active / missing).
+function isUnfinishedDraft(t){
+  if(!t)return false;
+  if(t.status==='correction_requested'||t.status==='submitted'||t.status==='locked')return false;
+  return !t.status||t.status==='active';
+}
+function isHomeListItem(t){
+  return isUnfinishedDraft(t)||t.status==='correction_requested';
+}
 function getDraftTimesheets(){
-  return getAllTimesheets().filter(t=>t.status==='active');
+  return getAllTimesheets().filter(isUnfinishedDraft);
+}
+function getHomeTimesheets(){
+  sweepSubmittedLeftovers();
+  return getAllTimesheets().filter(isHomeListItem);
+}
+function sweepSubmittedLeftovers(){
+  if(!currentUser)return;
+  const all=store.get('all_timesheets')||[];
+  if(!all.length)return;
+  const list=getAllTimesheets();
+  let changed=false;
+  list.forEach(t=>{
+    if(!isUnfinishedDraft(t))return;
+    if(!(t.clientName||'').trim()||!(t.weekStart||'').trim())return;
+    if(!_wdIsEmpty(weekDataForTS(t.id)))return;
+    const key=_weekKey(t.clientName,t.weekStart);
+    const match=all.some(r=>(!r.username||r.username===currentUser.username)&&_weekKey(r.clientName,r.weekStart)===key);
+    if(match){t.status='submitted';changed=true;}
+  });
+  if(changed)saveAllTimesheets(list);
+}
+function currentWeekSunday(){
+  const d=new Date();d.setDate(d.getDate()-d.getDay());
+  return d.toISOString().split('T')[0];
+}
+function clearHeaderSigPads(){
+  ['sp_hdr_aide','sp_hdr_client'].forEach(id=>{
+    const c=document.getElementById(id);
+    if(!c)return;
+    const ctx=c.getContext('2d');
+    if(ctx)ctx.clearRect(0,0,c.width,c.height);
+    c.classList.remove('signed');
+    setSigHint(id,false);
+  });
+}
+function resetTimesheetForm(){
+  const notesEl=document.getElementById('cg_notes');
+  const clientEl=document.getElementById('cg_client');
+  const err=document.getElementById('cg_client_err');
+  const weekEl=document.getElementById('cg_weekstart');
+  const totalEl=document.getElementById('cg_total');
+  if(notesEl)notesEl.value='';
+  if(clientEl){clientEl.value='';clientEl.classList.remove('invalid');}
+  if(err)err.classList.remove('show');
+  if(weekEl)weekEl.value='';
+  if(totalEl)totalEl.textContent='0:00';
+  clearHeaderSigPads();
+  if(typeof clearServiceMatrix==='function')clearServiceMatrix();
 }
 function getBackupTargetTS(){
   const drafts=getDraftTimesheets();
@@ -2644,13 +2763,15 @@ async function restoreCloudBackups(){
 }
 
 function createNewTimesheet(){
-  const id='ts_'+Date.now();
+  // Always a brand-new blank current week — never resume last / submitted / currentTS.
+  correctionMode=false;
+  correctionData=null;
+  const id='ts_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
   const list=getAllTimesheets();
-  // Auto-default to current week's Sunday
-  const d=new Date();d.setDate(d.getDate()-d.getDay());
-  const currentSunday=d.toISOString().split('T')[0];
-  list.push({id,clientName:'',weekStart:currentSunday,created:new Date().toLocaleDateString(),status:'active'});
+  list.push({id,clientName:'',clientId:'',weekStart:currentWeekSunday(),created:new Date().toLocaleDateString(),status:'active'});
   saveAllTimesheets(list);
+  if(currentUser)store.set('wd_'+currentUser.username+'_'+id,{});
+  currentTS=id;
   return id;
 }
 
@@ -2661,30 +2782,36 @@ function updateTSMeta(id,updates){
 }
 
 function renderTSHome(){
-  const list=getDraftTimesheets();
+  const list=getHomeTimesheets();
+  const drafts=getDraftTimesheets();
   const el=document.getElementById('cgTSList');
   const backupBox=document.getElementById('cgHomeBackup');
-  if(backupBox)backupBox.style.display=list.length?'block':'none';
+  if(backupBox)backupBox.style.display=drafts.length?'block':'none';
   if(!el)return;
   if(!list.length){
-    el.innerHTML='<div class="card" style="text-align:center;padding:20px;color:var(--muted)"><p>No active timesheets.</p><p style="font-size:0.78rem;margin-top:6px">Tap "+ Start Another Timesheet" to begin.</p></div>';
+    el.innerHTML='<div class="card" style="text-align:center;padding:20px;color:var(--muted)"><p>No draft or sent-back timesheets.</p><p style="font-size:0.78rem;margin-top:6px">Tap "+ Start Another Timesheet" to start a new blank week.</p></div>';
     return;
   }
   el.innerHTML=list.map(ts=>{
     const wd=store.get('wd_'+currentUser.username+'_'+ts.id)||{};
-    const daysSaved=Object.keys(wd).length;
-    return '<div class="card" style="margin-bottom:10px;cursor:pointer;border:1.5px solid var(--teal)" onclick="openTS(&quot;'+ts.id+'&quot;)">'+
+    const daysSaved=Object.keys(wd).filter(k=>wd[k]&&typeof wd[k]==='object').length;
+    const sentBack=ts.status==='correction_requested';
+    const border=sentBack?'var(--warn)':'var(--teal)';
+    const sub=sentBack
+      ? formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; Office sent back — tap to fix'
+      : formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; '+daysSaved+' day'+(daysSaved!==1?'s':'')+' saved';
+    return '<div class="card" style="margin-bottom:10px;cursor:pointer;border:1.5px solid '+border+'" onclick="openTS(&quot;'+ts.id+'&quot;)">'+
       '<div style="display:flex;align-items:center;justify-content:space-between">'+
-      '<div><p style="font-weight:600;color:var(--navy);font-size:0.9rem">'+( ts.clientName||'No client name yet')+'</p>'+
-      '<p style="font-size:0.72rem;color:var(--muted);margin-top:2px">'+formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; '+daysSaved+' day'+(daysSaved!==1?'s':'')+' saved</p></div>'+
-      '<div style="color:var(--teal);font-size:18px">&#8250;</div>'+
+      '<div><p style="font-weight:600;color:var(--navy);font-size:0.9rem">'+(ts.clientName||'No client name yet')+(sentBack?' <span style="color:var(--warn);font-size:0.72rem">Needs correction</span>':'')+'</p>'+
+      '<p style="font-size:0.72rem;color:var(--muted);margin-top:2px">'+sub+'</p></div>'+
+      '<div style="color:'+border+';font-size:18px">&#8250;</div>'+
       '</div></div>';
   }).join('');
 }
 
 function confirmNewTS(){
   if(!requireSandataAck())return;
-  if(confirm('Are you sure you want to start another timesheet? Make sure you need a separate timesheet for a different client.')){
+  if(confirm('Start a new blank timesheet for a different client / week? This does not reopen your last week.')){
     const id=createNewTimesheet();
     openTS(id);
   }
@@ -2751,40 +2878,58 @@ function locDistanceBadge(verified,distanceFt){
 
 function openTS(id){
   if(!requireSandataAck())return;
+  let ts=getAllTimesheets().find(t=>t.id===id);
+  if(ts&&(ts.status==='submitted'||ts.status==='locked')){
+    showTempMsg('That week is already submitted. Starting a new blank week.','var(--teal)');
+    id=createNewTimesheet();
+    ts=getAllTimesheets().find(t=>t.id===id);
+  }
+  if(ts&&ts.status==='correction_requested'){
+    correctionData={
+      id:ts.correctionId!=null?ts.correctionId:String(id).replace(/^correction_/,''),
+      weekStart:ts.weekStart,
+      clientName:ts.clientName,
+      days:weekDataForTS(id),
+      correctionDays:ts.correctionDays||[]
+    };
+    loadCorrectionMode();
+    return;
+  }
+  correctionMode=false;
   currentTS=id;
-  const list=getAllTimesheets();
-  const ts=list.find(t=>t.id===id);
+  resetTimesheetForm();
   document.getElementById('cgHomeView').style.display='none';
   document.getElementById('cgFormView').style.display='block';
+  document.getElementById('cgSuccessView').style.display='none';
   // Build the day blocks FIRST so the date/time fields exist
   buildDayBlocks();
+  clearHeaderSigPads();
   const aideEl=document.getElementById('cg_aide_name');
   if(aideEl&&currentUser)aideEl.textContent=currentUser.name||'—';
   loadMyClients().then(()=>{
-    if(ts&&ts.clientId){
-      const sel=document.getElementById('cg_client');
-      if(sel)sel.value=ts.clientId;
-    }
+    const sel=document.getElementById('cg_client');
+    if(sel)sel.value=(ts&&ts.clientId)?ts.clientId:'';
   });
-  // Load saved data
   if(ts){
-    document.getElementById('cg_weekstart').value=ts.weekStart||'';
+    document.getElementById('cg_weekstart').value=ts.weekStart||currentWeekSunday();
     document.getElementById('cg_notes').value=ts.notes||'';
+  }else{
+    document.getElementById('cg_weekstart').value=currentWeekSunday();
   }
   if(!document.getElementById('cg_weekstart').value){
-    const d=new Date();d.setDate(d.getDate()-d.getDay());
-    document.getElementById('cg_weekstart').value=d.toISOString().split('T')[0];
+    document.getElementById('cg_weekstart').value=currentWeekSunday();
   }
   fillDates();
   loadSavedWeek();
   updateTotal();
-  if(ts)restoreHdrSigs(ts);
+  if(ts&&(ts.headerAideSig||ts.headerClientSig))restoreHdrSigs(ts);
 }
 
 function backToTSHome(){
   // Save current client name and week to ts meta
   const clientSel=document.getElementById('cg_client');
-  const clientName=clientSel.options[clientSel.selectedIndex]?.text||'';
+  const raw=clientSel.options[clientSel.selectedIndex]?.text||'';
+  const clientName=(!clientSel.value||/^--\s*Select/i.test(raw))?'':raw;
   const clientId=clientSel.value;
   const weekStart=document.getElementById('cg_weekstart').value;
   const notes=document.getElementById('cg_notes').value;
