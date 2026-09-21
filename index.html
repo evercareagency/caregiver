@@ -145,8 +145,9 @@ canvas.sigpad.signed{border-color:var(--success);}
 .action-stack .btn{min-height:48px;font-size:0.92rem;padding:14px 18px;}
 .action-row{display:flex;gap:10px;padding:8px 0 20px;}
 .action-row .btn{min-height:48px;font-size:0.9rem;padding:14px 16px;}
-.backup-help,.submit-help{font-size:0.74rem;color:var(--muted);margin-top:8px;line-height:1.5;}
-.submit-help{margin-top:0;margin-bottom:6px;}
+.backup-help{font-size:0.92rem;color:var(--navy);margin-top:10px;line-height:1.55;}
+.submit-help{font-size:0.74rem;color:var(--muted);margin-top:0;margin-bottom:6px;line-height:1.5;}
+.modal p.backup-confirm-help{font-size:1rem;line-height:1.6;color:var(--navy);margin-top:4px;margin-bottom:10px;}
 .loc-tag{font-size:0.7rem;color:var(--teal);background:var(--teal-light);border:1px solid var(--border);border-radius:6px;padding:5px 9px;margin-bottom:9px;display:flex;align-items:center;gap:5px;}
 .total-bar{background:var(--teal);color:white;padding:12px 15px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .total-bar .tl{font-size:0.67rem;opacity:0.7;text-transform:uppercase;letter-spacing:1px;}
@@ -377,6 +378,10 @@ else setupEverCarePWA();
         <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a timesheet below to continue filling it out. When done for the week, tap Submit on each one.</p>
       </div>
       <div id="cgTSList"></div>
+      <div id="cgHomeBackup" class="action-stack" style="display:none;margin-bottom:10px">
+        <button class="btn btn-teal btn-full" id="cgBackupBtn" onclick="askCloudBackup()">☁️ Back up this week's draft</button>
+        <p class="backup-help">This saves an <strong>office copy</strong> of this week's draft — it is <strong>not</strong> a final submit. Use if you're changing phones or about to reset/clear this phone.</p>
+      </div>
       <div class="action-row" style="padding-top:0;margin-bottom:14px">
         <button class="btn btn-ghost btn-full" onclick="confirmLogout()">&#8592; Back</button>
         <button class="btn btn-ghost btn-full" onclick="confirmNewTS()" style="border-color:var(--teal);color:var(--teal)">+ Start Another Timesheet</button>
@@ -443,10 +448,6 @@ else setupEverCarePWA();
         Timesheets due by <strong>5:00 PM every Monday</strong>, no exceptions. Full legal signatures only — no scratch-outs or white-out; correct errors with a single line-through, initialed.<br>
         This is a legal document: signing confirms the hours and services above are accurate.<br>
         <strong>5510 Pearl Rd Ste 200, Cleveland, OH 44129</strong>
-      </div>
-      <div class="action-stack">
-        <button class="btn btn-teal btn-full" id="cgBackupBtn" onclick="askCloudBackup()">☁️ Backup to office</button>
-        <p class="backup-help">Saves a copy at the office — <strong>not</strong> a final submit. Use if you're changing phones or about to reset/clear this phone.</p>
       </div>
       <p class="submit-help">When the week is done, review and <strong>submit</strong> below. You cannot edit after submit.</p>
       <div class="action-stack">
@@ -577,7 +578,7 @@ else setupEverCarePWA();
   <div class="modal">
     <div class="mico">☁️</div>
     <h3>Backup to office?</h3>
-    <p style="font-size:0.82rem;line-height:1.55;color:var(--muted)">Back it up if you're changing phones or about to reset or clear your phone.</p>
+    <p class="backup-confirm-help">Back it up if you're changing phones or about to reset or clear your phone.</p>
     <p style="font-size:0.88rem;font-weight:600;margin-top:10px;color:var(--navy)">Are you sure?</p>
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" onclick="closeModal('backupConfirmModal')">Cancel</button>
@@ -764,6 +765,41 @@ const store={
   del:k=>{localStorage.removeItem(k);sessionStorage.removeItem(k);}
 };
 
+// Session stays across opens; clock starts at loginAt only (no idle timer).
+const CG_SESSION_MS=8*60*60*1000;
+function parseLoginAt(sess){
+  if(!sess||sess.loginAt==null||sess.loginAt==='')return null;
+  const n=typeof sess.loginAt==='number'?sess.loginAt:Date.parse(sess.loginAt);
+  return Number.isFinite(n)?n:null;
+}
+function isCgSessionExpired(sess){
+  // Missing loginAt on a leftover session → expire once (force re-login).
+  const at=parseLoginAt(sess);
+  if(at==null)return true;
+  return (Date.now()-at)>CG_SESSION_MS;
+}
+function startCgSession(user){
+  const sess={username:user.username,name:user.name,loginAt:Date.now()};
+  currentUser=sess;
+  store.set('cg_session',sess);
+  return sess;
+}
+function restoreCgSession(){
+  const sess=store.get('cg_session');
+  if(!sess)return false;
+  if(isCgSessionExpired(sess)){
+    caregiverLogout();
+    return false;
+  }
+  currentUser=sess;
+  return true;
+}
+function enforceCgSessionTimeout(){
+  const sess=store.get('cg_session')||currentUser;
+  if(!sess||!sess.username)return;
+  if(isCgSessionExpired(sess))caregiverLogout();
+}
+
 const GAS_HEADERS={'Content-Type':'text/plain;charset=utf-8'};
 const CACHE_TTL_MS=5*60*1000;
 const _memCache={};
@@ -907,11 +943,11 @@ async function doLogin(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
-    if(data.success){currentUser={username:user,name:data.name};store.set('cg_session',currentUser);document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
+    if(data.success){startCgSession({username:user,name:data.name});document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
     else{document.getElementById('loginErr').style.display='block';}
   }catch(e){
     const users=store.get('cg_users')||{};
-    if(users[user]&&users[user].password===pass){currentUser={username:user,name:users[user].name};store.set('cg_session',currentUser);if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
+    if(users[user]&&users[user].password===pass){startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
     else{document.getElementById('loginErr').style.display='block';}
   }finally{
     window._cgLoginInFlight=false;
@@ -932,12 +968,12 @@ async function doSignup(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'signup',username:user,password:pass,name,email})});
     const data=await res.json();
-    if(data.success){cacheInvalidate('get_users');const u=store.get('cg_users')||{};u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);currentUser={username:user,name};store.set('cg_session',currentUser);err.style.display='none';afterLogin({freshLogin:true});}
+    if(data.success){cacheInvalidate('get_users');const u=store.get('cg_users')||{};u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);startCgSession({username:user,name});err.style.display='none';afterLogin({freshLogin:true});}
     else{err.textContent=data.error||'Username taken.';err.style.display='block';}
   }catch(e){
     const u=store.get('cg_users')||{};
     if(u[user]){err.textContent='Username taken.';err.style.display='block';btn.textContent='Create Account →';btn.disabled=false;return;}
-    u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);currentUser={username:user,name};store.set('cg_session',currentUser);afterLogin({freshLogin:true});
+    u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);startCgSession({username:user,name});afterLogin({freshLogin:true});
   }
   btn.textContent='Create Account →';btn.disabled=false;
 }
@@ -2318,29 +2354,79 @@ function saveAllTimesheets(list){
 }
 
 
+// Draft week = an item on the home continue list (cgTSList): status==='active'
+// for the logged-in aide. Backup is shown only when that list has ≥1 item.
+// If several drafts exist, back up currentTS when it is still in the list;
+// otherwise the first unfinished week.
+function getDraftTimesheets(){
+  return getAllTimesheets().filter(t=>t.status==='active');
+}
+function getBackupTargetTS(){
+  const drafts=getDraftTimesheets();
+  if(!drafts.length)return null;
+  if(currentTS){
+    const cur=drafts.find(t=>t.id===currentTS);
+    if(cur)return cur;
+  }
+  return drafts[0];
+}
+function weekDataForTS(id){
+  if(!currentUser||!id)return{};
+  return store.get('wd_'+currentUser.username+'_'+id)||{};
+}
+function daysPayloadFromWeekData(wd){
+  const out={};
+  for(let i=0;i<=6;i++){
+    const d=(wd&&(wd[i]||wd[String(i)]))||null;
+    if(!d)continue;
+    const svcs=Array.isArray(d.svcs)?d.svcs.slice():[];
+    const day={
+      date:d.date||'',
+      tin:d.tin||d.in||'',
+      tout:d.tout||d.out||'',
+      hrs:d.hrs||'',
+      aideSig:d.aideSig||'',
+      clientSig:d.clientSig||'',
+      svcs
+    };
+    if(svcs.includes('Other (specify)')&&d.otherSpecify)day.otherSpecify=d.otherSpecify;
+    if(d.location)day.location=d.location;
+    if(d.lat!=null)day.lat=d.lat;
+    if(d.lng!=null)day.lng=d.lng;
+    if(d.verified!=null)day.verified=d.verified;
+    if(d.distanceFt!=null)day.distanceFt=d.distanceFt;
+    if(d.savedAt)day.savedAt=d.savedAt;
+    out[String(i)]=day;
+  }
+  return out;
+}
+function totalHoursFromWeekData(wd){
+  let t=0;
+  Object.keys(wd||{}).forEach(k=>{
+    t+=minsFromHrs((wd[k]||{}).hrs);
+  });
+  return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
+}
+
 function askCloudBackup(){
-  if(!currentUser||!currentTS){showTempMsg('Open a timesheet first.','var(--danger)');return;}
-  if(!requireClientSelected())return;
+  if(!currentUser){showTempMsg('Please log in first.','var(--danger)');return;}
+  const ts=getBackupTargetTS();
+  if(!ts){showTempMsg('No draft week to back up.','var(--danger)');return;}
   openModal('backupConfirmModal');
 }
 
 async function doCloudBackup(){
   closeModal('backupConfirmModal');
-  if(!currentUser||!currentTS){showTempMsg('Open a timesheet first.','var(--danger)');return;}
-  if(!requireClientSelected())return;
-  const clientSel=document.getElementById('cg_client');
-  const clientId=clientSel?clientSel.value:'';
-  const clientName=(clientSel&&clientSel.selectedIndex>=0)?(clientSel.options[clientSel.selectedIndex].text||''):'';
-  const weekStart=document.getElementById('cg_weekstart').value||'';
-  const notes=document.getElementById('cg_notes').value||'';
-  const svcType=document.getElementById('cg_svctype').value||'Personal Care/Home Making';
-  const totalHrs=document.getElementById('cg_total').textContent||'0:00';
-  const weekData=buildDaysPayload();
-  // Also persist local week with latest svcs
-  saveUserWeekData(Object.assign({},getUserWeekData()||{},weekData));
-  updateTSMeta(currentTS,{clientName,clientId,weekStart,notes,svcType,...captureHdrSigs()});
-  const list=getAllTimesheets();
-  const ts=list.find(t=>t.id===currentTS);
+  if(!currentUser){showTempMsg('Please log in first.','var(--danger)');return;}
+  const ts=getBackupTargetTS();
+  if(!ts){showTempMsg('No draft week to back up.','var(--danger)');return;}
+  const weekData=daysPayloadFromWeekData(weekDataForTS(ts.id));
+  const clientName=ts.clientName||'';
+  const clientId=ts.clientId||'';
+  const weekStart=ts.weekStart||'';
+  const notes=ts.notes||'';
+  const svcType=ts.svcType||'Personal Care/Home Making';
+  const totalHrs=totalHoursFromWeekData(weekData);
   const payload={
     action:'save_timesheet_backup',
     username:currentUser.username,
@@ -2353,12 +2439,12 @@ async function doCloudBackup(){
     notes:notes,
     days:weekData
   };
-  if(ts&&ts.cloudBackupId)payload.id=ts.cloudBackupId;
+  if(ts.cloudBackupId)payload.id=ts.cloudBackupId;
   try{
     showTempMsg('Backing up to office...','var(--teal)');
     const data=await apiPost(payload);
     if(data&&data.success){
-      if(data.id!=null)updateTSMeta(currentTS,{cloudBackupId:data.id});
+      if(data.id!=null)updateTSMeta(ts.id,{cloudBackupId:data.id});
       showTempMsg('✅ Backed up to office!','var(--success)');
     }else{
       showTempMsg((data&&data.error)||'Backup failed. Try again.','var(--danger)');
@@ -2513,8 +2599,10 @@ function updateTSMeta(id,updates){
 }
 
 function renderTSHome(){
-  const list=getAllTimesheets().filter(t=>t.status==='active');
+  const list=getDraftTimesheets();
   const el=document.getElementById('cgTSList');
+  const backupBox=document.getElementById('cgHomeBackup');
+  if(backupBox)backupBox.style.display=list.length?'block':'none';
   if(!el)return;
   if(!list.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:20px;color:var(--muted)"><p>No active timesheets.</p><p style="font-size:0.78rem;margin-top:6px">Tap "+ Start Another Timesheet" to begin.</p></div>';
@@ -2781,8 +2869,11 @@ async function submitInservice(){
 
 window.addEventListener('load',()=>{
   syncStorage();
-  const sess=store.get('cg_session');
-  if(sess){currentUser=sess;afterLogin();}
+  if(restoreCgSession())afterLogin();
+});
+window.addEventListener('pageshow',()=>{enforceCgSessionTimeout();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')enforceCgSessionTimeout();
 });
 window.addEventListener('resize',()=>{
   Object.keys(sigPads).forEach(id=>{
