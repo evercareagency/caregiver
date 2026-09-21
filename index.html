@@ -4,6 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-21-backup-under-inservices">
+<!-- caregiver-build: 2026-09-21-backup-under-inservices — Home Backup sits under My Inservices only -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EverCare — Caregiver Timesheet</title>
@@ -378,10 +380,6 @@ else setupEverCarePWA();
         <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a timesheet below to continue filling it out. When done for the week, tap Submit on each one.</p>
       </div>
       <div id="cgTSList"></div>
-      <div id="cgHomeBackup" class="action-stack" style="display:none;margin-bottom:10px">
-        <button class="btn btn-teal btn-full" id="cgBackupBtn" onclick="askCloudBackup()">☁️ Back up this week's draft</button>
-        <p class="backup-help">This saves an <strong>office copy</strong> of this week's draft — it is <strong>not</strong> a final submit. Use if you're changing phones or about to reset/clear this phone.</p>
-      </div>
       <div class="action-row" style="padding-top:0;margin-bottom:14px">
         <button class="btn btn-ghost btn-full" onclick="confirmLogout()">&#8592; Back</button>
         <button class="btn btn-ghost btn-full" onclick="confirmNewTS()" style="border-color:var(--teal);color:var(--teal)">+ Start Another Timesheet</button>
@@ -389,6 +387,10 @@ else setupEverCarePWA();
       <button class="btn btn-ghost btn-full" onclick="goToInservices()" style="border-color:var(--navy);color:var(--navy);margin-bottom:14px">
         &#128218; My Inservices
       </button>
+      <div id="cgHomeBackup" class="action-stack" style="display:none;margin-bottom:14px">
+        <button class="btn btn-teal btn-full" id="cgBackupBtn" onclick="askCloudBackup()">☁️ Back up this week's draft</button>
+        <p class="backup-help">This saves an <strong>office copy</strong> of this week's draft — it is <strong>not</strong> a final submit. Use if you're changing phones or about to reset/clear this phone.</p>
+      </div>
       <div class="notice">
         <ul>
           <li>Notify office at <strong>(216) 377-5991</strong> for any significant change — hospitalization, falls, hours change, etc.</li>
