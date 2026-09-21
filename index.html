@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-21-aide-first-login-setup">
-<!-- caregiver-build: 2026-09-21-aide-first-login-setup — first-login mustChangePassword/needsEmail gate -->
+<meta name="caregiver-build" content="2026-09-21-save-day-under-services">
+<!-- caregiver-build: 2026-09-21-save-day-under-services — Save Day under services, block empty services, session notice ack -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -71,6 +71,8 @@ textarea{resize:vertical;min-height:68px;}
 .btn-danger{background:var(--danger);color:white;}
 .btn-warn{background:var(--warn);color:white;}
 .btn-full{width:100%;justify-content:center;padding:12px;}
+#saveDayBtn:disabled{background:#b0b5b8;color:#fff;cursor:not-allowed;}
+#saveDayBtn:disabled:hover{background:#b0b5b8;}
 .hdr{background:var(--teal);color:white;padding:13px 15px;display:flex;align-items:center;gap:10px;border-bottom:3px solid #9a9a9a;position:sticky;top:0;z-index:50;}
 .hdr-back{background:rgba(255,255,255,0.15);border:none;color:white;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:14px;flex-shrink:0;}
 .hdr-text h2{font-family:'Playfair Display',serif;font-size:0.95rem;}
@@ -443,7 +445,7 @@ else setupEverCarePWA();
       </div>
       <div class="card">
         <div class="card-title"><span class="ico">📅</span> Daily Log (Sun–Sat)</div>
-        <p style="font-size:0.74rem;color:var(--muted);margin-bottom:11px">Fill each day you worked: date, time in/out, and both signatures. Tap <strong>Save This Day</strong> when that day is done. Check services in the grids below (same week for all days).</p>
+        <p style="font-size:0.74rem;color:var(--muted);margin-bottom:11px">Fill each day you worked: date, time in/out, and both signatures. Check services in the grids below, then tap <strong>Save Day</strong> for the open day (same week for all days).</p>
         <div id="dayBlocks"></div>
       </div>
       <div class="total-bar">
@@ -460,6 +462,9 @@ else setupEverCarePWA();
         <div class="card-title"><span class="ico">✅</span> Services Provided (by weekday)</div>
         <p style="font-size:0.72rem;color:var(--muted);margin-bottom:10px">Tap the boxes under <strong>S M T W T F S</strong> for each service you did that day. Columns match Sunday–Saturday above.</p>
         <div id="serviceMatrix"></div>
+        <p id="saveDayTarget" style="font-size:0.78rem;font-weight:600;color:var(--navy);margin:12px 0 6px">Open a day above — Save Day saves that day.</p>
+        <p id="saveDaySvcErr" role="alert" style="display:none;color:var(--danger);font-size:0.8rem;font-weight:700;margin:0 0 8px">Check at least one service before saving.</p>
+        <button class="btn btn-teal btn-full" type="button" id="saveDayBtn" onclick="saveActiveDay()" disabled>✓ Save Day</button>
       </div>
       <div class="card">
         <div class="card-title"><span class="ico">📝</span> Comments</div>
@@ -529,7 +534,7 @@ else setupEverCarePWA();
     <div class="mico">🚨</div>
     <h3>Important Notice</h3>
     <p><strong>All hospitalizations, falls, and hours changes must be reported to the office immediately.</strong><br><br>📞 <strong style="font-size:1.1rem">(216) 377-5991</strong></p>
-    <div class="modal-btns"><button class="mbtn mbtn-confirm" onclick="closeModal('alertModal')">I Understand</button></div>
+    <div class="modal-btns"><button class="mbtn mbtn-confirm" onclick="ackImportantNotice()">I Understand</button></div>
   </div>
 </div>
 
@@ -779,7 +784,7 @@ const SERVICE_SECTIONS=[
 ];
 const ALL_SERVICE_LABELS=[...PERSONAL_CARE,...ELIMINATION,...HOUSEHOLD,...MOBILITY,...TREATMENTS,...NUTRITION];
 function svcSlug(s){return String(s).replace(/\W+/g,'_');}
-let currentUser=null,pendingDayIdx=null,sigPads={},correctionData=null,correctionMode=false;
+let currentUser=null,pendingDayIdx=null,activeDayIdx=null,sigPads={},correctionData=null,correctionMode=false;
 
 const store={
   get:k=>{
@@ -983,7 +988,11 @@ function unlockBodyScroll(){
   document.body.style.top='';
   window.scrollTo(0,_modalScrollY||0);
 }
-function openModal(id){document.getElementById(id).classList.add('show');lockBodyScroll();}
+function openModal(id){
+  if(id==='alertModal'&&typeof isNoticeAcked==='function'&&isNoticeAcked())return;
+  if(id==='sandataModal'&&typeof isSandataAcked==='function'&&isSandataAcked())return;
+  document.getElementById(id).classList.add('show');lockBodyScroll();
+}
 function closeModal(id){document.getElementById(id).classList.remove('show');if(!document.querySelector('.modal-bg.show'))unlockBodyScroll();}
 function switchTab(tab){
   document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
@@ -1058,7 +1067,7 @@ function headerBack(){
   confirmLogout();
 }
 
-function caregiverLogout(){store.del('cg_session');currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
+function caregiverLogout(){store.del('cg_session');clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
 
 // SANDATA GATE + LOCATION (once after login, again on save / submit)
 const SANDATA_ACK_KEY='sandata_ack_session';
@@ -1073,6 +1082,33 @@ function setSandataAck(){
 function clearSandataAck(){
   window._sandataAcked=false;
   try{sessionStorage.removeItem(SANDATA_ACK_KEY);}catch(e){}
+}
+function noticeAckStorageKey(){
+  const u=currentUser&&currentUser.username?String(currentUser.username):'';
+  return 'notice_ack_'+(u||'session');
+}
+function isNoticeAcked(){
+  if(window._noticeAcked===true)return true;
+  try{return sessionStorage.getItem(noticeAckStorageKey())==='1';}catch(e){return false;}
+}
+function setNoticeAck(){
+  window._noticeAcked=true;
+  try{sessionStorage.setItem(noticeAckStorageKey(),'1');}catch(e){}
+}
+function clearNoticeAck(){
+  window._noticeAcked=false;
+  try{
+    const keys=[];
+    for(let i=0;i<sessionStorage.length;i++){
+      const k=sessionStorage.key(i);
+      if(k&&k.indexOf('notice_ack_')===0)keys.push(k);
+    }
+    keys.forEach(k=>sessionStorage.removeItem(k));
+  }catch(e){}
+}
+function ackImportantNotice(){
+  setNoticeAck();
+  closeModal('alertModal');
 }
 function setPendingLoginLocation(on){
   window._pendingLoginLocation=!!on;
@@ -1239,6 +1275,7 @@ async function submitAideSetup(){
 function afterLogin(opts){
   if(opts&&opts.freshLogin){
     clearSandataAck();
+    clearNoticeAck();
     setPendingLoginLocation(true);
     window._cgFreshLogin=true;
   }
@@ -1360,8 +1397,8 @@ async function loadCaregiverScreen(){
   }
   renderTSHome();
 
-  // Important notice only after Sandata Got It — do not cover the login-time Sandata gate
-  if(isSandataAcked())setTimeout(()=>openModal('alertModal'),100);
+  // Important notice only after Sandata Got It — once per login, then stay dismissed
+  if(isSandataAcked()&&!isNoticeAcked())setTimeout(()=>openModal('alertModal'),100);
 
   // Broadcast
   const bc=store.get('broadcast_msg');
@@ -1483,8 +1520,10 @@ function loadCorrectionMode(){
         locEl.innerHTML=`<span>📍</span><span id="loc_txt_${i}">${d.location}</span> ${badge}`;
       }
     }
-    const btn=document.getElementById(`sbtn_${i}`);
-    if(btn&&!correctionData.correctionDays?.includes(parseInt(i))){btn.textContent='✅ Day OK';btn.style.background='var(--success)';}
+    if(!correctionData.correctionDays?.includes(parseInt(i))){
+      const statOk=document.getElementById(`dstat_${i}`);
+      if(statOk){statOk.textContent='✅ Day OK';statOk.classList.add('saved');}
+    }
   });
   updateTotal();
   document.getElementById('correctionBanner').style.display='none';
@@ -1527,7 +1566,6 @@ function buildDayBlocks(fixDays=[]){
           <div><div class="sig-lbl">HHA Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_aide_${i}" height="110"></canvas></div><div class="sig-hint" id="hint_sp_aide_${i}">Tap to sign</div><button class="sig-clear" onclick="clearSig('sp_aide_${i}')">Clear</button></div>
           <div><div class="sig-lbl">Client Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_client_${i}" height="110"></canvas></div><div class="sig-hint" id="hint_sp_client_${i}">Tap to sign</div><button class="sig-clear" onclick="clearSig('sp_client_${i}')">Clear</button></div>
         </div>
-        <button class="btn btn-teal btn-full" style="margin-top:11px" id="sbtn_${i}" onclick="previewDay(${i})">✓ Save This Day</button>
       </div>`;
     container.appendChild(div);
   });
@@ -1536,6 +1574,8 @@ function buildDayBlocks(fixDays=[]){
   initSig('sp_hdr_aide');initSig('sp_hdr_client');
   const aideEl=document.getElementById('cg_aide_name');
   if(aideEl&&currentUser)aideEl.textContent=currentUser.name||'—';
+  activeDayIdx=null;
+  refreshSaveDayState();
 }
 
 function buildServiceMatrix(){
@@ -1581,6 +1621,7 @@ function onMatrixChange(){
     }
   });
   if(changed)saveUserWeekData(wd);
+  refreshSaveDayState();
 }
 
 function updateOtherSpecifyVisibility(){
@@ -1615,10 +1656,19 @@ function toggleDay(i){
   const body=document.getElementById(`dbody_${i}`);
   body.classList.toggle('open');
   if(body.classList.contains('open')){
+    setActiveDay(i);
     requestAnimationFrame(()=>{
       resizeSigCanvas(`sp_aide_${i}`);
       resizeSigCanvas(`sp_client_${i}`);
     });
+  }else{
+    if(activeDayIdx===i){
+      activeDayIdx=null;
+      for(let j=0;j<DAYS.length;j++){
+        if(document.getElementById('dbody_'+j)?.classList.contains('open')){activeDayIdx=j;break;}
+      }
+    }
+    refreshSaveDayState();
   }
 }
 function resizeSigCanvas(id){
@@ -1653,6 +1703,7 @@ function updateDayName(i){
     nameEl.textContent=`${DAYS[i]} — Pick a date`;
   }
   recalcWeekStart();
+  refreshSaveDayState();
 }
 
 function recalcWeekStart(){
@@ -1686,6 +1737,7 @@ function calcDay(i){
     wd[i]=cur;saveUserWeekData(wd);
   }
   refreshDaySigs(i);
+  setActiveDay(i);
 }
 function updateTotal(){let t=0;DAYS.forEach((_,i)=>t+=parseInt(document.getElementById(`d${i}_hrs`).dataset.mins||0));document.getElementById('cg_total').textContent=`${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;}
 function getCheckedSvcs(i){return ALL_SERVICE_LABELS.filter(s=>document.getElementById(`sm_${svcSlug(s)}_${i}`)?.checked);}
@@ -1712,10 +1764,57 @@ function requireDaySignatures(i){
   }
   return true;
 }
+function setActiveDay(i){
+  const block=document.getElementById('db_'+i);
+  if(!block||block.classList.contains('locked'))return;
+  activeDayIdx=i;
+  refreshSaveDayState();
+}
+function refreshSaveDayState(){
+  const btn=document.getElementById('saveDayBtn');
+  const err=document.getElementById('saveDaySvcErr');
+  const target=document.getElementById('saveDayTarget');
+  if(!btn)return;
+  const i=activeDayIdx;
+  const body=i!=null?document.getElementById('dbody_'+i):null;
+  const open=!!(body&&body.classList.contains('open'));
+  if(!open){
+    activeDayIdx=null;
+    btn.disabled=true;
+    if(err)err.style.display='none';
+    if(target)target.textContent='Open a day above — Save Day saves that day.';
+    return;
+  }
+  const raw=(document.getElementById('dname_'+i)?.textContent||DAYS[i]||'this day').replace(/\s*⚠️\s*/g,'').trim();
+  if(target)target.textContent='Saving '+raw;
+  const has=getCheckedSvcs(i).length>0;
+  btn.disabled=!has;
+  if(err)err.style.display=has?'none':'block';
+}
+function saveActiveDay(){
+  refreshSaveDayState();
+  const i=activeDayIdx;
+  if(i==null){
+    showTempMsg('Open the day you want to save.','var(--warn)');
+    return;
+  }
+  previewDay(i);
+}
+function requireDayService(i){
+  if(getCheckedSvcs(i).length>0){
+    const err=document.getElementById('saveDaySvcErr');
+    if(err&&activeDayIdx===i)err.style.display='none';
+    return true;
+  }
+  refreshSaveDayState();
+  showTempMsg('Check at least one service before saving.','var(--danger)');
+  return false;
+}
 function previewDay(i){
   if(!requireSandataAck())return;
   if(!requireClientSelected())return;
   if(!requireDaySignatures(i))return;
+  if(!requireDayService(i))return;
   const client=getSelectedClient();
   const clientName=client?client.name:'';
   // Save client info to ts meta
@@ -1729,6 +1828,7 @@ function previewDay(i){
 let pendingDaySave=null;
 function confirmSaveDay(){
   const i=pendingDayIdx;
+  if(!requireDayService(i)){closeModal('previewModal');return;}
   if(!requireDaySignatures(i))return;
   const _prev=getUserWeekData()[i]||{};
   closeModal('previewModal');
@@ -1768,12 +1868,18 @@ async function captureDayLocationAndSave(){
 }
 
 function saveDayData(i,dayObj){
+  const liveSvcs=getCheckedSvcs(i);
+  if(!liveSvcs.length){
+    refreshSaveDayState();
+    showTempMsg('Check at least one service before saving.','var(--danger)');
+    return;
+  }
+  dayObj={...dayObj,svcs:liveSvcs};
   if(!storedHasRealInk(dayObj&&dayObj.aideSig,dayObj&&dayObj.aideSigInk)||!storedHasRealInk(dayObj&&dayObj.clientSig,dayObj&&dayObj.clientSigInk)){
     showTempMsg('Aide and Client signatures required to save this day','var(--danger)');
     return;
   }
   const wd=getUserWeekData();wd[i]={...dayObj,savedAt:new Date().toLocaleString()};saveUserWeekData(wd);
-  const btn=document.getElementById(`sbtn_${i}`);if(btn){btn.textContent='✅ Day Saved — Tap to Edit';btn.style.background='var(--success)';}
   const stat=document.getElementById(`dstat_${i}`);if(stat){stat.textContent=`✅ ${dayObj.hrs}`;stat.classList.add('saved');}
   // Show verification badge (miles in UI; 500ft radius stays internal)
   const locEl=document.getElementById(`loc_${i}`);
@@ -1782,6 +1888,8 @@ function saveDayData(i,dayObj){
     locEl.innerHTML=`<span>📍</span><span id="loc_txt_${i}">${dayObj.location}</span> ${badge}`;
   }
   document.getElementById(`dhdr_${i}`)?.classList.remove('open');document.getElementById(`dbody_${i}`)?.classList.remove('open');
+  if(activeDayIdx===i)activeDayIdx=null;
+  refreshSaveDayState();
   showTempMsg(`✅ ${DAYS[i]} saved!`,'var(--success)');window.scrollTo(0,0);
 }
 
@@ -1820,7 +1928,6 @@ function loadSavedWeek(){
         locEl.innerHTML=`<span>📍</span><span id="loc_txt_${i}">${d.location}</span> ${badge}`;
       }
     }
-    const btn=document.getElementById(`sbtn_${i}`);if(btn){btn.textContent='✅ Day Saved — Tap to Edit';btn.style.background='var(--success)';}
     const stat=document.getElementById(`dstat_${i}`);if(stat){stat.textContent=`✅ ${d.hrs}`;stat.classList.add('saved');}
   });
   updateOtherSpecifyVisibility();
@@ -2170,7 +2277,7 @@ function initSig(id){
   if(prev){const img=new Image();img.onload=()=>{ctx.drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};img.src=prev;setSigHint(id,true);}
   else setSigHint(id,false);
   const pos=e=>{const r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)};};
-  const start=e=>{const p=pos(e);sigPads[id].drawing=true;ctx.beginPath();ctx.moveTo(p.x,p.y);c.classList.add('signed');setSigHint(id,true);};
+  const start=e=>{const dayHit=/^sp_(?:aide|client)_(\d+)$/.exec(id);if(dayHit)setActiveDay(parseInt(dayHit[1],10));const p=pos(e);sigPads[id].drawing=true;ctx.beginPath();ctx.moveTo(p.x,p.y);c.classList.add('signed');setSigHint(id,true);};
   const move=e=>{if(!sigPads[id]||!sigPads[id].drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1a2744';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();};
   const stop=()=>{if(!sigPads[id])return;sigPads[id].drawing=false;persistPadSig(id);};
   c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);c.addEventListener('mouseup',stop);c.addEventListener('mouseleave',stop);
