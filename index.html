@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-21-save-day-under-services">
-<!-- caregiver-build: 2026-09-21-save-day-under-services — Save Day under services, block empty services, session notice ack -->
+<meta name="caregiver-build" content="2026-09-22-login-feel">
+<!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -811,18 +811,26 @@ const store={
   del:k=>{try{localStorage.removeItem(k);}catch(e){}try{sessionStorage.removeItem(k);}catch(e){}}
 };
 
-// Session stays across opens; clock starts at loginAt only (no idle timer).
+// Session stays across opens for 8 hours from loginAt only (no idle timer).
+// Admin does not document a longer TTL. Missing loginAt is backfilled, not a forced re-login.
 const CG_SESSION_MS=8*60*60*1000;
 function parseLoginAt(sess){
   if(!sess||sess.loginAt==null||sess.loginAt==='')return null;
   const n=typeof sess.loginAt==='number'?sess.loginAt:Date.parse(sess.loginAt);
   return Number.isFinite(n)?n:null;
 }
-function isCgSessionExpired(sess){
-  // Only expire when loginAt is known and now-loginAt > 8h. Never wipe on refresh for missing loginAt.
+function cgSessionExpiresAt(sess){
   const at=parseLoginAt(sess);
-  if(at==null)return false;
-  return (Date.now()-at)>CG_SESSION_MS;
+  if(at==null)return null;
+  const stored=sess&&sess.expiresAt!=null?Number(sess.expiresAt):NaN;
+  const fromLogin=at+CG_SESSION_MS;
+  return Number.isFinite(stored)?Math.max(stored,fromLogin):fromLogin;
+}
+function isCgSessionExpired(sess){
+  // Only expire when loginAt is known and now is past the 8h window. Never wipe on refresh for missing loginAt.
+  const exp=cgSessionExpiresAt(sess);
+  if(exp==null)return false;
+  return Date.now()>exp;
 }
 function persistCgSession(sess){
   if(!sess||!sess.username)return sess;
@@ -832,10 +840,12 @@ function persistCgSession(sess){
   return sess;
 }
 function startCgSession(user){
+  const loginAt=Date.now();
   const sess={
     username:user.username,
     name:user.name,
-    loginAt:Date.now(),
+    loginAt:loginAt,
+    expiresAt:loginAt+CG_SESSION_MS,
     mustChangePassword:aideTruth(user&&user.mustChangePassword),
     needsEmail:aideTruth(user&&user.needsEmail)
   };
@@ -844,9 +854,17 @@ function startCgSession(user){
 }
 function backfillCgSessionLoginAt(sess){
   if(!sess||!sess.username)return sess;
-  if(parseLoginAt(sess)!=null)return sess;
-  sess.loginAt=Date.now();
-  persistCgSession(sess);
+  let changed=false;
+  if(parseLoginAt(sess)==null){
+    sess.loginAt=Date.now();
+    changed=true;
+  }
+  const exp=cgSessionExpiresAt(sess);
+  if(exp!=null&&sess.expiresAt!==exp){
+    sess.expiresAt=exp;
+    changed=true;
+  }
+  if(changed)persistCgSession(sess);
   return sess;
 }
 function restoreCgSession(){
@@ -904,14 +922,34 @@ function formatWeekOfLabel(val){
 }
 
 
+function markAceHealthBad(){
+  if(window._aceLoginOk)return;
+  window._aceHealthBad=true;
+}
+function noteAceHealth(res){
+  if(window._aceLoginOk)return;
+  if(!res||!res.ok){markAceHealthBad();return;}
+  // Unknown ping action is not a down script. Only an explicit unhealthy body marks /exec soft.
+  let clone=null;
+  try{clone=res.clone();}catch(e){return;}
+  clone.json().then(function(data){
+    if(window._aceLoginOk)return;
+    if(!data||typeof data!=='object')return;
+    if(data.healthy===false||data.ok===false||data.health==='down'||data.health==='bad')markAceHealthBad();
+  }).catch(function(){});
+}
+function aceExecSoft(){return window._aceHealthBad===true;}
+// Wake Apps Script as soon as this file runs so the first login is less cold.
+// ping is the lightweight no-op; GET matches the existing doGet warm. Both soft-fail offline.
 function warmUpSheets(){
   if(window._sheetsWarmUpStarted)return;
   window._sheetsWarmUpStarted=true;
-  fetch(SHEETS_URL,{method:'GET',mode:'cors',cache:'no-store'}).catch(()=>{});
-  fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'ping'}),mode:'cors',cache:'no-store'}).catch(()=>{});
+  fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'ping'}),mode:'cors',cache:'no-store'})
+    .then(noteAceHealth)
+    .catch(function(){markAceHealthBad();});
+  fetch(SHEETS_URL,{method:'GET',mode:'cors',cache:'no-store'}).catch(function(){});
 }
-
-
+warmUpSheets();
 document.addEventListener('DOMContentLoaded',function(){ warmUpSheets(); });
 
 async function apiPost(payload){
@@ -1021,11 +1059,11 @@ async function doLogin(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
-    if(data.success){startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
+    if(data.success){window._aceLoginOk=true;window._aceHealthBad=false;startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
     else{document.getElementById('loginErr').style.display='block';}
   }catch(e){
     const users=store.get('cg_users')||{};
-    if(users[user]&&users[user].password===pass){startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;requestAnimationFrame(function(){setTimeout(function(){afterLogin({freshLogin:true});},0);});return;}
+    if(users[user]&&users[user].password===pass){startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
     else{document.getElementById('loginErr').style.display='block';}
   }finally{
     window._cgLoginInFlight=false;
@@ -1247,6 +1285,8 @@ async function submitAideSetup(){
     });
     const data=res&&res.data;
     if(aideSetupSuccess(data)){
+      window._aceLoginOk=true;
+      window._aceHealthBad=false;
       currentUser.email=email;
       clearAideSetupGate();
       window._aideSetupCurrentPassword='';
@@ -1287,14 +1327,11 @@ function afterLogin(opts){
     });
     return;
   }
-  // Home may render underneath, but Start timesheet stays blocked until Got It.
+  // Home first. Heavy list calls start only after that paint (see scheduleHomeBackgroundLoads).
   // Do not request GPS until Sandata is acknowledged — Sandata must not wait on location.
+  window._cgPendingBackupRestore=true;
   loadCaregiverScreen();
   if(!isSandataAcked())openModal('sandataModal');
-  checkISNotif();
-  apiGetCached('get_clients').catch(()=>{});
-  // Cloud backups restore runs again from loadCaregiverScreen once home UI is ready
-  window._cgPendingBackupRestore=true;
 }
 
 async function requestLocationOnceAfterLogin(){
@@ -1378,8 +1415,30 @@ function showInstructions(device){
   }
 }
 
+// Heavy Sheets lists (backups, corrections, clients, inservice) run after home is on screen.
+// get_users / get_all are not part of aide login. If the warm ping says /exec is down, skip them.
+function scheduleHomeBackgroundLoads(){
+  const restoreBackups=window._cgPendingBackupRestore!==false;
+  window._cgPendingBackupRestore=false;
+  const run=function(){
+    if(aceExecSoft())return;
+    if(restoreBackups){
+      restoreCloudBackups().then(function(rr){
+        if(rr&&rr.restored>0)showTempMsg('Restored '+rr.restored+' backup(s) from the office','var(--teal)');
+        else if(rr&&rr.kept>0)showTempMsg('Local timesheet kept — Backup available','var(--teal)');
+        renderTSHome();
+      }).catch(function(){});
+    }
+    checkForCorrection().catch(function(){});
+    checkISNotif();
+    apiGetCached('get_clients').catch(function(){});
+  };
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(function(){setTimeout(run,0);});
+  else setTimeout(run,0);
+}
+
 // CAREGIVER SCREEN
-async function loadCaregiverScreen(){
+function loadCaregiverScreen(){
   if(!requireAideSetup())return;
   showScreen('caregiverScreen');
   document.getElementById('hdr_name').textContent=currentUser.name;
@@ -1387,14 +1446,6 @@ async function loadCaregiverScreen(){
   document.getElementById('cgFormView').style.display='none';
   document.getElementById('cgSuccessView').style.display='none';
   correctionMode=false;correctionData=null;
-  if(window._cgPendingBackupRestore!==false){
-    window._cgPendingBackupRestore=false;
-    try{
-      const rr=await restoreCloudBackups();
-      if(rr&&rr.restored>0)showTempMsg('Restored '+rr.restored+' backup(s) from the office','var(--teal)');
-      else if(rr&&rr.kept>0)showTempMsg('Local timesheet kept — Backup available','var(--teal)');
-    }catch(e){}
-  }
   renderTSHome();
 
   // Important notice only after Sandata Got It — once per login, then stay dismissed
@@ -1405,9 +1456,6 @@ async function loadCaregiverScreen(){
   const banner=document.getElementById('broadcastBanner');
   if(bc){banner.textContent='🚨 '+bc;banner.classList.add('show');}else{banner.classList.remove('show');}
 
-  // Check for correction request
-  await checkForCorrection();
-
   buildDayBlocks();
   loadSavedWeek();
   if(!document.getElementById('cg_weekstart').value){
@@ -1415,6 +1463,7 @@ async function loadCaregiverScreen(){
     document.getElementById('cg_weekstart').value=d.toISOString().split('T')[0];
     fillDates();
   }
+  scheduleHomeBackgroundLoads();
 }
 
 function syncCorrectionsFromAdmin(rows){
