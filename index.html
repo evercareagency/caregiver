@@ -4,7 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-22-login-feel">
+<meta name="caregiver-build" content="2026-09-23-sb-dual-caregiver">
+<!-- caregiver-build: 2026-09-23-sb-dual-caregiver — soft sb dual-verify after sheets login; flag off unless ?sb=1 or evercare_sb=1 -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
@@ -723,6 +724,8 @@ else setupEverCarePWA();
 
 <script>
 const SHEETS_URL='https://script.google.com/macros/s/AKfycbwSZbOtThwwwiu5pojn7reMvaygQ2tDQgxfidaytVZBykIvl-yT3X0qgnpufAg6Xku4/exec';
+const SUPABASE_URL='https://zealkptwgifnkbkuavvp.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplYWxrcHR3Z2lmbmtia3VhdnZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDExMTAsImV4cCI6MjEwNTc3NzExMH0.b-3Pdb_oVR3L6JM0yd_aQcqtQH8exGV7OPwdtx0b3Xg';
 const OFFICE_CODE='ECA2026';
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const DAY_LETTERS=['S','M','T','W','T','F','S'];
@@ -1041,6 +1044,88 @@ function switchTab(tab){
 
 // AUTH
 
+function evercareSbEnabled(){
+  try{
+    var search=(typeof location!=='undefined'&&location&&location.search)||'';
+    if(/(?:^|[?&])sb=1(?:&|$)/.test(search))return true;
+    if(typeof localStorage!=='undefined'&&localStorage.getItem('evercare_sb')==='1')return true;
+  }catch(e){}
+  return false;
+}
+// Soft dual-verify after a successful Sheets aide login. Sheets stays source of truth.
+// Flag off (default) returns before any Supabase request. Failures never block Sign In.
+// Resolve the aide email with resolve_username_email, then optional password grant.
+// Aide username goes through the RPC, not an admin role-email map. No Supabase writes. No live cutover.
+function softSbDualVerify(username,password){
+  try{
+    if(!evercareSbEnabled())return;
+    var user=String(username||'').trim().toLowerCase();
+    if(!user){
+      window.__sbDual={ok:false,error:'missing username'};
+      return;
+    }
+    window.__sbDual={ok:false};
+    var headers={
+      apikey:SUPABASE_ANON_KEY,
+      Authorization:'Bearer '+SUPABASE_ANON_KEY,
+      'Content-Type':'application/json'
+    };
+    fetch(SUPABASE_URL+'/rest/v1/rpc/resolve_username_email',{
+      method:'POST',
+      headers:headers,
+      body:JSON.stringify({p_username:user,p_org_slug:'evercare'})
+    }).then(function(res){
+      return res.text().then(function(raw){
+        var data=null;
+        var parsed=false;
+        if(raw==null||raw===''){data=null;parsed=true;}
+        else{try{data=JSON.parse(raw);parsed=true;}catch(e){parsed=false;}}
+        if(!res.ok){
+          var msg=(data&&(data.error_description||data.msg||data.message||data.error||data.hint))||('HTTP '+res.status);
+          if(msg&&typeof msg==='object')msg=msg.message||JSON.stringify(msg);
+          window.__sbDual={ok:false,error:String(msg)};
+          return;
+        }
+        if(!parsed||(data!=null&&typeof data!=='string')){
+          window.__sbDual={ok:false,error:'unexpected rpc body'};
+          return;
+        }
+        var email=data==null?'':String(data).trim();
+        if(!email){
+          window.__sbDual={ok:false,error:'no email',rpcEmail:null};
+          return;
+        }
+        window.__sbDual={ok:false,email:email,rpcEmail:email};
+        return fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+          method:'POST',
+          headers:headers,
+          body:JSON.stringify({email:email,password:password})
+        }).then(function(authRes){
+          return authRes.text().then(function(authRaw){
+            var authData=null;
+            try{authData=authRaw?JSON.parse(authRaw):null;}catch(e){}
+            if(authRes.ok&&authData&&authData.access_token){
+              window.__sbDual={ok:true,email:email,rpcEmail:email};
+            }else{
+              var amsg=(authData&&(authData.error_description||authData.msg||authData.message||authData.error))||('HTTP '+authRes.status);
+              if(amsg&&typeof amsg==='object')amsg=amsg.message||JSON.stringify(amsg);
+              window.__sbDual={ok:false,error:String(amsg),email:email,rpcEmail:email};
+            }
+          });
+        });
+      });
+    }).catch(function(err){
+      var prev=window.__sbDual||{};
+      var next={ok:false,error:String(err&&err.message||err||'supabase')};
+      if(prev.email)next.email=prev.email;
+      if(prev.rpcEmail)next.rpcEmail=prev.rpcEmail;
+      window.__sbDual=next;
+    });
+  }catch(err){
+    try{window.__sbDual={ok:false,error:String(err&&err.message||err||'supabase')};}catch(e2){}
+  }
+}
+
 function togglePasswordVisibility(id,btn){
   const el=document.getElementById(id);
   if(!el)return;
@@ -1059,7 +1144,10 @@ async function doLogin(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
-    if(data.success){window._aceLoginOk=true;window._aceHealthBad=false;startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
+    if(data.success){
+      try{softSbDualVerify(user,pass);}catch(sbErr){}
+      window._aceLoginOk=true;window._aceHealthBad=false;startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
+    }
     else{document.getElementById('loginErr').style.display='block';}
   }catch(e){
     const users=store.get('cg_users')||{};
