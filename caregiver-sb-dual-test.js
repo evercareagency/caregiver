@@ -408,6 +408,14 @@ async function runBrowser(){
           });
           return;
         }
+        if(/\/rest\/v1\/clients/.test(u)){
+          req.respond({status:200,contentType:'application/json',headers:cors,body:'[]'});
+          return;
+        }
+        if(/\/rest\/v1\/timesheets/.test(u)&&req.method()==='GET'){
+          req.respond({status:200,contentType:'application/json',headers:cors,body:'[]'});
+          return;
+        }
         if(/\/rest\/v1\/profiles/.test(u)){
           req.respond({status:200,contentType:'application/json',headers:cors,body:'[]'});
           return;
@@ -427,6 +435,13 @@ async function runBrowser(){
   async function openFresh(href){
     sbCalls.length=0;
     sheetsActions.length=0;
+    try{
+      await page.evaluate(function(){
+        localStorage.removeItem('cg_session');
+        sessionStorage.removeItem('cg_session');
+        localStorage.removeItem('evercare_sb');
+      });
+    }catch(e){}
     await page.goto(href,{waitUntil:'domcontentloaded',timeout:20000});
     await page.evaluate(function(){
       localStorage.removeItem('cg_session');
@@ -506,6 +521,21 @@ async function runBrowser(){
   assert.ok(!JSON.stringify(sess).includes('secret'),'session does not keep the password');
   const live=await page.evaluate(function(){return window.__sbSession&&window.__sbSession.access_token;});
   assert.strictEqual(live,'jwt-test-token');
+  const listDeadline=Date.now()+3000;
+  while(Date.now()<listDeadline&&!(sbCalls.some(function(c){return c.method==='GET'&&c.url.indexOf('/rest/v1/clients')>=0;})&&sbCalls.some(function(c){return c.method==='GET'&&c.url.indexOf('/rest/v1/timesheets')>=0&&c.url.indexOf('status=eq.backup')>=0;}))){
+    await new Promise(function(r){setTimeout(r,30);});
+  }
+  const clientsCall=sbCalls.filter(function(c){return c.method==='GET'&&c.url.indexOf('/rest/v1/clients')>=0;})[0];
+  const backupCall=sbCalls.filter(function(c){return c.method==='GET'&&c.url.indexOf('/rest/v1/timesheets')>=0&&c.url.indexOf('status=eq.backup')>=0;})[0];
+  assert.ok(clientsCall,'flag on loads assigned clients');
+  const clientUrl=decodeURIComponent(clientsCall.url);
+  assert.ok(clientUrl.indexOf('is_active=eq.true')>=0,'clients stay active');
+  assert.ok(clientUrl.indexOf('assignments(id,is_active,aide_id,client_id)')>=0,'assignments ride on the client list');
+  assert.strictEqual(clientsCall.authorization,'Bearer jwt-test-token');
+  assert.ok(backupCall,'flag on lists backup timesheets');
+  assert.strictEqual(backupCall.authorization,'Bearer jwt-test-token');
+  assert.ok(sheetsActions.indexOf('get_clients')<0,'flag on does not list clients through sheets');
+  assert.ok(sheetsActions.indexOf('get_my_backups')<0,'flag on does not list backups through sheets');
 
   rpcMode='null';
   authMode='ok';

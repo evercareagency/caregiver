@@ -190,6 +190,7 @@ function authOk(extra){
   assert.strictEqual(ready.needsEmail, false);
   assert.strictEqual(ready.mustChangePassword, false);
   assert.strictEqual(ready.sbEmail, 'aide.one@example.com');
+  assert.strictEqual(ready.sbOrgId, '33333333-3333-3333-3333-333333333333');
   assert.ok(ready.sbExpiresAt > Date.now(), 'expires_in becomes a timestamp');
 
   const setupBox = run({
