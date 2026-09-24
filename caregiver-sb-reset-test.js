@@ -25,9 +25,10 @@ function extractFn(src, sig){
   return '';
 }
 
-assert.ok(html.includes('v=sbrecover1'), 'recover marker');
+assert.ok(html.includes('v=sbseal1'), 'sealed marker');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
 assert.ok(!html.includes('reset_aide_own_password'), 'in-modal Auth password rpc is not the cut path');
+assert.ok(!html.includes('reset_aide_temp_password'), 'office temp-password rpc is not called');
 assert.ok(!html.includes('/auth/v1/signup'), 'caregiver tip does not sign aides up in Auth');
 assert.strictEqual((html.match(/\/auth\/v1\/token\?grant_type=password/g) || []).length, 2, 'password grant stays login plus setup');
 

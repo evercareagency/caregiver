@@ -24,8 +24,8 @@ function extractFn(src, sig){
   return '';
 }
 
-assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-recover">'), 'caregiver-build meta');
-assert.ok(html.includes('v=sbrecover1'), 'recover probe marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-seal">'), 'caregiver-build meta');
+assert.ok(html.includes('v=sbseal1'), 'sealed probe marker');
 assert.ok(html.includes('evercare_sheets'), 'emergency sheets rollback is documented');
 assert.ok(html.includes("const SUPABASE_URL='https://zealkptwgifnkbkuavvp.supabase.co';"), 'supabase url');
 assert.ok(!html.includes('lvaglmztnlnsrhlluayz'), 'abandoned project ref must not appear');

@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-24-sb-recover">
-<!-- caregiver-build: 2026-09-24-sb-recover v=sbrecover1 — Friday GO 2026-09-24. org portal_data_backend=supabase. Default (no ?sb=1) is Supabase-only: auth, forgot-password recovery email, recovery-link set password (PUT /auth/v1/user), list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. Signup on the cut does not write Sheets and does not call Auth signup; aides are office-provisioned. No silent /exec dual-write on those paths. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec, including signup, verify_reset, and reset_password. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds), SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
+<meta name="caregiver-build" content="2026-09-24-sb-seal">
+<!-- caregiver-build: 2026-09-24-sb-seal v=sbseal1 — Friday GO 2026-09-24. No new Ace RPC. Cut forgot-password: resolve_username_email, then GoTrue recover to this page, then PUT /auth/v1/user on the recovery session. Logged-in setup stays PUT /auth/v1/user. Signup on the cut does not write Sheets and does not call Auth signup. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 keeps Sheets signup, verify_reset, and reset_password. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds), SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
@@ -1098,7 +1098,7 @@ function switchTab(tab){
 
 // AUTH
 
-// Friday GO 2026-09-24 cut (v=sbrecover1). Default true.
+// Friday GO 2026-09-24 cut (v=sbseal1). Default true. No new Ace RPC.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
 // surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
@@ -2789,8 +2789,9 @@ function restoreHdrSigs(ts){
 
 
 // RESET PASSWORD
-// Cut default: resolve_username_email, then POST /auth/v1/recover to that Auth email.
-// The email link lands with a recovery session; submitRecoveryPassword PUT /auth/v1/user.
+// Cut default, no new RPC: resolve_username_email, then POST /auth/v1/recover
+// (resetPasswordForEmail) to this page. The recovery session PUT /auth/v1/user.
+// Logged-in setup also uses that user update only. Office temp-password reset is not called.
 // Sheets verify_reset / reset_password run only when evercareSbEnabled() is false.
 function aideEmailsMatch(resolved,entered){
   const got=String(resolved||'').trim().toLowerCase();
