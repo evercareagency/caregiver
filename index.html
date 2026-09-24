@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-bcast1b">
 <meta name="caregiver-build" content="2026-09-24-bcast1">
 <meta name="caregiver-build" content="2026-09-24-warm-off">
 <meta name="caregiver-build" content="2026-09-24-pdf-1page-print">
@@ -19,6 +20,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-bcast1b v=bcast1b — Friday GO 2026-09-24. Home #broadcastBanner unwraps the Ace get_active_broadcast envelope {success,data} (or ok/data) before reading data.message, same as Admin bcastActiveFromRpc. data null, empty message, or success/ok false hides the banner. Array singleton and a string payload still paint. Cut stays aide-JWT POST /rest/v1/rpc/get_active_broadcast {} only. Caregiver never calls send_broadcast or clear_broadcast. If the JWT is missing at home paint and appears within about 2s, the banner load retries once. Rollback ?sheets=1 OR localStorage.evercare_sheets=1 still reads store broadcast_msg only. v=bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-bcast1 v=bcast1 — Friday GO 2026-09-24. Home #broadcastBanner / .broadcast-banner on the Supabase cut reads aide-JWT POST /rest/v1/rpc/get_active_broadcast {} only (GHOST-BROADCAST-CONTRACT-v1). If data.message is set, show it; if data is null or empty, hide. Caregiver never calls send_broadcast or clear_broadcast. Rollback ?sheets=1 OR localStorage.evercare_sheets=1 restores the localStorage/store key broadcast_msg read path and does not invent Sheets /exec. v=warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-warm-off v=warmoff1 — Friday GO 2026-09-24. Supabase cut does not fire Sheets warmkeep /exec beacons (POST ping and GET) when the login page loads, so first paint is not blocked on Apps Script. Rollback ?sheets=1 or localStorage.evercare_sheets=1 still warms /exec as soon as this script runs. v=cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-pdf-1page-print v=cgpdf1p2 — Friday GO 2026-09-24. Saved timesheet PDF and browser/iOS Letter print are one page. The blank form is inset by TS_PDF_PAGE_SLACK_PT (72) so 5510 Pearl Rd stays on page 1 at 100% scale. Print of the open timesheet shows that sheet only. v=norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -2039,9 +2041,9 @@ function scheduleHomeBackgroundLoads(){
   else setTimeout(run,0);
 }
 
-// GHOST-BROADCAST-CONTRACT-v1 (CALLABLE) — aide JWT read-only. v=bcast1.
-// POST /rest/v1/rpc/get_active_broadcast {} → {message} or null.
-// Caregiver never calls send_broadcast or clear_broadcast.
+// GHOST-BROADCAST-CONTRACT-v1 (CALLABLE) — aide JWT read-only. v=bcast1b.
+// POST /rest/v1/rpc/get_active_broadcast {} → {success:true,data:{message}} or {success:true,data:null}.
+// Unwrap success/data/ok like Admin bcastActiveFromRpc, then read .message. Caregiver never calls send_broadcast or clear_broadcast.
 function paintBroadcastBanner(msg){
   const banner=document.getElementById('broadcastBanner');
   if(!banner)return;
@@ -2051,11 +2053,23 @@ function paintBroadcastBanner(msg){
 }
 function sbBroadcastMessage(data){
   if(data==null||data==='')return '';
+  if(typeof data==='string'){
+    const text=data.trim();
+    if(!text)return '';
+    if(text.charAt(0)==='{'||text.charAt(0)==='['){
+      try{return sbBroadcastMessage(JSON.parse(text));}catch(e){return text;}
+    }
+    return text;
+  }
   if(Array.isArray(data)){
     if(!data.length)return '';
     return sbBroadcastMessage(data[0]);
   }
   if(typeof data==='object'){
+    if(Object.prototype.hasOwnProperty.call(data,'data')||data.ok!=null||data.success!=null){
+      if(data.ok===false||data.success===false)return '';
+      return sbBroadcastMessage(data.data);
+    }
     if(data.message==null||data.message==='')return '';
     return String(data.message).trim();
   }
@@ -2071,8 +2085,25 @@ async function sbGetActiveBroadcast(){
 }
 async function loadBroadcastBanner(){
   if(typeof evercareSbEnabled==='function'&&evercareSbEnabled()){
+    const ready=typeof sbDataEnabled==='function'&&sbDataEnabled();
     const data=await sbGetActiveBroadcast();
     paintBroadcastBanner(sbBroadcastMessage(data));
+    if(!ready&&typeof setTimeout==='function'&&!loadBroadcastBanner._jwtWatch){
+      loadBroadcastBanner._jwtWatch=true;
+      const started=Date.now();
+      (function tick(){
+        if(typeof sbDataEnabled==='function'&&sbDataEnabled()){
+          loadBroadcastBanner._jwtWatch=false;
+          loadBroadcastBanner().catch(function(){});
+          return;
+        }
+        if(Date.now()-started>=2000){
+          loadBroadcastBanner._jwtWatch=false;
+          return;
+        }
+        setTimeout(tick,200);
+      })();
+    }
     return;
   }
   const bc=(typeof store!=='undefined'&&store&&store.get)?store.get('broadcast_msg'):null;
