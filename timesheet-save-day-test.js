@@ -57,7 +57,8 @@ async function runBrowser(){
     else req.continue();
   });
   page.on('dialog',d=>d.accept());
-  const url=process.env.CG_URL||'http://127.0.0.1:8765/index.html';
+  const rawUrl=process.env.CG_URL||'http://127.0.0.1:8765/index.html';
+  const url=/[?&]sheets=1(?:&|$)/.test(rawUrl)?rawUrl:(rawUrl+(rawUrl.indexOf('?')>=0?'&':'?')+'sheets=1');
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:20000});
   await page.evaluate(()=>{
     const sess={username:'aide1',name:'Test Aide',loginAt:Date.now(),mustChangePassword:false,needsEmail:false};

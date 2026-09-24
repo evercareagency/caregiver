@@ -30,8 +30,10 @@ function extractConst(name){
   return html.slice(start, end + 2);
 }
 
-assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-sb-pdf-write — ?sb=1 Save Day renders a client blank-letter PDF and uploads it; Sheets /exec bytes only if that overlay fails; no Edge; flag off stays on Sheets -->'), 'pdf write build marker');
-assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-auth-login">'), 'auth build meta stays');
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-sb-cut v=sbcut1 —'), 'cut build marker');
+assert.ok(html.includes('v=sbcut1'), 'probe marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-cut">'), 'cut build meta');
+assert.ok(html.includes('Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf'), 'emergency sheets pdf path is documented');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
 assert.ok(html.includes("const SB_PDF_BUCKET='evercare-pdfs'"), 'bucket is evercare-pdfs');
 assert.ok(html.includes('assets/blank-letter.png?v=a713ovl'), 'paper form blank');
@@ -44,6 +46,7 @@ assert.ok(!html.includes('/functions/v1'), 'no Edge function for PDF bytes');
 const writeFn = extractFn(html, 'async function sbWriteTimesheetPdf(timesheetId,record)');
 const pullFn = extractFn(html, 'async function sbPullSheetsTimesheetPdf(record)');
 assert.ok(writeFn.indexOf('renderTimesheetPdfBlob') < writeFn.indexOf('sbPullSheetsTimesheetPdf'), 'overlay runs before the sheets pull');
+assert.ok(writeFn.includes('!evercareSbEnabled()'), 'sheets PDF bytes only when emergency sheets is forced');
 assert.ok(writeFn.includes('sbPdfSize(bytes)<1024'), 'upload requires at least 1KiB');
 assert.ok(!/rpc\//.test(writeFn) && !/functions\/v1/.test(writeFn), 'write path has no render RPC');
 assert.ok(pullFn.includes('SHEETS_URL'), 'fallback reads Sheets /exec');
@@ -268,12 +271,24 @@ function settle(){
   assert.ok(htmlOut.indexOf('assets/blank-letter.png') >= 0, 'blank form is the overlay background');
   assert.ok(htmlOut.indexOf('Extra laundry') >= 0, 'notes are on the form');
 
-  const off = run({search: ''});
+  const off = run({search: '?sheets=1'});
   const offResult = await vm.runInContext('sbRefreshTimesheetPdf("ts-9")', off);
-  assert.strictEqual(offResult, false, 'flag off does not write a PDF');
-  assert.strictEqual(off.calls.length, 0, 'flag off makes no supabase calls');
+  assert.strictEqual(offResult, false, 'sheets emergency refresh does not write a Supabase PDF');
+  assert.strictEqual(off.calls.length, 0, 'sheets emergency refresh makes no supabase calls');
 
-  const saved = run({});
+  const bareMiss = run({search: ''});
+  const bareMissResult = await vm.runInContext('sbRefreshTimesheetPdf("ts-9")', bareMiss);
+  assert.strictEqual(bareMissResult, false, 'default overlay miss soft-fails');
+  assert.ok(!bareMiss.calls.some(function(c){return c.url === sheetsUrl;}), 'default overlay miss does not pull Sheets');
+
+  const saved = run({search: ''});
+  saved.sbEnsurePdfLibs = async function(){return true;};
+  saved.renderTimesheetPdfBlob = async function(){
+    const raw = '%PDF-1.4\n' + 'overlay '.repeat(180) + '\n%%EOF\n';
+    const u8 = new Uint8Array(raw.length);
+    for(let i = 0; i < raw.length; i++)u8[i] = raw.charCodeAt(i);
+    return u8;
+  };
   vm.runInContext('sbSyncSavedDay(1,{date:"2026-09-21",tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Assist W/Bath-Bed/Tub/Shower"],aideSig:"data:image/png;base64,aaa",clientSig:"sig"})', saved);
   await settle();
   assert.strictEqual(saved._msgs.length, 0, 'a PDF upload must not fail Save Day');
@@ -287,17 +302,10 @@ function settle(){
   assert.strictEqual(storage[0].init.headers['x-upsert'], 'true');
   assert.ok(storage[0].url.indexOf('/evercare-pdfs/' + org + '/timesheet/ts-9.pdf') >= 0, storage[0].url);
   const pdfText = bytesToString(storage[0].init.body);
-  assert.strictEqual(pdfText, sheetsPdfBytes(), 'uploaded bytes are the Sheets PDF when the overlay cannot run');
+  assert.ok(pdfText.indexOf('overlay ') > 0, 'uploaded bytes are the client overlay');
   assert.ok(pdfText.indexOf('%PDF-') === 0, 'uploaded bytes are a real PDF');
   assert.ok(pdfText.length >= 1024, 'uploaded PDF is at least 1KiB');
-  const sheetsCall = saved.calls.filter(function(c){return c.url === sheetsUrl;});
-  assert.strictEqual(sheetsCall.length, 1, 'overlay miss pulls Sheets /exec once');
-  assert.strictEqual(sheetsCall[0].init.method, 'POST');
-  const sheetsBody = JSON.parse(sheetsCall[0].init.body);
-  assert.strictEqual(sheetsBody.action, 'render_timesheet_pdf');
-  assert.strictEqual(sheetsBody.client_name, 'Ada Client');
-  assert.ok(sheetsBody.days['1'].tin === '08:00' || sheetsBody.days[1].tin === '08:00');
-  assert.ok(saved.calls.indexOf(sheetsCall[0]) < saved.calls.indexOf(storage[0]), 'sheets pull happens before upload');
+  assert.ok(!saved.calls.some(function(c){return c.url === sheetsUrl;}), 'default Save Day PDF does not call Sheets');
   assert.ok(!saved.calls.some(function(c){return c.url.indexOf('/functions/v1') >= 0 || c.url.indexOf('/rpc/') >= 0;}), 'no Edge or RPC on the PDF path');
 
   const patches = saved.calls.filter(function(c){return c.init.method === 'PATCH' && c.url.indexOf('/rest/v1/timesheets') >= 0;});
@@ -330,13 +338,21 @@ function settle(){
   const docAt = saved.calls.indexOf(docs[0]);
   assert.ok(storageAt < pathAt && pathAt < docAt, 'upload, then path, then registry');
 
-  const failed = run({storageFail: true});
+  const failed = run({search:'', storageFail: true});
+  failed.sbEnsurePdfLibs = async function(){return true;};
+  failed.renderTimesheetPdfBlob = async function(){
+    const raw = '%PDF-1.4\n' + 'overlay '.repeat(180) + '\n%%EOF\n';
+    const u8 = new Uint8Array(raw.length);
+    for(let i = 0; i < raw.length; i++)u8[i] = raw.charCodeAt(i);
+    return u8;
+  };
   vm.runInContext('sbSyncSavedDay(1,{tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Bathing"],aideSig:"a",clientSig:"c"})', failed);
   await settle();
   assert.strictEqual(failed._msgs.length, 0, 'storage failure still leaves the day saved');
   assert.strictEqual(failed._meta.patch.cloudBackupId, 'ts-9');
   assert.ok(failed.warnings.some(function(w){return w.indexOf('timesheet pdf') >= 0;}), 'upload errors are logged quietly');
   assert.strictEqual(failed.calls.filter(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;}).length, 1);
+  assert.ok(!failed.calls.some(function(c){return c.url === sheetsUrl;}), 'storage failure does not fall through to Sheets');
   const failedPatches = failed.calls.filter(function(c){return c.init.method === 'PATCH';});
   assert.strictEqual(failedPatches.length, 1, 'failed upload does not patch pdf_storage_path');
   assert.ok(!failed.calls.some(function(c){return c.url.indexOf('/pdf_documents') >= 0;}));
@@ -360,12 +376,25 @@ function settle(){
   const overlayStorage = overlay.calls.filter(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;})[0];
   assert.ok(bytesToString(overlayStorage.init.body).indexOf('overlay ') > 0, 'upload uses the overlay bytes');
 
-  const noBytes = run({sheetsRaw: '{"success":false}'});
+  const noBytes = run({search:'', sheetsRaw: '{"success":false}'});
   vm.runInContext('sbSyncSavedDay(1,{tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Bathing"],aideSig:"a",clientSig:"c"})', noBytes);
   await settle();
   assert.strictEqual(noBytes._msgs.length, 0, 'missing PDF bytes still leaves the day saved');
   assert.strictEqual(noBytes._meta.patch.cloudBackupId, 'ts-9');
   assert.ok(!noBytes.calls.some(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;}), 'no stub is uploaded');
+  assert.ok(!noBytes.calls.some(function(c){return c.url === sheetsUrl;}), 'default overlay miss does not pull Sheets');
+
+  const emergency = run({search:'?sheets=1'});
+  const emergencyOk = await vm.runInContext('sbWriteTimesheetPdf("ts-9",{clientName:"Ada Client",empName:"Aide One",username:"aide.one",weekStart:"2026-09-20",totalHrs:"4:00",days:{"1":{tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Bathing"]}}})', emergency);
+  assert.strictEqual(emergencyOk, true, 'emergency sheets force may upload /exec PDF bytes');
+  const emergSheets = emergency.calls.filter(function(c){return c.url === sheetsUrl;});
+  assert.strictEqual(emergSheets.length, 1, 'emergency overlay miss pulls Sheets /exec once');
+  const emergBody = JSON.parse(emergSheets[0].init.body);
+  assert.strictEqual(emergBody.action, 'render_timesheet_pdf');
+  assert.strictEqual(emergBody.client_name, 'Ada Client');
+  const emergStorage = emergency.calls.filter(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;});
+  assert.strictEqual(emergStorage.length, 1);
+  assert.strictEqual(bytesToString(emergStorage[0].init.body), sheetsPdfBytes());
 
   const fat = run({});
   fat.sbEnsurePdfLibs = async function(){return true;};

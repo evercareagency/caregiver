@@ -111,8 +111,12 @@ function run(opts){
 }
 
 (async function(){
-  const off = run({search:''});
-  assert.strictEqual(vm.runInContext('sbDataEnabled()', off), false, 'flag off does not use the jwt data path');
+  const bare = run({search:''});
+  assert.strictEqual(vm.runInContext('sbDataEnabled()', bare), true, 'default uses the jwt data path with no ?sb=1');
+  const sheets = run({search:'?sheets=1'});
+  assert.strictEqual(vm.runInContext('sbDataEnabled()', sheets), false, 'sheets emergency does not use the jwt data path');
+  const oldOpt = run({search:'?sb=0'});
+  assert.strictEqual(vm.runInContext('sbDataEnabled()', oldOpt), true, 'missing or sb=0 does not fall through to Sheets');
 
   const clients = run({
     routes:[{
@@ -320,6 +324,9 @@ function run(opts){
   const sheetsBackup = extractFn(html, 'async function doCloudBackup()');
   assert.ok(sheetsBackup.includes("action:'save_timesheet_backup'"));
   assert.ok(sheetsBackup.indexOf('evercareSbEnabled()') < sheetsBackup.indexOf('apiPost(payload)'));
+  const loc = extractFn(html, 'function saveLocationStatus(status)');
+  assert.ok(loc.includes("action:'save_location_status'"), 'sheets rollback can still post location');
+  assert.ok(loc.indexOf('evercareSbEnabled()') < loc.indexOf('SHEETS_URL'), 'default Save Day and submit do not post location to /exec');
 
   console.log('caregiver-sb-data checks ok');
 })().catch(function(err){
