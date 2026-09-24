@@ -15,7 +15,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
-<!-- caregiver-build: 2026-09-24-pw-reset-ux v=pwreset1 — Friday GO 2026-09-24. After the email link saves a new password (PUT /auth/v1/user on the recovery session), the reset page stays on “Password saved”. Primary button “Open ECA Aide Portal” goes to this same-origin Pages login (location.origin+pathname, the same redirect_to Forgot already uses) and the page follows that login after about 3 seconds. Soft copy: if you use the app icon on your phone, open it from there after this. No Universal Links. v=portal1 and the Ace Auth recovery path stay. -->
+<!-- caregiver-build: 2026-09-24-pw-reset-ux v=pwreset1 — Friday GO 2026-09-24. After the email link saves a new password (PUT /auth/v1/user on the recovery session), the reset page stays on “Password saved”. Primary button “Open ECA Aide Portal” goes to the LIVE Pages login https://evercareagency.github.io/caregiver/ . On caregiver Pages, including a tip preview, that button uses location.origin+pathname instead, so the preview login still opens. Forgot redirect_to stays location.origin+pathname (LIVE host, not a localhost redirect). The page follows that login after about 3 seconds. Soft copy: if you use the app icon on your phone, open it from there after this. No Universal Links. v=portal1 and the Ace Auth recovery path stay. -->
 <!-- caregiver-build: 2026-09-24-is-assign-unlock v=isassign1 — Friday GO 2026-09-24. My Inservices unlock and the home due-this-month banner read aide-JWT POST /rest/v1/rpc/my_inservice_topics (a set of topic_id strings). A topic in that set with no Active completion is startable. Completed still hydrates from inservice_results (v=ishydr1). Sheets get_assigned_topic and get_is_reminder are not on the unlock path. Aides still have no Print or View Certificate. v=portal1, ishydr1, cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-aide-portal v=portal1 — Friday GO 2026-09-24. Visible chrome is ECA Aide Portal (title, login headers, home header, PWA name and short_name). Bottom nav is Home, Timesheet, Inservices, More. Clients stay on Home only. Deleting a draft asks first. Client and aide signatures use Confirm and Redo, and each one asks before it keeps or clears the ink. Stay-logged-in TTL is CG_SESSION_MS (8 hours from loginAt). A foreground check clears the session and returns to login when that window ends. Icons A defaults: PORTAL_MARK_HANDS (teal hands+heart) and PORTAL_MARK_CLIPBOARD (navy clipboard). Same drawings live in brand/eca-hands-heart.svg and brand/eca-clipboard.svg for a later pass. The login photo is unchanged. v=cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-is-hydrate v=ishydr1 — Friday GO 2026-09-24. My Inservices hydrates Completed from inservice_results with the aide JWT (username + topic_id) before the list paints. Badge and date come from that row when the office has one. The phone store stays as a cache and in-progress answers are kept. Aides still have no Print or View Certificate. v=cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -448,7 +448,7 @@ else setupEverCarePWA();
     <div id="recoveryDone" style="display:none">
       <h2 id="recoveryDoneTitle" style="color:var(--success)">Password saved</h2>
       <p>Sign in with your new password.</p>
-      <a class="btn btn-teal btn-full" id="recoveryOpenPortal" href="./" onclick="openCaregiverLogin();return false;">Open ECA Aide Portal</a>
+      <a class="btn btn-teal btn-full" id="recoveryOpenPortal" href="https://evercareagency.github.io/caregiver/" onclick="openCaregiverLogin();return false;">Open ECA Aide Portal</a>
       <p id="recoveryDoneHint" style="margin-top:14px;margin-bottom:0">If you use the app icon on your phone, open it from there after this</p>
     </div>
   </div>
@@ -3212,7 +3212,16 @@ function clearPwResetRedirect(){
   }
 }
 function caregiverLoginUrl(){
-  return caregiverRecoverRedirect();
+  const live='https://evercareagency.github.io/caregiver/';
+  try{
+    const origin=String((typeof location!=='undefined'&&location&&location.origin)||'');
+    const path=String((typeof location!=='undefined'&&location&&location.pathname)||'/');
+    let host=String((typeof location!=='undefined'&&location&&location.host)||'').toLowerCase();
+    if(!host&&origin&&origin!=='null')host=origin.replace(/^https?:\/\//,'').split('/')[0].toLowerCase();
+    const local=!host||host==='localhost'||host.indexOf('localhost:')===0||host.indexOf('127.0.0.1')===0||host.indexOf('[::1]')===0||origin==='null'||!origin;
+    if(!local)return origin+path;
+  }catch(e){}
+  return live;
 }
 function openCaregiverLogin(){
   clearPwResetRedirect();
@@ -3246,7 +3255,7 @@ function showRecoveryPasswordSaved(){
   if(done)done.style.display='block';
   const link=document.getElementById('recoveryOpenPortal');
   const login=caregiverLoginUrl();
-  if(link)link.href=login||'./';
+  if(link)link.href=login||'https://evercareagency.github.io/caregiver/';
   window.__sbRecovery=null;
   clearPwResetRedirect();
   if(typeof setTimeout==='function'){

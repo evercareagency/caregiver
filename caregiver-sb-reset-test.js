@@ -30,6 +30,8 @@ assert.ok(html.includes('v=pwreset1'), 'password reset ux marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-pw-reset-ux">'), 'password reset ux meta');
 assert.ok(html.includes('id="recoveryDone"') && html.includes('>Password saved</h2>'), 'success heading stays on the reset page');
 assert.ok(html.includes('id="recoveryOpenPortal"') && html.includes('>Open ECA Aide Portal</a>'), 'portal button is on the reset page');
+assert.ok(html.includes('href="https://evercareagency.github.io/caregiver/"'), 'portal button defaults to LIVE Pages login');
+assert.ok(html.includes("const live='https://evercareagency.github.io/caregiver/'"), 'login fallback is LIVE Pages');
 assert.ok(html.includes('If you use the app icon on your phone, open it from there after this'), 'browser soft copy');
 assert.ok(html.includes('onclick="openCaregiverLogin();return false;"'), 'portal button opens the login url');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
@@ -104,7 +106,7 @@ function harness(opts){
     search: opts.search || '',
     hash: opts.hash || '',
     origin: opts.origin || 'https://caregiver.example',
-    pathname: '/index.html',
+    pathname: opts.pathname || '/index.html',
     assign: function(url){nav.push({op: 'assign', url: String(url)});},
     reload: function(){nav.push({op: 'reload'});}
   };
@@ -257,6 +259,30 @@ function rpcEmail(email){
   assert.strictEqual(recoverCall.init.headers.Authorization, 'Bearer ' + anonKey);
   const redirect = decodeURIComponent(recoverCall.url.split('redirect_to=')[1]);
   assert.strictEqual(redirect, 'https://caregiver.example/index.html');
+  assert.ok(redirect.indexOf('localhost') < 0 && redirect.indexOf('127.0.0.1') < 0, 'preview redirect_to stays on that host');
+
+  const sentLive = harness({
+    origin: 'https://evercareagency.github.io',
+    pathname: '/caregiver/',
+    user: 'mossier',
+    email: 'mo.aide@example.com',
+    rpc: rpcEmail('mo.aide@example.com')
+  });
+  await sentLive.box.verifyReset();
+  const liveRecover = sentLive.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
+  const liveRedirect = decodeURIComponent(liveRecover.url.split('redirect_to=')[1]);
+  assert.strictEqual(liveRedirect, 'https://evercareagency.github.io/caregiver/');
+  assert.ok(liveRedirect.indexOf('localhost') < 0, 'LIVE redirect_to is Pages, not localhost');
+  assert.strictEqual(sentLive.box.caregiverLoginUrl(), 'https://evercareagency.github.io/caregiver/');
+
+  const pagesIndex = harness({origin: 'https://evercareagency.github.io', pathname: '/caregiver/index.html'});
+  assert.strictEqual(pagesIndex.box.caregiverLoginUrl(), 'https://evercareagency.github.io/caregiver/index.html');
+  assert.strictEqual(pagesIndex.box.caregiverRecoverRedirect(), 'https://evercareagency.github.io/caregiver/index.html');
+
+  const localLogin = harness({origin: 'http://127.0.0.1:4173', pathname: '/index.html'});
+  assert.strictEqual(localLogin.box.caregiverLoginUrl(), 'https://evercareagency.github.io/caregiver/');
+  const localhostLogin = harness({origin: 'http://localhost:8080', pathname: '/'});
+  assert.strictEqual(localhostLogin.box.caregiverLoginUrl(), 'https://evercareagency.github.io/caregiver/');
   assert.ok(!sent.calls.some(function(c){return c.url.indexOf('script.google.com') >= 0 || c.url === 'https://sheets.example/exec' || (c.body && c.body.action);}));
   assert.ok(!sent.toasts.some(function(t){return t.indexOf('Password reset!') >= 0;}));
 
@@ -407,6 +433,33 @@ function rpcEmail(email){
   assert.strictEqual(delayed.timers[0].ms, 3000);
   delayed.timers[0].fn();
   assert.deepStrictEqual(delayed.nav, [{op: 'assign', url: 'https://caregiver.example/index.html'}]);
+
+  const pagesSaved = harness({
+    origin: 'https://evercareagency.github.io',
+    pathname: '/caregiver/',
+    recoveryPass: 'new-secret',
+    recoveryConfirm: 'new-secret',
+    window: {__sbRecovery: {access_token: token, refresh_token: 'r'}},
+    aide: {ok: true, status: 200, raw: '[]'}
+  });
+  await pagesSaved.box.submitRecoveryPassword();
+  assert.strictEqual(pagesSaved.nodes.recoveryDoneTitle.textContent, 'Password saved');
+  assert.strictEqual(pagesSaved.nodes.recoveryOpenPortal.href, 'https://evercareagency.github.io/caregiver/');
+  pagesSaved.box.openCaregiverLogin();
+  assert.deepStrictEqual(pagesSaved.nav, [{op: 'reload'}]);
+
+  const localSaved = harness({
+    origin: 'http://localhost:8080',
+    pathname: '/index.html',
+    recoveryPass: 'new-secret',
+    recoveryConfirm: 'new-secret',
+    window: {__sbRecovery: {access_token: token, refresh_token: 'r'}},
+    aide: {ok: true, status: 200, raw: '[]'}
+  });
+  await localSaved.box.submitRecoveryPassword();
+  assert.strictEqual(localSaved.nodes.recoveryOpenPortal.href, 'https://evercareagency.github.io/caregiver/');
+  localSaved.timers[0].fn();
+  assert.deepStrictEqual(localSaved.nav, [{op: 'assign', url: 'https://evercareagency.github.io/caregiver/'}]);
 
   const taken = harness({hash: '#access_token=' + encodeURIComponent(token) + '&refresh_token=r&type=recovery&expires_in=3600'});
   const session = taken.box.sbTakeRecoverySession();
