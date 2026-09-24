@@ -3968,6 +3968,8 @@ function sbSyncSavedDay(i,dayObj){
 // After soft Save Day (backup row id) or Submit, uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
 // If the overlay cannot produce a real letter PDF, temporarily pull Sheets /exec PDF bytes and upload those. Sunday archive stays catch-up only.
 const SB_PDF_BUCKET='evercare-pdfs';
+const SB_PDF_MAX_BYTES=25*1024*1024;
+const SB_PDF_TARGET_BYTES=3*1024*1024;
 const TS_PDF_BLANK='assets/blank-letter.png?v=a713ovl';
 const TS_FORM_PT={
   sheetW:612,sheetH:792,
@@ -4193,6 +4195,24 @@ function sbWaitImg(img,ms){
     setTimeout(finish,ms||8000);
   });
 }
+function sbShrinkCanvas(src,factor){
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round((src.width||1)*factor));
+  c.height=Math.max(1,Math.round((src.height||1)*factor));
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,c.width,c.height);
+  ctx.imageSmoothingEnabled=true;
+  if('imageSmoothingQuality' in ctx)ctx.imageSmoothingQuality='high';
+  ctx.drawImage(src,0,0,c.width,c.height);
+  return c;
+}
+function sbJpegLetterPdf(canvas,quality){
+  const imgData=canvas.toDataURL('image/jpeg',quality);
+  const pdf=new window.jspdf.jsPDF({orientation:'p',unit:'pt',format:'letter',compress:true});
+  pdf.addImage(imgData,'JPEG',0,0,612,792,undefined,'FAST');
+  return pdf.output('blob');
+}
 async function renderTimesheetPdfBlob(r){
   if(!sbPdfLibsReady())throw new Error('pdf lib');
   const container=document.createElement('div');
@@ -4207,18 +4227,15 @@ async function renderTimesheetPdfBlob(r){
     if(!ready)throw new Error('blank form');
     const imgs=container.querySelectorAll('img');
     await Promise.all(Array.prototype.map.call(imgs,function(img){return sbWaitImg(img,4000);}));
-    const canvas=await html2canvas(container,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
-    const pageWidth=612;
-    const pageHeight=792;
-    let blob=null;
-    let quality=0.86;
-    for(let attempt=0;attempt<3;attempt++){
-      const imgData=canvas.toDataURL('image/jpeg',quality);
-      const pdf=new window.jspdf.jsPDF('p','pt','letter');
-      pdf.addImage(imgData,'JPEG',0,0,pageWidth,pageHeight,undefined,'FAST');
-      blob=pdf.output('blob');
-      if(blob.size<=8*1024*1024)break;
-      quality=Math.max(0.5,quality-0.16);
+    // scale 1 downscales the blank letter (scale 2 PNG embed was ~13.8 MB). One JPEG page, no PNG XObject.
+    const canvas=await html2canvas(container,{scale:1,useCORS:true,backgroundColor:'#ffffff'});
+    let blob=await sbJpegLetterPdf(canvas,0.72);
+    if(sbPdfSize(blob)>SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.58);
+    if(sbPdfSize(blob)>SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.46);
+    if(sbPdfSize(blob)>5*1024*1024){
+      const smaller=sbShrinkCanvas(canvas,0.72);
+      blob=await sbJpegLetterPdf(smaller,0.58);
+      if(sbPdfSize(blob)>SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(smaller,0.46);
     }
     return blob;
   }finally{
@@ -4347,7 +4364,7 @@ async function uploadTimesheetPdf(opts){
   if(!(await sbPdfMagicOk(pdfBytes)))throw new Error('PDF bytes are not a PDF.');
   const size=sbPdfSize(pdfBytes);
   if(size<1024)throw new Error('PDF is too small.');
-  if(size>10*1024*1024)throw new Error('PDF is too large.');
+  if(size>SB_PDF_MAX_BYTES)throw new Error('PDF is too large.');
   const objectPath=sbTimesheetObjectPath(orgId,timesheetId);
   await sbStorageUploadPdf(objectPath,pdfBytes);
   await sbRest('timesheets?id=eq.'+encodeURIComponent(timesheetId),{
@@ -4383,6 +4400,10 @@ async function sbWriteTimesheetPdf(timesheetId,record){
   }
   if(!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024){
     try{console.warn('timesheet pdf','overlay and sheets bytes unavailable');}catch(e){}
+    return false;
+  }
+  if(sbPdfSize(bytes)>SB_PDF_MAX_BYTES){
+    try{console.warn('timesheet pdf','over 25MB guard');}catch(e){}
     return false;
   }
   await uploadTimesheetPdf({orgId:orgId,timesheetId:timesheetId,pdfBytes:bytes});

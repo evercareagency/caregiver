@@ -50,6 +50,18 @@ assert.ok(pullFn.includes('SHEETS_URL'), 'fallback reads Sheets /exec');
 assert.ok(pullFn.includes("action:'render_timesheet_pdf'"), 'sheets action is the archive render');
 assert.ok(!/rpc\//.test(pullFn) && !/functions\/v1/.test(pullFn), 'sheets pull is not an Edge call');
 assert.ok(html.includes('nameX:110') && html.includes('dayY0:172.5') && html.includes('commentsY:610'), 'Ace FORM overlay coordinates');
+assert.ok(html.includes('const SB_PDF_MAX_BYTES=25*1024*1024'), 'client upload guard is 25MB');
+assert.ok(html.includes('const SB_PDF_TARGET_BYTES=3*1024*1024'), 'compress target is 3MB');
+assert.ok(!html.includes('10*1024*1024'), '10MB client guard is gone');
+const renderFn = extractFn(html, 'async function renderTimesheetPdfBlob(r)');
+const jpegFn = extractFn(html, 'function sbJpegLetterPdf(canvas,quality)');
+assert.ok(renderFn.includes('scale:1'), 'blank letter is captured at scale 1');
+assert.ok(!renderFn.includes('scale:2'), 'scale 2 capture is not used');
+assert.ok(renderFn.includes('sbJpegLetterPdf'), 'letter page is the JPEG helper');
+assert.ok(renderFn.includes('sbShrinkCanvas'), 'oversize canvas is downscaled');
+assert.ok(jpegFn.includes("toDataURL('image/jpeg'"), 'overlay page is JPEG');
+assert.ok(jpegFn.includes(",'JPEG',"), 'jsPDF embeds JPEG not PNG');
+assert.ok(!jpegFn.includes('image/png') && !renderFn.includes('image/png'), 'overlay PDF does not embed a PNG');
 
 const uploadFn = extractFn(html, 'async function uploadTimesheetPdf(opts)') + '\n' + extractFn(html, 'async function sbStorageUploadPdf(objectPath,pdfBytes)');
 assert.ok(uploadFn.includes('/storage/v1/object/'), 'storage upload');
@@ -351,6 +363,19 @@ function settle(){
   assert.strictEqual(noBytes._msgs.length, 0, 'missing PDF bytes still leaves the day saved');
   assert.strictEqual(noBytes._meta.patch.cloudBackupId, 'ts-9');
   assert.ok(!noBytes.calls.some(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;}), 'no stub is uploaded');
+
+  const fat = run({});
+  fat.sbEnsurePdfLibs = async function(){return true;};
+  fat.renderTimesheetPdfBlob = async function(){
+    const u8 = new Uint8Array(25 * 1024 * 1024 + 64);
+    u8[0] = 0x25; u8[1] = 0x50; u8[2] = 0x44; u8[3] = 0x46; u8[4] = 0x2D;
+    return u8;
+  };
+  const fatOk = await vm.runInContext('sbRefreshTimesheetPdf("ts-9",{"1":{tin:"08:00",aideSig:"a",clientSig:"c"}})', fat);
+  assert.strictEqual(fatOk, false, 'over the 25MB guard soft-fails');
+  assert.strictEqual(fat._msgs.length, 0, 'a too-large PDF does not fail Save Day');
+  assert.ok(!fat.calls.some(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;}), 'over-guard bytes are not uploaded');
+  assert.ok(fat.warnings.some(function(w){return w.indexOf('25MB') >= 0;}), 'over-guard is logged');
 
   console.log('caregiver-sb-pdf checks ok');
 })().catch(function(err){
