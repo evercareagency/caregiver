@@ -13,9 +13,17 @@ function extractFn(src, sig){
   assert.ok(start >= 0, 'missing ' + sig);
   let i = src.indexOf('{', start);
   let depth = 0;
+  let quote = '';
   for(; i < src.length; i++){
-    if(src[i] === '{')depth++;
-    else if(src[i] === '}'){
+    const c = src[i];
+    if(quote){
+      if(c === '\\'){i++; continue;}
+      if(c === quote)quote = '';
+      continue;
+    }
+    if(c === '"' || c === "'" || c === '`'){quote = c; continue;}
+    if(c === '{')depth++;
+    else if(c === '}'){
       depth--;
       if(depth === 0)return src.slice(start, i + 1);
     }
@@ -23,6 +31,9 @@ function extractFn(src, sig){
   throw new Error('unclosed ' + sig);
 }
 
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-bcast1b v=bcast1b —'), 'bcast1b marker');
+assert.ok(html.includes('v=bcast1b'), 'bcast1b probe');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-bcast1b">'), 'bcast1b meta');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-bcast1 v=bcast1 —'), 'bcast marker');
 assert.ok(html.includes('v=bcast1'), 'bcast probe');
 assert.ok(html.includes('v=bcast1-cg') || html.includes('v=bcast1 —'), 'cg probe in comment');
@@ -90,7 +101,13 @@ function boot(opts){
 
   const shapes = [
     {message:'Alert A'},
-    [{message:'Alert A'}]
+    [{message:'Alert A'}],
+    {success:true, data:{message:'Alert A', isActive:true}},
+    {success:true, ok:true, data:{message:'Alert A'}},
+    {ok:true, data:{success:true, data:{message:'Alert A'}}},
+    [{success:true, data:{message:'Alert A'}}],
+    '{"success":true,"data":{"message":"Alert A"}}',
+    'Alert A'
   ];
   for(let i = 0; i < shapes.length; i++){
     const box = boot({data:shapes[i], local:'SHOULD_NOT_READ'});
@@ -99,7 +116,13 @@ function boot(opts){
     assert.ok(box.calls.length === 1, 'shape '+i+' does not read localStorage');
   }
 
-  const emptyCases = [null, '', {}, {message:''}, {message:null}, []];
+  const emptyCases = [
+    null, '', {}, {message:''}, {message:null}, [],
+    {success:true, data:null},
+    {success:true, data:{message:''}},
+    {success:false, data:{message:'Alert A'}},
+    {ok:false, error:'nope', data:{message:'Alert A'}}
+  ];
   for(let i = 0; i < emptyCases.length; i++){
     const box = boot({data:emptyCases[i], local:'stale local'});
     await vm.runInContext('loadBroadcastBanner()', box);
@@ -127,6 +150,38 @@ function boot(opts){
   await vm.runInContext('loadBroadcastBanner()', sheetsEmpty);
   assert.strictEqual(sheetsEmpty.banner.textContent, '', 'sheets rollback hides when store empty');
   assert.ok(!sheetsEmpty.banner.classList.contains('show'), 'sheets empty removes show');
+
+  const late = boot({token:false, data:{success:true, data:{message:'Late alert'}}});
+  let tokenOn = false;
+  late.sbDataEnabled = function(){return tokenOn;};
+  const timers = [];
+  late.setTimeout = function(fn){timers.push(fn); return timers.length;};
+  late.Date = Date;
+  await vm.runInContext('loadBroadcastBanner()', late);
+  assert.strictEqual(late.calls.length, 0, 'missing jwt skips rpc');
+  assert.strictEqual(late.banner.textContent, '', 'missing jwt hides');
+  assert.strictEqual(timers.length, 1, 'arms one jwt watch');
+  tokenOn = true;
+  timers[0]();
+  await new Promise(function(r){setImmediate(r);});
+  assert.strictEqual(late.calls.length, 1, 'jwt within 2s retries the banner once');
+  assert.strictEqual(late.calls[0].q, 'rpc/get_active_broadcast');
+  assert.strictEqual(late.banner.textContent, '🚨 Late alert');
+  assert.ok(late.banner.classList.contains('show'), 'late jwt shows the banner');
+  assert.strictEqual(timers.length, 1, 'retry does not arm a second watch');
+
+  const expired = boot({token:false, data:{success:true, data:{message:'Too late'}}});
+  let now = 10000;
+  expired.sbDataEnabled = function(){return false;};
+  const expiredTimers = [];
+  expired.setTimeout = function(fn){expiredTimers.push(fn); return expiredTimers.length;};
+  expired.Date = {now: function(){return now;}};
+  await vm.runInContext('loadBroadcastBanner()', expired);
+  assert.strictEqual(expiredTimers.length, 1, 'watch waits for the jwt');
+  now = 12000;
+  expiredTimers[0]();
+  assert.strictEqual(expired.calls.length, 0, 'jwt still missing after 2s does not call rpc');
+  assert.strictEqual(expired.banner.textContent, '', 'expired watch stays hidden');
 
   console.log('caregiver-broadcast-test: ok');
 })().catch(function(err){
