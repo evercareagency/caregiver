@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-is-assign-unlock">
 <meta name="caregiver-build" content="2026-09-24-aide-portal">
 <meta name="caregiver-build" content="2026-09-24-is-hydrate">
 <meta name="caregiver-build" content="2026-09-24-cg-pdf-view">
@@ -13,6 +14,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-is-assign-unlock v=isassign1 — Friday GO 2026-09-24. My Inservices unlock and the home due-this-month banner read aide-JWT POST /rest/v1/rpc/my_inservice_topics (a set of topic_id strings). A topic in that set with no Active completion is startable. Completed still hydrates from inservice_results (v=ishydr1). Sheets get_assigned_topic and get_is_reminder are not on the unlock path. Aides still have no Print or View Certificate. v=portal1, ishydr1, cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-aide-portal v=portal1 — Friday GO 2026-09-24. Visible chrome is ECA Aide Portal (title, login headers, home header, PWA name and short_name). Bottom nav is Home, Timesheet, Inservices, More. Clients stay on Home only. Deleting a draft asks first. Client and aide signatures use Confirm and Redo, and each one asks before it keeps or clears the ink. Stay-logged-in TTL is CG_SESSION_MS (8 hours from loginAt). A foreground check clears the session and returns to login when that window ends. Icons A defaults: PORTAL_MARK_HANDS (teal hands+heart) and PORTAL_MARK_CLIPBOARD (navy clipboard). Same drawings live in brand/eca-hands-heart.svg and brand/eca-clipboard.svg for a later pass. The login photo is unchanged. v=cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-is-hydrate v=ishydr1 — Friday GO 2026-09-24. My Inservices hydrates Completed from inservice_results with the aide JWT (username + topic_id) before the list paints. Badge and date come from that row when the office has one. The phone store stays as a cache and in-progress answers are kept. Aides still have no Print or View Certificate. v=cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cg-pdf-view v=cgpdfv1 — Friday GO 2026-09-24. After Save Day, View PDF opens the 1-page US Letter timesheet (blank-letter overlay, 14pt slack, address on page 1). The button is on the open timesheet once a day is saved, not on Home cards. Save Day still uploads that PDF. bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -1324,6 +1326,7 @@ function switchTab(tab){
 // Letter PDF is one page (v=cgpdf1).
 // View PDF after Save Day (v=cgpdfv1). Shown once a day is saved. Not gated on cloudBackupId or pdf_storage_path.
 // Inservice Completed hydrates from inservice_results (v=ishydr1). No aide certificate.
+// Assigned unlock and the home due banner read rpc my_inservice_topics (v=isassign1). No Sheets get_assigned_topic.
 // Backup UUID guard (v=bakuuid1). Phone Date.now / ts_* ids never enter uuid columns.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
@@ -1979,7 +1982,10 @@ function scheduleHomeBackgroundLoads(){
   window._cgPendingBackupRestore=false;
   const run=function(){
     if(evercareSbEnabled()){
-      if(currentUser&&currentUser.sbAccessToken)sbLoadHomeLists(restoreBackups);
+      if(currentUser&&currentUser.sbAccessToken){
+        sbLoadHomeLists(restoreBackups);
+        checkISNotif();
+      }
       return;
     }
     if(aceExecSoft())return;
@@ -6147,14 +6153,36 @@ function goToInservices(){
 function getISData(){return store.get('is_'+currentUser.username)||{};}
 function saveISData(data){store.set('is_'+currentUser.username,data);}
 
-async function getAssignedIS(){
-  const username=currentUser&&currentUser.username;
-  if(!username)return null;
+function sbInserviceTopicSet(raw){
+  const set=new Set();
+  function addId(v){
+    const s=String(v==null?'':v).trim();
+    if(!s||s==='null'||s==='undefined')return;
+    set.add(s);
+  }
+  function walk(v){
+    if(v==null)return;
+    if(Array.isArray(v)){v.forEach(walk);return;}
+    if(typeof v==='object'){
+      if(v.topic_id!=null)addId(v.topic_id);
+      else if(v.topicId!=null)addId(v.topicId);
+      if(Array.isArray(v.topic_ids))v.topic_ids.forEach(addId);
+      else if(Array.isArray(v.topicIds))v.topicIds.forEach(addId);
+      return;
+    }
+    addId(v);
+  }
+  walk(raw);
+  return set;
+}
+// Aide JWT. Ace scopes ALL (aide_usernames null) and SELECTED (username in the array). No Sheets topic id.
+async function sbMyInserviceTopics(){
+  if(typeof sbDataEnabled!=='function'||!sbDataEnabled())return new Set();
   try{
-    const data=await apiPost({action:'get_assigned_topic',username:username});
-    return data.success?data.topicId:null;
+    const got=await sbRest('rpc/my_inservice_topics',{method:'POST',body:{}});
+    return sbInserviceTopicSet(got);
   }catch(e){
-    return null;
+    return new Set();
   }
 }
 
@@ -6202,28 +6230,17 @@ async function checkISNotif(){
   const isData=getISData();
   const banner=document.getElementById('isNotifBanner');
   if(!banner)return;
-  let assigned=null, reminderData=null;
+  let assigned=new Set();
   try{
-    const results=await Promise.all([
-      getAssignedIS(),
-      apiPost({action:'get_is_reminder',username:currentUser.username}).catch(()=>null)
-    ]);
-    assigned=results[0];
-    reminderData=results[1];
+    assigned=await sbMyInserviceTopics();
   }catch(e){}
-  if(!assigned||isData['completed_'+assigned]){banner.style.display='none';return;}
-
-  // Check if admin sent a specific reminder to this aide (from Google Sheets)
-  let myReminder=null;
-  if(reminderData&&reminderData.success)myReminder=reminderData.reminder;
-
-  if(myReminder&&myReminder.topicId==assigned){
-    banner.innerHTML=`&#128226; <strong>Reminder from your office:</strong> Please complete this month's inservice training. Tap here to complete it.`;
-    banner.style.background='var(--danger)';
-  }else{
-    banner.innerHTML=`&#128218; <strong>You have an inservice due this month!</strong> Tap here to complete it.`;
-    banner.style.background='var(--navy)';
-  }
+  let due=false;
+  assigned.forEach(function(id){
+    if(!isData['completed_'+id])due=true;
+  });
+  if(!due){banner.style.display='none';return;}
+  banner.innerHTML='&#128218; <strong>You have an inservice due this month!</strong> Tap here to complete it.';
+  banner.style.background='var(--navy)';
   banner.style.display='block';
 }
 
@@ -6234,11 +6251,11 @@ async function renderISList(){
   if(typeof sbHydrateInserviceCompletions==='function'){
     try{await sbHydrateInserviceCompletions();}catch(e){}
   }
-  const assigned=await getAssignedIS();
+  const assigned=await sbMyInserviceTopics();
   const isData=getISData();
   el.innerHTML=INSERVICES.map(is=>{
     const completed=isData['completed_'+is.id];
-    const isAssigned=assigned==is.id;
+    const isAssigned=assigned.has(String(is.id));
     const locked=!isAssigned&&!completed;
     return '<div class="card" style="margin-bottom:10px;opacity:'+(locked?'0.5':'1')+';border:'+(isAssigned&&!completed?'2px solid var(--teal)':'1px solid var(--border)')+'">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'+
@@ -6339,7 +6356,7 @@ async function submitInservice(){
   }
   document.getElementById('isSuccessMsg').textContent='You have completed this month inservice: "'+currentIS.shortTitle+'". Great job! The office has been notified.';
   showScreen('isSuccessScreen');
-  if(!evercareSbEnabled())checkISNotif();
+  checkISNotif();
 }
 
 function escapeHtml(str){

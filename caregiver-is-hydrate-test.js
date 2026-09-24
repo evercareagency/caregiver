@@ -114,7 +114,7 @@ function run(opts){
       {id: 2, shortTitle: 'Dementia Care', title: 'Dementia: Safety and Support Through Care'},
       {id: 4, shortTitle: 'Falls', title: 'Fall Prevention'}
     ],
-    getAssignedIS: async function(){return null;},
+    sbMyInserviceTopics: async function(){return new Set();},
     sbHydrateInserviceCompletions: async function(){
       paint.hydrated = true;
       paint.isData = {completed_2: 'September 2, 2026', completedAt_2: '2026-09-02T15:00:00.000Z', answers_4: '[0]'};

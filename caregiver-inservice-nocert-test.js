@@ -63,7 +63,7 @@ const sandbox = {
     {id:4, shortTitle:'Falls', title:'Fall Prevention'},
     {id:5, shortTitle:'Nutrition', title:'Nutrition Basics'}
   ],
-  getAssignedIS:async function(){return 4;},
+  sbMyInserviceTopics:async function(){return new Set(['4']);},
   getISData:function(){return {'completed_3':'September 2, 2026'};}
 };
 vm.createContext(sandbox);
