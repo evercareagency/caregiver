@@ -26,6 +26,12 @@ function extractFn(src, sig){
 }
 
 assert.ok(html.includes('v=sbseal1'), 'sealed marker');
+assert.ok(html.includes('v=pwreset1'), 'password reset ux marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-pw-reset-ux">'), 'password reset ux meta');
+assert.ok(html.includes('id="recoveryDone"') && html.includes('>Password saved</h2>'), 'success heading stays on the reset page');
+assert.ok(html.includes('id="recoveryOpenPortal"') && html.includes('>Open ECA Aide Portal</a>'), 'portal button is on the reset page');
+assert.ok(html.includes('If you use the app icon on your phone, open it from there after this'), 'browser soft copy');
+assert.ok(html.includes('onclick="openCaregiverLogin();return false;"'), 'portal button opens the login url');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
 assert.ok(!html.includes('reset_aide_own_password'), 'in-modal Auth password rpc is not the cut path');
 assert.ok(!html.includes('reset_aide_temp_password'), 'office temp-password rpc is not called');
@@ -42,6 +48,9 @@ assert.ok(verifyFn && resetFn && signupFn && recoverFn && submitFn && setupFn);
 assert.ok(setupFn.includes("method:'PUT'") && setupFn.includes('/auth/v1/user'), 'logged-in setup still updates Auth');
 assert.ok(submitFn.includes("method:'PUT'") && submitFn.includes('/auth/v1/user'), 'recovery landing updates Auth');
 assert.ok(submitFn.includes('clearAideMustChangeAfterRecovery'), 'recovery landing clears the aide flag');
+assert.ok(submitFn.includes('showRecoveryPasswordSaved'), 'recovery landing shows the saved state');
+assert.ok(!submitFn.includes("showScreen('authScreen')"), 'recovery landing does not skip the saved state');
+assert.ok(!submitFn.includes('Password updated. Please log in.'), 'recovery landing does not use a disappearing toast');
 assert.ok(extractFn(html, 'async function clearAideMustChangeAfterRecovery(token)').includes('must_change_password:false'));
 assert.ok(recoverFn.includes('/auth/v1/recover'), 'forgot password sends a recovery email');
 assert.ok(!recoverFn.includes('reset_password') && !submitFn.includes('SHEETS_URL'), 'recovery path does not write Sheets');
@@ -88,11 +97,16 @@ function harness(opts){
   const alerts = [];
   const screens = [];
   const replaced = [];
+  const nav = [];
+  const timers = [];
+  let timerSeq = 0;
   const loc = {
     search: opts.search || '',
     hash: opts.hash || '',
     origin: opts.origin || 'https://caregiver.example',
-    pathname: '/index.html'
+    pathname: '/index.html',
+    assign: function(url){nav.push({op: 'assign', url: String(url)});},
+    reload: function(){nav.push({op: 'reload'});}
   };
   const nodes = {
     reset_user: field(opts.user),
@@ -114,7 +128,12 @@ function harness(opts){
     recovery_confirm: field(opts.recoveryConfirm),
     recoveryErr: field('', 'none'),
     recoveryBtn: {textContent: 'Save password', disabled: false, style: {}},
-    recoveryScreen: {classList: {add: function(){}, remove: function(){}}}
+    recoveryScreen: {classList: {add: function(){}, remove: function(){}}},
+    recoveryForm: {style: {display: ''}},
+    recoveryDone: {style: {display: 'none'}},
+    recoveryDoneTitle: {textContent: 'Password saved'},
+    recoveryDoneHint: {textContent: 'If you use the app icon on your phone, open it from there after this', style: {}},
+    recoveryOpenPortal: {textContent: 'Open ECA Aide Portal', href: './'}
   };
   nodes.resetVerifyBtn.textContent = 'Send reset link →';
   const box = {
@@ -144,6 +163,14 @@ function harness(opts){
       querySelectorAll: function(){return [];}
     },
     alert: function(msg){alerts.push(msg);},
+    setTimeout: function(fn, ms){
+      timerSeq += 1;
+      timers.push({id: timerSeq, fn: fn, ms: ms, cleared: false});
+      return timerSeq;
+    },
+    clearTimeout: function(id){
+      timers.forEach(function(t){if(t.id === id)t.cleared = true;});
+    },
     closeModal: function(id){closed.push(id);},
     showTempMsg: function(msg){toasts.push(msg);},
     showScreen: function(id){screens.push(id);},
@@ -191,6 +218,10 @@ function harness(opts){
     extractFn(html, 'async function sendAideRecoveryEmail(email)'),
     extractFn(html, 'function sbReadAuthParams(raw)'),
     extractFn(html, 'function sbTakeRecoverySession()'),
+    extractFn(html, 'function clearPwResetRedirect()'),
+    extractFn(html, 'function caregiverLoginUrl()'),
+    extractFn(html, 'function openCaregiverLogin()'),
+    extractFn(html, 'function showRecoveryPasswordSaved()'),
     extractFn(html, 'async function clearAideMustChangeAfterRecovery(token)'),
     submitFn,
     verifyFn,
@@ -199,7 +230,7 @@ function harness(opts){
   ].join('\n');
   vm.createContext(box);
   vm.runInContext(src, box);
-  return {calls: calls, box: box, nodes: nodes, toasts: toasts, closed: closed, alerts: alerts, screens: screens, replaced: replaced};
+  return {calls: calls, box: box, nodes: nodes, toasts: toasts, closed: closed, alerts: alerts, screens: screens, replaced: replaced, nav: nav, timers: timers};
 }
 
 function rpcEmail(email){
@@ -305,9 +336,21 @@ function rpcEmail(email){
     patch: {ok: true, status: 204, raw: ''}
   });
   await landed.box.submitRecoveryPassword();
-  assert.deepStrictEqual(landed.toasts, ['Password updated. Please log in.']);
-  assert.deepStrictEqual(landed.screens, ['authScreen']);
+  assert.deepStrictEqual(landed.toasts, []);
+  assert.deepStrictEqual(landed.screens, []);
+  assert.strictEqual(landed.nodes.recoveryForm.style.display, 'none');
+  assert.strictEqual(landed.nodes.recoveryDone.style.display, 'block');
+  assert.strictEqual(landed.nodes.recoveryDoneTitle.textContent, 'Password saved');
+  assert.strictEqual(landed.nodes.recoveryOpenPortal.textContent, 'Open ECA Aide Portal');
+  assert.strictEqual(landed.nodes.recoveryOpenPortal.href, 'https://caregiver.example/index.html');
+  assert.strictEqual(landed.nodes.recoveryDoneHint.textContent, 'If you use the app icon on your phone, open it from there after this');
   assert.strictEqual(landed.box.window.__sbRecovery, null);
+  assert.strictEqual(landed.timers.length, 1);
+  assert.strictEqual(landed.timers[0].ms, 3000);
+  assert.strictEqual(landed.timers[0].cleared, false);
+  landed.box.openCaregiverLogin();
+  assert.strictEqual(landed.timers[0].cleared, true);
+  assert.deepStrictEqual(landed.nav, [{op: 'reload'}]);
   const put = landed.calls.filter(function(c){return c.url.indexOf('/auth/v1/user') >= 0;})[0];
   const patch = landed.calls.filter(function(c){return c.init.method === 'PATCH';})[0];
   assert.strictEqual(put.init.method, 'PUT');
@@ -328,6 +371,9 @@ function rpcEmail(email){
   await putFails.box.submitRecoveryPassword();
   assert.deepStrictEqual(putFails.toasts, []);
   assert.strictEqual(putFails.nodes.recoveryErr.textContent, 'Password should be at least 6 characters.');
+  assert.strictEqual(putFails.nodes.recoveryDone.style.display, 'none');
+  assert.strictEqual(putFails.nodes.recoveryForm.style.display, '');
+  assert.deepStrictEqual(putFails.timers, []);
   assert.ok(!putFails.calls.some(function(c){return c.init.method === 'PATCH';}));
   assert.ok(putFails.box.window.__sbRecovery);
 
@@ -342,7 +388,25 @@ function rpcEmail(email){
     }
   });
   await patchFails.box.submitRecoveryPassword();
-  assert.deepStrictEqual(patchFails.toasts, ['Password updated. Please log in.'], 'Auth password stands if the flag patch fails');
+  assert.deepStrictEqual(patchFails.toasts, [], 'Auth password stands if the flag patch fails');
+  assert.strictEqual(patchFails.nodes.recoveryDone.style.display, 'block');
+  assert.strictEqual(patchFails.nodes.recoveryOpenPortal.href, 'https://caregiver.example/index.html');
+  assert.strictEqual(patchFails.box.window.__sbRecovery, null);
+
+  const delayed = harness({
+    search: '?from=email',
+    recoveryPass: 'new-secret',
+    recoveryConfirm: 'new-secret',
+    window: {__sbRecovery: {access_token: token, refresh_token: 'r'}},
+    aide: {ok: true, status: 200, raw: JSON.stringify([{id: aideId}])},
+    patch: {ok: true, status: 204, raw: ''}
+  });
+  await delayed.box.submitRecoveryPassword();
+  assert.strictEqual(delayed.nodes.recoveryOpenPortal.href, 'https://caregiver.example/index.html');
+  assert.strictEqual(delayed.timers.length, 1);
+  assert.strictEqual(delayed.timers[0].ms, 3000);
+  delayed.timers[0].fn();
+  assert.deepStrictEqual(delayed.nav, [{op: 'assign', url: 'https://caregiver.example/index.html'}]);
 
   const taken = harness({hash: '#access_token=' + encodeURIComponent(token) + '&refresh_token=r&type=recovery&expires_in=3600'});
   const session = taken.box.sbTakeRecoverySession();
