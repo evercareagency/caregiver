@@ -324,6 +324,9 @@ function run(opts){
   const sheetsBackup = extractFn(html, 'async function doCloudBackup()');
   assert.ok(sheetsBackup.includes("action:'save_timesheet_backup'"));
   assert.ok(sheetsBackup.indexOf('evercareSbEnabled()') < sheetsBackup.indexOf('apiPost(payload)'));
+  const loc = extractFn(html, 'function saveLocationStatus(status)');
+  assert.ok(loc.includes("action:'save_location_status'"), 'sheets rollback can still post location');
+  assert.ok(loc.indexOf('evercareSbEnabled()') < loc.indexOf('SHEETS_URL'), 'default Save Day and submit do not post location to /exec');
 
   console.log('caregiver-sb-data checks ok');
 })().catch(function(err){
