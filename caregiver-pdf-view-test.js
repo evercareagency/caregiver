@@ -46,6 +46,9 @@ assert.ok(/id="viewPdfBtn"[^>]*style="display:none/.test(html), 'View PDF starts
 assert.ok(html.includes('id="viewPdfFrame"'), 'on-page PDF frame');
 assert.ok(!html.includes('cloudBackupId') || !extractFn(html, 'function cgPaintViewPdf()').includes('cloudBackupId'), 'View PDF is not gated on cloudBackupId');
 assert.ok(!extractFn(html, 'function viewSavedTimesheetPdf()').includes('pdf_storage_path'), 'View PDF is not gated on pdf_storage_path');
+assert.ok(!extractFn(html, 'function renderTSHome()').includes('View PDF'), 'home cards have no View PDF');
+assert.ok(!extractFn(html, 'function renderTSHome()').includes('viewPdf'), 'home cards have no PDF control');
+assert.ok(extractFn(html, 'function renderTSHome()').includes("submitted?'':' onclick"), 'submitted home cards stay non-interactive');
 assert.ok(!extractFn(html, 'async function renderISList()').includes('View PDF'), 'inservice list does not gain View PDF');
 assert.ok(!/Print Certificate|View Cert/i.test(extractFn(html, 'async function renderISList()')), 'aide cert strip stays absent');
 
@@ -58,6 +61,14 @@ assert.ok(sync.includes('sbRefreshTimesheetPdf(row.id)'), 'Save Day still refres
 const write = extractFn(html, 'async function sbWriteTimesheetPdf(timesheetId,record)');
 assert.ok(write.includes('window.__cgViewPdfBlob'), 'a produced PDF blob is kept for View PDF');
 assert.ok(write.includes('renderTimesheetPdfBlob'), 'Save Day PDF still uses the letter overlay');
+assert.ok(write.indexOf('renderTimesheetPdfBlob') < write.indexOf('uploadTimesheetPdf'), 'Save Day still uploads the rendered PDF');
+const upload = extractFn(html, 'async function uploadTimesheetPdf(opts)');
+const storage = extractFn(html, 'async function sbStorageUploadPdf(objectPath,pdfBytes)');
+assert.ok(upload.includes('sbStorageUploadPdf'), 'Save Day posts the PDF bytes');
+assert.ok(storage.includes("'Content-Type':'application/pdf'"), 'storage upload is application/pdf');
+assert.ok(storage.includes('/storage/v1/object/'), 'storage upload hits the PDF bucket');
+assert.ok(upload.includes('pdf_storage_path:objectPath'), 'storage upload patches pdf_storage_path');
+assert.ok(upload.includes("doc_kind:'timesheet'"), 'storage upload writes pdf_documents');
 const view = extractFn(html, 'async function viewSavedTimesheetPdf()');
 assert.ok(view.includes('cgRenderSavedTimesheetPdf'), 'View PDF renders the saved timesheet');
 assert.ok(view.includes('cgShowTimesheetPdf'), 'View PDF shows the blob');
