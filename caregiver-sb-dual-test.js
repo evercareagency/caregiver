@@ -335,7 +335,8 @@ async function runBrowser(){
   holdSb=new Promise(function(resolve){releaseSb=resolve;});
   await openFresh(base);
   assert.strictEqual(sbCalls.length,0,'default page does not call supabase before sign-in');
-  assert.ok(sheetsActions.indexOf('ping')>=0,'warm /exec ping still runs on the default cut');
+  assert.ok(sheetsActions.indexOf('ping')<0,'supabase cut does not warm-ping /exec before login');
+  assert.ok(sheetsActions.indexOf('GET')<0,'supabase cut does not GET-warm /exec before login');
   await signIn();
   await new Promise(function(r){setTimeout(r,250);});
   const held=await page.evaluate(function(){
@@ -392,6 +393,8 @@ async function runBrowser(){
   assert.strictEqual(backupCall.authorization,'Bearer jwt-test-token');
   assert.ok(sheetsActions.indexOf('get_clients')<0,'flag on does not list clients through sheets');
   assert.ok(sheetsActions.indexOf('get_my_backups')<0,'flag on does not list backups through sheets');
+  assert.ok(sheetsActions.indexOf('ping')<0,'flag on does not warm-ping /exec on login');
+  assert.ok(sheetsActions.indexOf('GET')<0,'flag on does not GET-warm /exec on login');
 
   rpcMode='null';
   authMode='ok';
