@@ -4,11 +4,13 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-backup-uuid">
 <meta name="caregiver-build" content="2026-09-24-cg-pdf-1page">
 <meta name="caregiver-build" content="2026-09-24-save-home">
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-backup-uuid v=bakuuid1 — Friday GO 2026-09-24. Backup and the offline Save Day flush send only Supabase UUIDs for timesheets.id, org_id, aide_id, and client_id. INSERT omits id (the server generates it). A draft with no assigned client UUID is blocked with “Pick a client first.” and is not posted. Home cards take the client name from assignments. A Sheets or phone millisecond id may be stored only as legacy_id. Letter PDF v=cgpdf1, Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cg-pdf-1page v=cgpdf1 — Timesheet View PDF / print / Save Day PDF is one US Letter page at 100% scale. The blank-letter overlay stays the paper form; jsPDF insets it by TS_PDF_PAGE_SLACK_PT so the office address stays on page 1. Print CSS uses @page{size:letter;margin:0} and hides the site footer. Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-save-home v=home1 — Friday GO 2026-09-24. Save Day stays on the timesheet. Successful full-week submit returns to Caregiver Home. Aide list is a client-filter (Ace: no query this slice): drafts and sent-back always, fully submitted limited to the 2 most recent week_start values. Offline queue flush, Auth seal v=sbseal1, and inservice nocert v=nocert1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-inservice-nocert v=nocert1 — Friday GO 2026-09-24. Caregiver My Inservices completed cards show a Completed badge and completion date only. Aides have no Print or View Certificate. Auth seal v=sbseal1 and Offline Save Day v=offline1 unchanged. -->
@@ -1128,6 +1130,7 @@ function switchTab(tab){
 // Friday GO 2026-09-24 cut (v=sbseal1). Default true. No new Ace RPC.
 // Offline Save Day queue (v=offline1) flushes through Supabase when a caregiver JWT is valid.
 // Letter PDF is one page (v=cgpdf1).
+// Backup UUID guard (v=bakuuid1). Phone Date.now / ts_* ids never enter uuid columns.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
 // surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
@@ -3639,10 +3642,68 @@ function totalHoursFromWeekData(wd){
   return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
 }
 
+function sbIsUuid(value){
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value==null?'':value).trim());
+}
+function sbLegacyMs(value){
+  const s=String(value==null?'':value).trim();
+  if(/^\d{11,16}$/.test(s))return s;
+  const hit=/^ts_(\d{11,16})(?:_|$)/.exec(s);
+  return hit?hit[1]:'';
+}
+function sbClientRoster(){
+  try{return (typeof myClients!=='undefined'&&Array.isArray(myClients))?myClients:[];}catch(e){return [];}
+}
+function sbAssignedClient(id){
+  if(!sbIsUuid(id))return null;
+  const want=String(id).trim().toLowerCase();
+  const list=sbClientRoster();
+  for(let i=0;i<list.length;i++){
+    const c=list[i];
+    if(c&&sbIsUuid(c.id)&&String(c.id).trim().toLowerCase()===want)return c;
+  }
+  return null;
+}
+function draftOfficeClient(ts){
+  if(!ts)return null;
+  const byId=sbAssignedClient(ts.clientId);
+  if(byId)return byId;
+  if(typeof getSelectedClient==='function'&&typeof currentTS!=='undefined'&&currentTS&&ts.id===currentTS){
+    const sel=getSelectedClient();
+    const picked=sel&&sbAssignedClient(sel.id);
+    if(picked)return picked;
+  }
+  const roster=sbClientRoster();
+  if(!roster.length&&sbIsUuid(ts.clientId)){
+    return {id:String(ts.clientId).trim(),name:String(ts.clientName||'').trim()};
+  }
+  const name=String(ts.clientName||'').trim().toLowerCase();
+  if(!name)return null;
+  let hit=null;
+  for(let i=0;i<roster.length;i++){
+    const c=roster[i];
+    if(!c||!sbIsUuid(c.id))continue;
+    if(String(c.name||'').trim().toLowerCase()!==name)continue;
+    if(hit)return null;
+    hit=c;
+  }
+  return hit;
+}
+function homeClientLabel(ts){
+  const office=draftOfficeClient(ts);
+  const hydrated=office&&String(office.name||'').trim();
+  if(hydrated)return hydrated;
+  const stored=String(ts&&ts.clientName||'').trim();
+  return stored||'No client name yet';
+}
 function askCloudBackup(){
   if(!currentUser){showTempMsg('Please log in first.','var(--danger)');return;}
   const ts=getBackupTargetTS();
   if(!ts){showTempMsg('No draft week to back up.','var(--danger)');return;}
+  if(evercareSbEnabled()){
+    const office=draftOfficeClient(ts);
+    if(!office||!sbIsUuid(office.id)){showTempMsg('Pick a client first.','var(--danger)');return;}
+  }
   openModal('backupConfirmModal');
 }
 
@@ -3652,12 +3713,46 @@ async function doCloudBackup(){
   const ts=getBackupTargetTS();
   if(!ts){showTempMsg('No draft week to back up.','var(--danger)');return;}
   const weekData=daysPayloadFromWeekData(weekDataForTS(ts.id));
-  const clientName=ts.clientName||'';
-  const clientId=ts.clientId||'';
+  const office=evercareSbEnabled()?draftOfficeClient(ts):null;
+  const clientName=(office&&office.name)||ts.clientName||'';
+  const clientId=(office&&office.id)||(evercareSbEnabled()?'':(ts.clientId||''));
   const weekStart=ts.weekStart||'';
   const notes=ts.notes||'';
   const svcType=ts.svcType||'Personal Care/Home Making';
   const totalHrs=totalHoursFromWeekData(weekData);
+  if(evercareSbEnabled()){
+    if(!office||!sbIsUuid(office.id)){showTempMsg('Pick a client first.','var(--danger)');return;}
+    if(!sbDataEnabled()){showTempMsg('Sign in again.','var(--danger)');return;}
+    try{
+      showTempMsg('Backing up to office...','var(--teal)');
+      const row=await sbUpsertTimesheet({
+        clientId:String(office.id).trim(),
+        weekStart:weekStart,
+        days:weekData,
+        status:'backup',
+        legacyId:ts.id,
+        header:{
+          total_hours:totalHrs,
+          notes:notes,
+          emp_name:currentUser.name,
+          client_name:clientName,
+          username:currentUser.username,
+          svc_type:svcType
+        }
+      });
+      const cloudId=row&&sbIsUuid(row.id)?String(row.id).trim():'';
+      const meta={clientId:String(office.id).trim(),clientName:clientName||ts.clientName||''};
+      if(cloudId)meta.cloudBackupId=cloudId;
+      updateTSMeta(ts.id,meta);
+      if(!cloudId)throw new Error('Office backup did not return an id.');
+      showTempMsg('✅ Backed up to office!','var(--success)');
+      renderTSHome();
+      return;
+    }catch(e){
+      showTempMsg((e&&e.message)||'Backup failed — check connection.','var(--danger)');
+      return;
+    }
+  }
   const payload={
     action:'save_timesheet_backup',
     username:currentUser.username,
@@ -3673,27 +3768,6 @@ async function doCloudBackup(){
   if(ts.cloudBackupId)payload.id=ts.cloudBackupId;
   try{
     showTempMsg('Backing up to office...','var(--teal)');
-    if(evercareSbEnabled()){
-      if(!sbDataEnabled())throw new Error('Sign in again.');
-      const row=await sbUpsertTimesheet({
-        clientId:clientId,
-        weekStart:weekStart,
-        days:weekData,
-        status:'backup',
-        header:{
-          total_hours:totalHrs,
-          notes:notes,
-          emp_name:currentUser.name,
-          client_name:clientName,
-          username:currentUser.username,
-          svc_type:svcType
-        }
-      });
-      if(row&&row.id)updateTSMeta(ts.id,{cloudBackupId:row.id,clientId:clientId||ts.clientId||''});
-      showTempMsg('✅ Backed up to office!','var(--success)');
-      renderTSHome();
-      return;
-    }
     const data=await apiPost(payload);
     if(data&&data.success){
       if(data.id!=null)updateTSMeta(ts.id,{cloudBackupId:data.id});
@@ -3912,7 +3986,7 @@ function renderTSHome(){
     const open=submitted?'':' onclick="openTS(&quot;'+ts.id+'&quot;)"';
     return '<div class="card" style="margin-bottom:10px;cursor:'+(submitted?'default':'pointer')+';border:1.5px solid '+border+'"'+open+'>'+
       '<div style="display:flex;align-items:center;justify-content:space-between">'+
-      '<div><p style="font-weight:600;color:var(--navy);font-size:0.9rem">'+(ts.clientName||'No client name yet')+(sentBack?' <span style="color:var(--warn);font-size:0.72rem">Needs correction</span>':'')+(submitted?' <span style="color:var(--muted);font-size:0.72rem">Submitted</span>':'')+'</p>'+
+      '<div><p style="font-weight:600;color:var(--navy);font-size:0.9rem">'+homeClientLabel(ts)+(sentBack?' <span style="color:var(--warn);font-size:0.72rem">Needs correction</span>':'')+(submitted?' <span style="color:var(--muted);font-size:0.72rem">Submitted</span>':'')+'</p>'+
       '<p style="font-size:0.72rem;color:var(--muted);margin-top:2px">'+sub+'</p></div>'+
       '<div style="color:'+border+';font-size:18px">'+(submitted?'':'&#8250;')+'</div>'+
       '</div></div>';
@@ -4073,11 +4147,14 @@ function sbNormalizeDays(days){
   return out;
 }
 async function sbFindWeekRow(aideId,clientId,weekStart,status){
+  if(!sbIsUuid(aideId)||!sbIsUuid(clientId)||!weekStart)return null;
   let q='timesheets?select='+encodeURIComponent('id,days,status')
-    +'&aide_id=eq.'+encodeURIComponent(aideId)
-    +'&client_id=eq.'+encodeURIComponent(clientId)
+    +'&org_id=eq.'+encodeURIComponent(String((currentUser&&currentUser.sbOrgId)||'').trim())
+    +'&aide_id=eq.'+encodeURIComponent(String(aideId).trim())
+    +'&client_id=eq.'+encodeURIComponent(String(clientId).trim())
     +'&week_start=eq.'+encodeURIComponent(weekStart)
     +'&is_active=eq.true&limit=1';
+  if(!sbIsUuid(currentUser&&currentUser.sbOrgId))return null;
   if(status)q+='&status=eq.'+encodeURIComponent(status);
   const rows=await sbRest(q);
   return (Array.isArray(rows)&&rows[0])||null;
@@ -4099,14 +4176,37 @@ function sbMergeDaysReplace(base,incoming){
 function sbKeepSubmitted(existing,status){
   return !!(existing&&String(existing.status||'').toLowerCase()==='submitted'&&status!=='submitted');
 }
+function sbPatchTimesheet(id,body){
+  if(!sbIsUuid(id))throw new Error('Office backup did not return an id.');
+  const patch=Object.assign({},body||{});
+  delete patch.id;
+  delete patch.local_id;
+  delete patch.client_op_id;
+  delete patch.org_id;
+  delete patch.aide_id;
+  delete patch.client_id;
+  delete patch.week_start;
+  delete patch.is_active;
+  delete patch.legacy_id;
+  return sbRest('timesheets?id=eq.'+encodeURIComponent(String(id).trim()),{
+    method:'PATCH',
+    headers:{Prefer:'return=representation'},
+    body:patch
+  });
+}
 async function sbUpsertTimesheet(opts){
   opts=opts||{};
-  const aideId=currentUser&&currentUser.sbAideId;
-  const clientId=opts.clientId;
+  const aideId=sbIsUuid(currentUser&&currentUser.sbAideId)?String(currentUser.sbAideId).trim():'';
+  const clientId=sbIsUuid(opts.clientId)?String(opts.clientId).trim():'';
   const weekStart=sbWeekSunday(opts.weekStart);
   const status=opts.status==='submitted'?'submitted':'backup';
-  if(!aideId||!clientId||!weekStart)throw new Error('Choose a client and week before saving.');
-  const orgId=await sbEnsureOrgId();
+  if(!aideId)throw new Error('Sign in again.');
+  if(!clientId)throw new Error('Pick a client first.');
+  if(!weekStart)throw new Error('Choose a client and week before saving.');
+  const orgRaw=await sbEnsureOrgId();
+  const orgId=sbIsUuid(orgRaw)?String(orgRaw).trim():'';
+  if(!orgId)throw new Error('Missing office id for this account.');
+  if(currentUser)currentUser.sbOrgId=orgId;
   const header=opts.header||{};
   const incoming=sbNormalizeDays(opts.days||{});
   const existing=await sbFindWeekRow(aideId,clientId,weekStart,'');
@@ -4122,7 +4222,7 @@ async function sbUpsertTimesheet(opts){
     username:header.username||(currentUser&&currentUser.username)||'',
     svc_type:header.svc_type||''
   };
-  if(existing&&existing.id){
+  if(existing&&sbIsUuid(existing.id)){
     if(status==='submitted'){
       body.status='submitted';
       body.submitted_at=new Date().toISOString();
@@ -4130,69 +4230,82 @@ async function sbUpsertTimesheet(opts){
       body.status='backup';
       body.submitted_at=null;
     }
-    const updated=await sbRest('timesheets?id=eq.'+encodeURIComponent(existing.id),{
-      method:'PATCH',
-      headers:{Prefer:'return=representation'},
-      body:body
-    });
+    const updated=await sbPatchTimesheet(existing.id,body);
     return Array.isArray(updated)?updated[0]:updated;
   }
-  if(!orgId)throw new Error('Missing office id for this account.');
-  body.org_id=orgId;
-  body.aide_id=aideId;
-  body.client_id=clientId;
-  body.week_start=weekStart;
-  body.status=status;
-  body.is_active=true;
-  body.submitted_at=status==='submitted'?new Date().toISOString():null;
+  const insert={
+    days:body.days,
+    total_hours:body.total_hours,
+    notes:body.notes,
+    emp_name:body.emp_name,
+    client_name:body.client_name,
+    username:body.username,
+    svc_type:body.svc_type,
+    org_id:orgId,
+    aide_id:aideId,
+    client_id:clientId,
+    week_start:weekStart,
+    status:status,
+    is_active:true,
+    submitted_at:status==='submitted'?new Date().toISOString():null
+  };
+  const legacy=sbLegacyMs(opts.legacyId);
+  if(legacy)insert.legacy_id=legacy;
+  delete insert.id;
+  delete insert.local_id;
+  delete insert.client_op_id;
   try{
     const inserted=await sbRest('timesheets',{
       method:'POST',
       headers:{Prefer:'return=representation'},
-      body:body
+      body:insert
     });
     return Array.isArray(inserted)?inserted[0]:inserted;
   }catch(err){
     if(!sbIsConflict(err))throw err;
     const again=await sbFindWeekRow(aideId,clientId,weekStart,'');
-    if(!again||!again.id)throw err;
-    const retry=Object.assign({},body);
-    delete retry.org_id;delete retry.aide_id;delete retry.client_id;delete retry.week_start;delete retry.is_active;
+    if(!again||!sbIsUuid(again.id))throw err;
+    const retry={
+      days:status==='submitted'?incoming:sbMergeDaysReplace(sbNormalizeDays(again.days),incoming),
+      total_hours:body.total_hours,
+      notes:body.notes,
+      emp_name:body.emp_name,
+      client_name:body.client_name,
+      username:body.username,
+      svc_type:body.svc_type
+    };
     const keepAgain=sbKeepSubmitted(again,status);
     if(status==='submitted'){
       retry.status='submitted';
       retry.submitted_at=new Date().toISOString();
-    }else if(keepAgain){
-      retry.days=sbMergeDaysReplace(sbNormalizeDays(again.days),incoming);
-      delete retry.status;
-      delete retry.submitted_at;
-    }else{
-      retry.days=sbMergeDaysReplace(sbNormalizeDays(again.days),incoming);
+    }else if(!keepAgain){
       retry.status='backup';
       retry.submitted_at=null;
     }
-    const updated=await sbRest('timesheets?id=eq.'+encodeURIComponent(again.id),{
-      method:'PATCH',
-      headers:{Prefer:'return=representation'},
-      body:retry
-    });
+    const updated=await sbPatchTimesheet(again.id,retry);
     return Array.isArray(updated)?updated[0]:updated;
   }
 }
 function sbSyncSavedDay(i,dayObj){
   const ts=(typeof getAllTimesheets==='function'?getAllTimesheets():[]).find(function(t){return t.id===currentTS;})||{};
   const client=typeof getSelectedClient==='function'?getSelectedClient():null;
-  const clientId=(client&&client.id)||ts.clientId||'';
+  const rawId=(client&&client.id)||ts.clientId||'';
+  const clientId=sbIsUuid(rawId)?String(rawId).trim():'';
   const weekEl=document.getElementById('cg_weekstart');
   const weekStart=(weekEl&&weekEl.value)||ts.weekStart||'';
   const days={};
   days[String(i)]=sbDayWire(dayObj);
   const svcEl=document.getElementById('cg_svctype');
+  if(!clientId){
+    try{cgEnqueueSaveDay(i,dayObj);}catch(e){}
+    return;
+  }
   sbUpsertTimesheet({
     clientId:clientId,
     weekStart:weekStart,
     days:days,
     status:'backup',
+    legacyId:ts.id,
     header:{
       total_hours:typeof totalHoursFromWeekData==='function'?totalHoursFromWeekData(getUserWeekData()):(dayObj&&dayObj.hrs)||'',
       notes:ts.notes||((document.getElementById('cg_notes')||{}).value)||'',
@@ -4202,8 +4315,11 @@ function sbSyncSavedDay(i,dayObj){
       svc_type:ts.svcType||(svcEl&&svcEl.value)||''
     }
   }).then(function(row){
-    if(row&&row.id&&currentTS&&typeof updateTSMeta==='function')updateTSMeta(currentTS,{cloudBackupId:row.id,clientId:clientId});
-    if(row&&row.id)sbRefreshTimesheetPdf(row.id);
+    if(row&&sbIsUuid(row.id)){
+      const cloudId=String(row.id).trim();
+      if(currentTS&&typeof updateTSMeta==='function')updateTSMeta(currentTS,{cloudBackupId:cloudId,clientId:clientId});
+      sbRefreshTimesheetPdf(row.id);
+    }
   }).catch(function(){
     try{cgEnqueueSaveDay(i,dayObj);}catch(e){}
     try{window._cgQueuePhase='error';cgPaintOfflineQueue();}catch(e){}
@@ -4639,11 +4755,13 @@ async function sbEnsureCaregiverJwt(){
 }
 async function cgFlushPdfOp(op){
   op=op||{};
-  let timesheetId=op.timesheet_id||'';
-  if(!timesheetId&&op.aide_id&&op.client_id&&op.week_start&&typeof sbFindWeekRow==='function'){
+  let timesheetId=sbIsUuid(op.timesheet_id)?String(op.timesheet_id).trim():'';
+  if(!timesheetId&&sbIsUuid(op.aide_id)&&sbIsUuid(op.client_id)&&op.week_start&&typeof sbFindWeekRow==='function'){
     const row=await sbFindWeekRow(op.aide_id,op.client_id,op.week_start,'');
-    timesheetId=(row&&row.id)||'';
-    if(timesheetId)op.timesheet_id=timesheetId;
+    if(row&&sbIsUuid(row.id)){
+      timesheetId=String(row.id).trim();
+      op.timesheet_id=timesheetId;
+    }
   }
   if(!timesheetId)return false;
   let bytes=await cgPdfBytesGet(op.client_op_id);
@@ -4688,6 +4806,7 @@ async function cgFlushWeek(ops,force){
     const op=dataOps[i];
     try{
       cgUpdateOp(op.client_op_id,{status:'uploading',last_error:''});
+      if(!sbIsUuid(op.client_id))throw new Error('Pick a client first.');
       const row=await sbUpsertTimesheet({
         clientId:op.client_id,
         weekStart:op.week_start,
@@ -4695,7 +4814,7 @@ async function cgFlushWeek(ops,force){
         status:op.kind==='submit'?'submitted':'backup',
         header:op.header||{}
       });
-      if(row&&row.id)cgStampWeekTimesheetId(op,row.id);
+      if(row&&sbIsUuid(row.id))cgStampWeekTimesheetId(op,row.id);
       cgRemoveOp(op.client_op_id);
     }catch(e){
       if(cgIsAuthErr(e)&&!authRetried){
@@ -5343,7 +5462,7 @@ function sbRefreshTimesheetPdf(timesheetId,daysSource){
 }
 // GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1 §5.4 — soft-delete frees the week natural key.
 async function sbSoftDeleteBackup(id){
-  if(id==null||String(id).trim()==='')throw new Error('Backup id missing.');
+  if(!sbIsUuid(id))throw new Error('Backup id missing.');
   const updated=await sbRest('timesheets?id=eq.'+encodeURIComponent(id),{
     method:'PATCH',
     headers:{Prefer:'return=representation'},
