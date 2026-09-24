@@ -23,6 +23,8 @@ function extractFn(src, sig){
   throw new Error('unclosed ' + sig);
 }
 
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-cg-pdf-1page">'), 'cg pdf one-page build meta');
+assert.ok(html.includes('v=cgpdf1'), 'cg pdf probe');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-offline-save">'), 'offline build meta');
 assert.ok(html.includes('v=offline1'), 'offline probe');
 assert.ok(html.includes('id="offlineQueueBanner"'), 'queue banner');

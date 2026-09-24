@@ -4,10 +4,12 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-cg-pdf-1page">
 <meta name="caregiver-build" content="2026-09-24-save-home">
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-cg-pdf-1page v=cgpdf1 — Timesheet View PDF / print / Save Day PDF is one US Letter page at 100% scale. The blank-letter overlay stays the paper form; jsPDF insets it by TS_PDF_PAGE_SLACK_PT so the office address stays on page 1. Print CSS uses @page{size:letter;margin:0} and hides the site footer. Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-save-home v=home1 — Friday GO 2026-09-24. Save Day stays on the timesheet. Successful full-week submit returns to Caregiver Home. Aide list is a client-filter (Ace: no query this slice): drafts and sent-back always, fully submitted limited to the 2 most recent week_start values. Offline queue flush, Auth seal v=sbseal1, and inservice nocert v=nocert1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-inservice-nocert v=nocert1 — Friday GO 2026-09-24. Caregiver My Inservices completed cards show a Completed badge and completion date only. Aides have no Print or View Certificate. Auth seal v=sbseal1 and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-sb-seal v=sbseal1 — Friday GO 2026-09-24. No new Ace RPC. Cut forgot-password: resolve_username_email, then GoTrue recover to this page, then PUT /auth/v1/user on the recovery session. Logged-in setup stays PUT /auth/v1/user. Signup on the cut does not write Sheets and does not call Auth signup. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 keeps Sheets signup, verify_reset, and reset_password. -->
@@ -210,6 +212,22 @@ footer{text-align:center;padding:11px;font-size:0.7rem;color:var(--muted);border
 .ts-pdf-sheet .ts-fill-other{font-size:7pt;max-width:12%;overflow:hidden;}
 .ts-pdf-sheet .ts-fill-notes{font-size:8pt;font-weight:400;white-space:normal;max-width:46%;line-height:1.3;transform:none;}
 .ts-pdf-sheet .ts-sig{position:absolute;z-index:2;width:11%;height:1.6%;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none;}
+/* 100% Letter print: an 11in sheet plus the site footer crosses the page break and leaves the Pearl Rd line on page 2. */
+@media print{
+  @page{size:letter portrait;margin:0;}
+  footer{display:none !important;}
+  .ts-pdf-sheet{
+    width:8.5in !important;
+    height:10.85in !important;
+    max-height:10.85in !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    box-shadow:none !important;
+    break-after:avoid-page;
+    page-break-after:avoid;
+  }
+}
 </style>
 
 <!-- PWA -->
@@ -1109,6 +1127,7 @@ function switchTab(tab){
 
 // Friday GO 2026-09-24 cut (v=sbseal1). Default true. No new Ace RPC.
 // Offline Save Day queue (v=offline1) flushes through Supabase when a caregiver JWT is valid.
+// Letter PDF is one page (v=cgpdf1).
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
 // surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
@@ -4839,6 +4858,9 @@ const SB_PDF_BUCKET='evercare-pdfs';
 const SB_PDF_MAX_BYTES=25*1024*1024;
 const SB_PDF_TARGET_BYTES=2*1024*1024;
 const TS_PDF_BLANK='assets/blank-letter.png?v=a713ovl';
+// Points of white kept inside the Letter page so a 100% scale print does not
+// push the form address (about 0.38in above the sheet edge) onto page 2.
+const TS_PDF_PAGE_SLACK_PT=14;
 const TS_FORM_PT={
   sheetW:612,sheetH:792,
   nameX:110,clientNameY:101.8,caregiverNameY:126.3,
@@ -5075,10 +5097,25 @@ function sbShrinkCanvas(src,factor){
   ctx.drawImage(src,0,0,c.width,c.height);
   return c;
 }
+function sbLetterDrawBox(pageW,pageH){
+  const w=Number(pageW)||612;
+  const h=Number(pageH)||792;
+  const slack=TS_PDF_PAGE_SLACK_PT;
+  const scale=Math.min(1,(h-slack)/h);
+  const dw=w*scale;
+  const dh=h*scale;
+  return {x:(w-dw)/2,y:0,w:dw,h:dh};
+}
 function sbJpegLetterPdf(canvas,quality){
   const imgData=canvas.toDataURL('image/jpeg',quality);
   const pdf=new window.jspdf.jsPDF({orientation:'p',unit:'pt',format:'letter',compress:true});
-  pdf.addImage(imgData,'JPEG',0,0,612,792,undefined,'FAST');
+  const pageW=pdf.internal.pageSize.getWidth();
+  const pageH=pdf.internal.pageSize.getHeight();
+  const box=sbLetterDrawBox(pageW,pageH);
+  pdf.addImage(imgData,'JPEG',box.x,box.y,box.w,box.h,undefined,'FAST');
+  if(typeof pdf.getNumberOfPages==='function'){
+    while(pdf.getNumberOfPages()>1)pdf.deletePage(pdf.getNumberOfPages());
+  }
   return pdf.output('blob');
 }
 async function renderTimesheetPdfBlob(r){
@@ -5095,8 +5132,19 @@ async function renderTimesheetPdfBlob(r){
     if(!ready)throw new Error('blank form');
     const imgs=container.querySelectorAll('img');
     await Promise.all(Array.prototype.map.call(imgs,function(img){return sbWaitImg(img,4000);}));
-    // scale 1 JPEG page. Stay under 2 MiB (Ace smoke ~261 KiB). No PNG embed.
-    const canvas=await html2canvas(container,{scale:1,useCORS:true,backgroundColor:'#ffffff'});
+    // scale 1 JPEG page. Lock the capture to the sheet so the site footer cannot
+    // extend the bitmap past Letter. Stay under 2 MiB (Ace smoke ~261 KiB). No PNG embed.
+    const sheetW=container.offsetWidth||816;
+    const sheetH=container.offsetHeight||1056;
+    const canvas=await html2canvas(container,{
+      scale:1,
+      useCORS:true,
+      backgroundColor:'#ffffff',
+      width:sheetW,
+      height:sheetH,
+      windowWidth:sheetW,
+      windowHeight:sheetH
+    });
     let blob=await sbJpegLetterPdf(canvas,0.72);
     if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.55);
     if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.4);

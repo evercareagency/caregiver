@@ -30,6 +30,13 @@ function extractConst(name){
   return html.slice(start, end + 2);
 }
 
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-cg-pdf-1page v=cgpdf1 —'), 'cg pdf one-page build marker');
+assert.ok(html.includes('v=cgpdf1'), 'cg pdf probe marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-cg-pdf-1page">'), 'cg pdf one-page build meta');
+assert.ok(!html.includes('v=pdf1p'), 'caregiver marker does not use Admin v=pdf1p');
+assert.ok(html.includes('@page{size:letter portrait;margin:0;}'), 'print page margin is 0');
+assert.ok(/@media print\{[\s\S]*footer\{display:none !important;/.test(html), 'print hides the site footer');
+assert.ok(html.includes('const TS_PDF_PAGE_SLACK_PT=14;'), 'letter slack keeps the address on page 1');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-save-home v=home1 —'), 'save-home build marker');
 assert.ok(html.includes('v=home1'), 'save-home probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-save-home">'), 'save-home build meta');
@@ -68,7 +75,18 @@ assert.ok(!html.includes('3*1024*1024'), '3MB overlay target is gone');
 assert.ok(!html.includes('10*1024*1024'), '10MB client guard is gone');
 const renderFn = extractFn(html, 'async function renderTimesheetPdfBlob(r)');
 const jpegFn = extractFn(html, 'function sbJpegLetterPdf(canvas,quality)');
+const drawFn = extractFn(html, 'function sbLetterDrawBox(pageW,pageH)');
 assert.ok(renderFn.includes('scale:1'), 'blank letter is captured at scale 1');
+assert.ok(renderFn.includes('windowWidth:sheetW') && renderFn.includes('windowHeight:sheetH'), 'capture is locked to the sheet box');
+assert.ok(jpegFn.includes('sbLetterDrawBox'), 'letter image uses the inset box');
+assert.ok(jpegFn.includes('getNumberOfPages()>1'), 'extra PDF pages are dropped');
+const drawCtx = {};
+vm.createContext(drawCtx);
+vm.runInContext((html.match(/const TS_PDF_PAGE_SLACK_PT=\d+;/) || [''])[0] + '\n' + drawFn + '\nthis.box=sbLetterDrawBox(612,792);', drawCtx);
+assert.ok(drawCtx.box.y === 0, 'overlay stays top-aligned on the letter page');
+assert.ok(drawCtx.box.y + drawCtx.box.h <= 792 - 8, 'drawn image ends above the letter edge');
+assert.ok(drawCtx.box.x >= 0 && drawCtx.box.x + drawCtx.box.w <= 612, 'drawn image stays inside the letter width');
+assert.ok(Math.abs((drawCtx.box.w / drawCtx.box.h) - (612 / 792)) < 0.001, 'inset keeps letter aspect');
 assert.ok(!renderFn.includes('scale:2'), 'scale 2 capture is not used');
 assert.ok(renderFn.includes('sbJpegLetterPdf'), 'letter page is the JPEG helper');
 assert.ok(renderFn.includes('sbShrinkCanvas'), 'oversize canvas is downscaled');

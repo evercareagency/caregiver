@@ -24,6 +24,9 @@ function extractFn(src, sig){
   return '';
 }
 
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-cg-pdf-1page">'), 'cg pdf one-page build meta');
+assert.ok(html.includes('v=cgpdf1'), 'cg pdf probe marker');
+assert.ok(!html.includes('v=pdf1p'), 'caregiver marker does not use Admin v=pdf1p');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-save-home">'), 'save-home build meta');
 assert.ok(html.includes('v=home1'), 'save-home probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-inservice-nocert">'), 'nocert build meta');
