@@ -24,6 +24,8 @@ function extractFn(src, sig){
   return '';
 }
 
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-save-home">'), 'save-home build meta');
+assert.ok(html.includes('v=home1'), 'save-home probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-inservice-nocert">'), 'nocert build meta');
 assert.ok(html.includes('v=nocert1'), 'nocert probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-seal">'), 'caregiver-build meta');

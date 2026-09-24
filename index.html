@@ -4,9 +4,11 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-save-home">
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-save-home v=home1 — Friday GO 2026-09-24. Successful Save Day and successful week submit return to Caregiver Home. Offline queue flush, Auth seal v=sbseal1, and inservice nocert v=nocert1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-inservice-nocert v=nocert1 — Friday GO 2026-09-24. Caregiver My Inservices completed cards show a Completed badge and completion date only. Aides have no Print or View Certificate. Auth seal v=sbseal1 and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-sb-seal v=sbseal1 — Friday GO 2026-09-24. No new Ace RPC. Cut forgot-password: resolve_username_email, then GoTrue recover to this page, then PUT /auth/v1/user on the recovery session. Logged-in setup stays PUT /auth/v1/user. Signup on the cut does not write Sheets and does not call Auth signup. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 keeps Sheets signup, verify_reset, and reset_password. -->
 <!-- caregiver-build: 2026-09-24-offline-save v=offline1 — Offline Save Day queue. Default Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Save Day and Submit queue on the phone when offline and flush through the existing Supabase upsert then PDF upload when a caregiver JWT is valid. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec for those surfaces. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds; PDF re-queues only), bucket evercare-pdfs, SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
@@ -2281,15 +2283,17 @@ function saveDayData(i,dayObj){
   if(activeDayIdx===i)activeDayIdx=null;
   refreshSaveDayState();
   showTempMsg(`✅ ${DAYS[i]} saved!`,'var(--success)');window.scrollTo(0,0);
-  if(!evercareSbEnabled())return;
+  if(!evercareSbEnabled()){if(typeof backToTSHome==='function')backToTSHome();return;}
   if(!cgShouldSyncNow()){
     try{cgEnqueueSaveDay(i,wd[i]||dayObj);}catch(e){}
     if(!sbDataEnabled())showTempMsg('Saved on this phone. Sign in again to back it up.','var(--warn)');
     else showTempMsg('Saved on this phone — will upload when you\'re back online','var(--teal)');
     try{window._cgQueuePhase=cgNetOnline()?'error':'offline';cgPaintOfflineQueue();}catch(e){}
+    if(typeof backToTSHome==='function')backToTSHome();
     return;
   }
   if(sbDataEnabled())sbSyncSavedDay(i,wd[i]||dayObj);
+  if(typeof backToTSHome==='function')backToTSHome();
 }
 
 function getUserWeekData(){
@@ -2691,13 +2695,9 @@ async function doFinalSubmit(){
   }
   currentTS=null;
   window._cgSubmitInFlight=false;
-  showScreen('caregiverScreen');
-  document.getElementById('cgFormView').style.display='none';
-  document.getElementById('cgSuccessView').style.display='block';
-  if(data&&data.queued){
-    const successP=document.querySelector('#cgSuccessView p');
-    if(successP)successP.textContent='Saved on this phone — will upload when you\'re back online';
-  }
+  showCaregiverHome();
+  if(data&&data.queued)showTempMsg('Saved on this phone — will upload when you\'re back online','var(--teal)');
+  else showTempMsg('Timesheet submitted.','var(--success)');
   window.scrollTo(0,0);
   setTimeout(()=>window.scrollTo(0,0),50);
 }
@@ -5478,6 +5478,18 @@ function openTS(id){
   if(ts&&(ts.headerAideSig||ts.headerClientSig))restoreHdrSigs(ts);
 }
 
+function showCaregiverHome(){
+  if(typeof showScreen==='function')showScreen('caregiverScreen');
+  const home=document.getElementById('cgHomeView');
+  const form=document.getElementById('cgFormView');
+  const done=document.getElementById('cgSuccessView');
+  if(form)form.style.display='none';
+  if(done)done.style.display='none';
+  if(home)home.style.display='block';
+  if(typeof renderTSHome==='function')renderTSHome();
+  try{window.scrollTo(0,0);}catch(e){}
+}
+
 function backToTSHome(){
   // Save current client name and week to ts meta
   const clientSel=document.getElementById('cg_client');
@@ -5487,9 +5499,7 @@ function backToTSHome(){
   const weekStart=document.getElementById('cg_weekstart').value;
   const notes=document.getElementById('cg_notes').value;
   updateTSMeta(currentTS,{clientName,clientId,weekStart,notes,...captureHdrSigs()});
-  document.getElementById('cgFormView').style.display='none';
-  document.getElementById('cgHomeView').style.display='block';
-  renderTSHome();
+  showCaregiverHome();
 }
 
 function goToInservices(){
