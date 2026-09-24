@@ -4,12 +4,16 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-is-hydrate">
+<meta name="caregiver-build" content="2026-09-24-cg-pdf-view">
 <meta name="caregiver-build" content="2026-09-24-backup-uuid">
 <meta name="caregiver-build" content="2026-09-24-cg-pdf-1page">
 <meta name="caregiver-build" content="2026-09-24-save-home">
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-is-hydrate v=ishydr1 — Friday GO 2026-09-24. My Inservices hydrates Completed from inservice_results with the aide JWT (username + topic_id) before the list paints. Badge and date come from that row when the office has one. The phone store stays as a cache and in-progress answers are kept. Aides still have no Print or View Certificate. v=cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-24-cg-pdf-view v=cgpdfv1 — Friday GO 2026-09-24. After Save Day, View PDF opens the 1-page US Letter timesheet (blank-letter overlay, 14pt slack, address on page 1). The button is on the open timesheet once a day is saved, not on Home cards. Save Day still uploads that PDF. bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-backup-uuid v=bakuuid1 — Friday GO 2026-09-24. Backup and the offline Save Day flush send only Supabase UUIDs for timesheets.id, org_id, aide_id, and client_id. INSERT omits id (the server generates it). A draft with no assigned client UUID is blocked with “Pick a client first.” and is not posted. Home cards take the client name from assignments. A Sheets or phone millisecond id may be stored only as legacy_id. Letter PDF v=cgpdf1, Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cg-pdf-1page v=cgpdf1 — Timesheet View PDF / print / Save Day PDF is one US Letter page at 100% scale. The blank-letter overlay stays the paper form; jsPDF insets it by TS_PDF_PAGE_SLACK_PT so the office address stays on page 1. Print CSS uses @page{size:letter;margin:0} and hides the site footer. Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-save-home v=home1 — Friday GO 2026-09-24. Save Day stays on the timesheet. Successful full-week submit returns to Caregiver Home. Aide list is a client-filter (Ace: no query this slice): drafts and sent-back always, fully submitted limited to the 2 most recent week_start values. Offline queue flush, Auth seal v=sbseal1, and inservice nocert v=nocert1 unchanged. -->
@@ -525,6 +529,10 @@ else setupEverCarePWA();
         <p id="saveDayTarget" style="font-size:0.78rem;font-weight:600;color:var(--navy);margin:12px 0 6px">Open a day above — Save Day saves that day.</p>
         <p id="saveDaySvcErr" role="alert" style="display:none;color:var(--danger);font-size:0.8rem;font-weight:700;margin:0 0 8px">Check at least one service before saving.</p>
         <button class="btn btn-teal btn-full" type="button" id="saveDayBtn" onclick="saveActiveDay()" disabled>✓ Save Day</button>
+        <button class="btn btn-ghost btn-full" type="button" id="viewPdfBtn" onclick="viewSavedTimesheetPdf()" hidden style="display:none;margin-top:8px">View PDF</button>
+        <div id="viewPdfPanel" style="display:none;margin-top:10px">
+          <iframe id="viewPdfFrame" title="Timesheet PDF" style="width:100%;height:70vh;min-height:420px;border:1px solid var(--border);border-radius:8px;background:#fff"></iframe>
+        </div>
       </div>
       <div class="card">
         <div class="card-title"><span class="ico">📝</span> Comments</div>
@@ -1130,6 +1138,8 @@ function switchTab(tab){
 // Friday GO 2026-09-24 cut (v=sbseal1). Default true. No new Ace RPC.
 // Offline Save Day queue (v=offline1) flushes through Supabase when a caregiver JWT is valid.
 // Letter PDF is one page (v=cgpdf1).
+// View PDF after Save Day (v=cgpdfv1). Shown once a day is saved. Not gated on cloudBackupId or pdf_storage_path.
+// Inservice Completed hydrates from inservice_results (v=ishydr1). No aide certificate.
 // Backup UUID guard (v=bakuuid1). Phone Date.now / ts_* ids never enter uuid columns.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
@@ -2305,6 +2315,7 @@ function saveDayData(i,dayObj){
   if(activeDayIdx===i)activeDayIdx=null;
   refreshSaveDayState();
   showTempMsg(`✅ ${DAYS[i]} saved!`,'var(--success)');window.scrollTo(0,0);
+  if(typeof cgNoteSavedDayPdf==='function')cgNoteSavedDayPdf();
   if(!evercareSbEnabled())return;
   if(!cgShouldSyncNow()){
     try{cgEnqueueSaveDay(i,wd[i]||dayObj);}catch(e){}
@@ -2355,6 +2366,7 @@ function loadSavedWeek(){
   });
   updateOtherSpecifyVisibility();
   updateTotal();
+  if(typeof cgPaintViewPdf==='function')cgPaintViewPdf();
 }
 
 // Ace wire: days["0"-"6"] with svcs[] flattened from matrix (no matrix-on-wire)
@@ -5232,9 +5244,11 @@ function sbJpegLetterPdf(canvas,quality){
   const pageH=pdf.internal.pageSize.getHeight();
   const box=sbLetterDrawBox(pageW,pageH);
   pdf.addImage(imgData,'JPEG',box.x,box.y,box.w,box.h,undefined,'FAST');
-  if(typeof pdf.getNumberOfPages==='function'){
-    while(pdf.getNumberOfPages()>1)pdf.deletePage(pdf.getNumberOfPages());
-  }
+  try{
+    if(typeof pdf.getNumberOfPages==='function'){
+      while(pdf.getNumberOfPages()>1)pdf.deletePage(pdf.getNumberOfPages());
+    }
+  }catch(e){}
   return pdf.output('blob');
 }
 async function renderTimesheetPdfBlob(r){
@@ -5255,15 +5269,21 @@ async function renderTimesheetPdfBlob(r){
     // extend the bitmap past Letter. Stay under 2 MiB (Ace smoke ~261 KiB). No PNG embed.
     const sheetW=container.offsetWidth||816;
     const sheetH=container.offsetHeight||1056;
-    const canvas=await html2canvas(container,{
-      scale:1,
-      useCORS:true,
-      backgroundColor:'#ffffff',
-      width:sheetW,
-      height:sheetH,
-      windowWidth:sheetW,
-      windowHeight:sheetH
-    });
+    let canvas=null;
+    try{
+      canvas=await html2canvas(container,{
+        scale:1,
+        useCORS:true,
+        backgroundColor:'#ffffff',
+        width:sheetW,
+        height:sheetH,
+        windowWidth:sheetW,
+        windowHeight:sheetH
+      });
+    }catch(e){canvas=null;}
+    if(!canvas||canvas.width<200||canvas.height<200){
+      canvas=await html2canvas(container,{scale:1,useCORS:true,backgroundColor:'#ffffff'});
+    }
     let blob=await sbJpegLetterPdf(canvas,0.72);
     if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.55);
     if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.4);
@@ -5442,8 +5462,117 @@ async function sbWriteTimesheetPdf(timesheetId,record){
     try{console.warn('timesheet pdf','over 25MB guard');}catch(e){}
     return false;
   }
+  try{
+    if(typeof window!=='undefined'&&window){
+      window.__cgViewPdfBlob=(typeof Blob==='function'&&bytes instanceof Blob)?bytes:new Blob([bytes],{type:'application/pdf'});
+    }
+  }catch(e){}
   await uploadTimesheetPdf({orgId:orgId,timesheetId:timesheetId,pdfBytes:bytes});
   return true;
+}
+function cgWeekHasSavedDay(wd){
+  const data=wd||(typeof getUserWeekData==='function'?getUserWeekData():{});
+  return Object.keys(data||{}).some(function(k){
+    const d=data[k];
+    return !!(d&&(d.savedAt||d.tin||d.in||d.tout||d.out||(d.svcs&&d.svcs.length)||d.aideSig||d.clientSig));
+  });
+}
+function cgPaintViewPdf(){
+  const show=cgWeekHasSavedDay();
+  const btn=document.getElementById('viewPdfBtn');
+  if(btn){
+    btn.hidden=!show;
+    btn.style.display=show?'block':'none';
+    if(!btn.disabled)btn.textContent='View PDF';
+  }
+  if(!show){
+    const panel=document.getElementById('viewPdfPanel');
+    if(panel)panel.style.display='none';
+  }
+}
+function cgClientUuidForPdf(){
+  const client=typeof getSelectedClient==='function'?getSelectedClient():null;
+  const list=typeof getAllTimesheets==='function'?getAllTimesheets():[];
+  const ts=(list||[]).find(function(t){return t&&t.id===currentTS;})||{};
+  const raw=(client&&client.id)||ts.clientId||'';
+  return (typeof sbIsUuid==='function'&&sbIsUuid(raw))?String(raw).trim():'';
+}
+async function cgRenderSavedTimesheetPdf(){
+  if(!(await sbEnsurePdfLibs()))throw new Error('pdf lib');
+  const record=sbTimesheetPdfRecord(typeof getUserWeekData==='function'?getUserWeekData():{});
+  const blob=await renderTimesheetPdfBlob(record);
+  if(!(await sbPdfMagicOk(blob))||sbPdfSize(blob)<1024)throw new Error('PDF');
+  return blob;
+}
+function cgShowTimesheetPdf(blob){
+  const url=URL.createObjectURL(blob);
+  if(window.__cgViewPdfUrl){
+    try{URL.revokeObjectURL(window.__cgViewPdfUrl);}catch(e){}
+  }
+  window.__cgViewPdfUrl=url;
+  const frame=document.getElementById('viewPdfFrame');
+  const panel=document.getElementById('viewPdfPanel');
+  if(frame)frame.src=url;
+  if(panel)panel.style.display='block';
+  let popup=window.__cgViewPdfPopup;
+  window.__cgViewPdfPopup=null;
+  if(popup&&!popup.closed){
+    try{popup.location.href=url;}catch(e){popup=null;}
+  }
+  if(!popup){
+    try{popup=window.open(url,'_blank');}catch(e){popup=null;}
+  }
+  if(!popup){
+    const a=document.createElement('a');
+    a.href=url;
+    a.target='_blank';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  return url;
+}
+function cgNoteSavedDayPdf(){
+  try{window.__cgViewPdfBlob=null;}catch(e){}
+  cgPaintViewPdf();
+  const syncing=typeof evercareSbEnabled==='function'&&evercareSbEnabled()&&typeof cgShouldSyncNow==='function'&&cgShouldSyncNow();
+  if(syncing)return;
+  const seq=(window.__cgViewPdfSeq=(window.__cgViewPdfSeq||0)+1);
+  cgRenderSavedTimesheetPdf().then(function(blob){
+    if(seq!==window.__cgViewPdfSeq)return;
+    window.__cgViewPdfBlob=blob;
+  }).catch(function(){});
+}
+async function viewSavedTimesheetPdf(){
+  if(!cgWeekHasSavedDay()){
+    if(typeof showTempMsg==='function')showTempMsg('Save a day first.','var(--warn)');
+    cgPaintViewPdf();
+    return null;
+  }
+  if(typeof evercareSbEnabled==='function'&&evercareSbEnabled()&&!cgClientUuidForPdf()){
+    if(typeof showTempMsg==='function')showTempMsg('Pick a client first.','var(--danger)');
+    return null;
+  }
+  const btn=document.getElementById('viewPdfBtn');
+  if(btn){btn.disabled=true;btn.textContent='Preparing PDF…';}
+  try{window.__cgViewPdfPopup=window.open('','_blank');}catch(e){window.__cgViewPdfPopup=null;}
+  try{
+    let blob=null;
+    try{blob=await cgRenderSavedTimesheetPdf();}catch(e){blob=null;}
+    if(!(await sbPdfMagicOk(blob))||sbPdfSize(blob)<1024)blob=window.__cgViewPdfBlob||null;
+    if(!(await sbPdfMagicOk(blob))||sbPdfSize(blob)<1024)throw new Error('PDF');
+    window.__cgViewPdfBlob=blob;
+    cgShowTimesheetPdf(blob);
+    if(typeof showTempMsg==='function')showTempMsg('PDF ready.','var(--success)');
+    return blob;
+  }catch(e){
+    try{if(window.__cgViewPdfPopup&&!window.__cgViewPdfPopup.closed)window.__cgViewPdfPopup.close();}catch(err){}
+    window.__cgViewPdfPopup=null;
+    if(typeof showTempMsg==='function')showTempMsg('Could not open the PDF.','var(--danger)');
+    return null;
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='View PDF';}
+  }
 }
 function sbRefreshTimesheetPdf(timesheetId,daysSource){
   if(typeof sbDataEnabled!=='function'||!sbDataEnabled()||!timesheetId)return Promise.resolve(false);
@@ -5724,7 +5853,47 @@ async function getAssignedIS(){
   }
 }
 
+async function sbHydrateInserviceCompletions(){
+  if(typeof sbDataEnabled!=='function'||!sbDataEnabled()||!currentUser||!currentUser.username){
+    return typeof getISData==='function'?getISData():{};
+  }
+  const username=String(currentUser.username).trim();
+  if(!username)return getISData();
+  let rows=[];
+  try{
+    const q='inservice_results?select='+encodeURIComponent('topic_id,completed,submitted_at,status,username')
+      +'&username=eq.'+encodeURIComponent(username)
+      +'&order=submitted_at.desc';
+    const got=await sbRest(q);
+    rows=Array.isArray(got)?got:(got?[got]:[]);
+  }catch(e){
+    return getISData();
+  }
+  const isData=getISData()||{};
+  const seen={};
+  let changed=false;
+  rows.forEach(function(row){
+    if(!row)return;
+    if(String(row.status||'Active').toLowerCase()==='archived')return;
+    const who=String(row.username||'').trim().toLowerCase();
+    if(who&&who!==username.toLowerCase())return;
+    const id=row.topic_id==null?'':String(row.topic_id).trim();
+    if(!id||seen[id])return;
+    const at=row.submitted_at||row.completed||'';
+    if(!at)return;
+    seen[id]=true;
+    const done=row.completed||at;
+    const stamp=row.submitted_at||row.completed||at;
+    if(isData['completed_'+id]!==done){isData['completed_'+id]=done;changed=true;}
+    if(isData['completedAt_'+id]!==stamp){isData['completedAt_'+id]=stamp;changed=true;}
+  });
+  if(changed&&typeof saveISData==='function')saveISData(isData);
+  return isData;
+}
 async function checkISNotif(){
+  if(typeof sbHydrateInserviceCompletions==='function'){
+    try{await sbHydrateInserviceCompletions();}catch(e){}
+  }
   const isData=getISData();
   const banner=document.getElementById('isNotifBanner');
   if(!banner)return;
@@ -5757,6 +5926,9 @@ async function renderISList(){
   const el=document.getElementById('isTopicList');
   if(!el)return;
   el.innerHTML='<div style="text-align:center;padding:30px"><div style="font-size:24px;margin-bottom:8px">⏳</div><p style="color:var(--muted);font-size:0.82rem">Loading inservices...</p></div>';
+  if(typeof sbHydrateInserviceCompletions==='function'){
+    try{await sbHydrateInserviceCompletions();}catch(e){}
+  }
   const assigned=await getAssignedIS();
   const isData=getISData();
   el.innerHTML=INSERVICES.map(is=>{
