@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-warm-off">
 <meta name="caregiver-build" content="2026-09-24-pdf-1page-print">
 <meta name="caregiver-build" content="2026-09-24-no-rm-backup">
 <meta name="caregiver-build" content="2026-09-24-pw-reset-ux">
@@ -17,6 +18,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-warm-off v=warmoff1 — Friday GO 2026-09-24. Supabase cut does not fire Sheets warmkeep /exec beacons (POST ping and GET) when the login page loads, so first paint is not blocked on Apps Script. Rollback ?sheets=1 or localStorage.evercare_sheets=1 still warms /exec as soon as this script runs. v=cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-pdf-1page-print v=cgpdf1p2 — Friday GO 2026-09-24. Saved timesheet PDF and browser/iOS Letter print are one page. The blank form is inset by TS_PDF_PAGE_SLACK_PT (72) so 5510 Pearl Rd stays on page 1 at 100% scale. Print of the open timesheet shows that sheet only. v=norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-no-rm-backup v=norbkup1 — Friday GO 2026-09-24. More no longer offers a control that deletes the office copy of a draft, and that confirm is gone. Back up this week's draft, Log out, and the 8-hour stay-signed-in note stay. v=pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-pw-reset-ux v=pwreset1 — Friday GO 2026-09-24. After the email link saves a new password (PUT /auth/v1/user on the recovery session), the reset page stays on “Password saved”. Primary button “Open ECA Aide Portal” goes to the LIVE Pages login https://evercareagency.github.io/caregiver/ . On caregiver Pages, including a tip preview, that button uses location.origin+pathname instead, so the preview login still opens. Forgot redirect_to stays location.origin+pathname (LIVE host, not a localhost redirect). The page follows that login after about 3 seconds. Soft copy: if you use the app icon on your phone, open it from there after this. No Universal Links. v=portal1 and the Ace Auth recovery path stay. -->
@@ -1169,10 +1171,13 @@ function noteAceHealth(res){
   }).catch(function(){});
 }
 function aceExecSoft(){return window._aceHealthBad===true;}
-// Wake Apps Script as soon as this file runs so the first login is less cold.
+// Wake Apps Script as soon as this file runs so a Sheets-mode login is less cold.
 // ping is the lightweight no-op; GET matches the existing doGet warm. Both soft-fail offline.
+// Supabase cut (v=warmoff1) returns before either beacon so login first paint does not hit /exec.
+// ?sheets=1 or localStorage evercare_sheets=1 (evercareSbEnabled false) still warms immediately.
 function warmUpSheets(){
   if(window._sheetsWarmUpStarted)return;
+  if(evercareSbEnabled())return;
   window._sheetsWarmUpStarted=true;
   fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'ping'}),mode:'cors',cache:'no-store'})
     .then(noteAceHealth)
@@ -1355,6 +1360,7 @@ function switchTab(tab){
 // Assigned unlock and the home due banner read rpc my_inservice_topics (v=isassign1). No Sheets get_assigned_topic.
 // Backup UUID guard (v=bakuuid1). Phone Date.now / ts_* ids never enter uuid columns.
 // More has no office-backup delete control (v=norbkup1). Backup, Log out, and the 8h note stay.
+// Sheets warmkeep is skipped on the cut (v=warmoff1). Login first paint does not beacon /exec.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
 // surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
