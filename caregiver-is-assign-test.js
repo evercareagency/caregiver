@@ -119,7 +119,7 @@ function cardsOf(htmlText){
     assert.strictEqual(box.calls.length, 1, 'one assignment rpc');
     assert.strictEqual(box.calls[0].q, 'rpc/my_inservice_topics');
     assert.strictEqual(box.calls[0].req.method, 'POST');
-    assert.deepStrictEqual(box.calls[0].req.body, {});
+    assert.strictEqual(JSON.stringify(box.calls[0].req.body), '{}');
   }
 
   const done = boot({
