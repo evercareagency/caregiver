@@ -42,6 +42,7 @@ const src = [
   extractFn(html, 'function sbExpiresMs(auth)'),
   extractFn(html, 'function aideEmailNeedsSetup(email)'),
   extractFn(html, 'function sbWorkingEmail(submitted,authEmail,aideEmail)'),
+  extractFn(html, 'async function resolveAideAuthEmail(username)'),
   extractFn(html, 'async function loginAideWithSupabase(username,password)'),
   extractFn(html, 'function aideTruth(v)'),
   'function persistCgSession(sess){ currentUser=sess; globalThis.__saved=sess; return sess; }',

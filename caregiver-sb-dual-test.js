@@ -24,8 +24,8 @@ function extractFn(src, sig){
   return '';
 }
 
-assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-cut">'), 'caregiver-build meta');
-assert.ok(html.includes('v=sbcut1'), 'cut probe marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-reset">'), 'caregiver-build meta');
+assert.ok(html.includes('v=sbreset1'), 'reset probe marker');
 assert.ok(html.includes('evercare_sheets'), 'emergency sheets rollback is documented');
 assert.ok(html.includes("const SUPABASE_URL='https://zealkptwgifnkbkuavvp.supabase.co';"), 'supabase url');
 assert.ok(!html.includes('lvaglmztnlnsrhlluayz'), 'abandoned project ref must not appear');
@@ -54,7 +54,7 @@ const login = extractFn(html, 'async function doLogin()');
 assert.ok(!html.includes('function softSbDualVerify'), 'soft dual-verify probe is removed');
 assert.ok(!login.includes('softSbDualVerify'), 'sign-in does not dual-verify');
 assert.strictEqual((html.match(/\/auth\/v1\/token\?grant_type=password/g) || []).length, 2, 'real login and setup recheck');
-assert.strictEqual((html.match(/resolve_username_email/g) || []).length, 1, 'rpc stays on the real login only');
+assert.strictEqual((html.match(/\/rest\/v1\/rpc\/resolve_username_email/g) || []).length, 1, 'username email lookup is one shared anon rpc');
 assert.ok(login.includes("action:'login'"), 'emergency sheets login stays');
 assert.ok(login.indexOf('await loginAideWithSupabase(user,pass)') < login.indexOf("action:'login'"), 'default auth runs instead of sheets login');
 const sheetsBranch = login.slice(login.indexOf("action:'login'"));

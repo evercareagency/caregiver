@@ -30,9 +30,9 @@ function extractConst(name){
   return html.slice(start, end + 2);
 }
 
-assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-sb-cut v=sbcut1 —'), 'cut build marker');
-assert.ok(html.includes('v=sbcut1'), 'probe marker');
-assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-cut">'), 'cut build meta');
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-sb-reset v=sbreset1 —'), 'reset build marker');
+assert.ok(html.includes('v=sbreset1'), 'probe marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-reset">'), 'reset build meta');
 assert.ok(html.includes('Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf'), 'emergency sheets pdf path is documented');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
 assert.ok(html.includes("const SB_PDF_BUCKET='evercare-pdfs'"), 'bucket is evercare-pdfs');

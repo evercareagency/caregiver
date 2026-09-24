@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-24-sb-cut">
-<!-- caregiver-build: 2026-09-24-sb-cut v=sbcut1 — Friday GO 2026-09-24. org portal_data_backend=supabase. Default (no ?sb=1) is Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds), SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: signup, verify_reset/reset_password, get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
+<meta name="caregiver-build" content="2026-09-24-sb-reset">
+<!-- caregiver-build: 2026-09-24-sb-reset v=sbreset1 — Friday GO 2026-09-24. org portal_data_backend=supabase. Default (no ?sb=1) is Supabase-only: auth, forgot-password verify, forgot-password set (anon RPC reset_aide_own_password), list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. Signup on the cut does not write Sheets; aides are office-provisioned. No silent /exec dual-write on those paths. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec, including signup, verify_reset, and reset_password. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds), SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
@@ -1082,7 +1082,7 @@ function switchTab(tab){
 
 // AUTH
 
-// Friday GO 2026-09-24 cut (v=sbcut1). Default true.
+// Friday GO 2026-09-24 cut (v=sbreset1). Default true.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
 // surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
@@ -1171,6 +1171,26 @@ function sbWorkingEmail(submitted,authEmail,aideEmail){
   if(cur)return cur;
   return auth;
 }
+// Anon lookup shared by sign-in and forgot-password. Returns the Auth email, or ''.
+// HTTP and shape failures throw login_failed so callers do not treat a bad body as a match.
+async function resolveAideAuthEmail(username){
+  const user=String(username||'').trim().toLowerCase();
+  if(!user){
+    const miss=new Error('login_failed');
+    throw miss;
+  }
+  const rpcRes=await fetch(SUPABASE_URL+'/rest/v1/rpc/resolve_username_email',{
+    method:'POST',
+    headers:sbAnonHeaders(),
+    body:JSON.stringify({p_username:user,p_org_slug:'evercare'})
+  });
+  const rpc=await sbRead(rpcRes);
+  if(!rpc.ok||!rpc.parsed||(rpc.data!=null&&typeof rpc.data!=='string')){
+    const rpcErr=new Error('login_failed');
+    throw rpcErr;
+  }
+  return rpc.data==null?'':String(rpc.data).trim();
+}
 // Default cut: this is the real sign-in. RPC → password grant → own aides row.
 // Blank aides.email still sets needsEmail. Failures throw so Sign In stays on the same error.
 async function loginAideWithSupabase(username,password){
@@ -1179,22 +1199,12 @@ async function loginAideWithSupabase(username,password){
     const miss=new Error('login_failed');
     throw miss;
   }
-  const headers=sbAnonHeaders();
-  const rpcRes=await fetch(SUPABASE_URL+'/rest/v1/rpc/resolve_username_email',{
-    method:'POST',
-    headers:headers,
-    body:JSON.stringify({p_username:user,p_org_slug:'evercare'})
-  });
-  const rpc=await sbRead(rpcRes);
-  if(!rpc.ok||!rpc.parsed||(rpc.data!=null&&typeof rpc.data!=='string')){
-    const rpcErr=new Error('login_failed');
-    throw rpcErr;
-  }
-  const email=rpc.data==null?'':String(rpc.data).trim();
+  const email=await resolveAideAuthEmail(user);
   if(!email){
     const noEmail=new Error('login_failed');
     throw noEmail;
   }
+  const headers=sbAnonHeaders();
   const authRes=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
     method:'POST',
     headers:headers,
@@ -1358,6 +1368,12 @@ async function doSignup(){
   const code=document.getElementById('s_code').value.trim();
   const err=document.getElementById('signupErr');
   if(!name||!user||!email||!pass||!code){err.textContent='Please fill in all fields.';err.style.display='block';return;}
+  // Cut default: aides are office-provisioned (Ace admin_create_aide, office JWT). Do not write a Sheets-only password.
+  if(evercareSbEnabled()){
+    err.textContent='Accounts are created by the office. Contact your manager.';
+    err.style.display='block';
+    return;
+  }
   if(code!==OFFICE_CODE){err.textContent='Invalid office code. Contact your manager.';err.style.display='block';return;}
   const btn=document.getElementById('signupBtn');btn.textContent='Creating...';btn.disabled=true;
   try{
@@ -2757,6 +2773,57 @@ function restoreHdrSigs(ts){
 
 
 // RESET PASSWORD
+// Cut default forgot-password. Verify uses resolveAideAuthEmail (anon resolve_username_email).
+// Set-new-password calls anon RPC reset_aide_own_password, which must update GoTrue.
+// Office RPC reset_aide_temp_password is not this path. Sheets verify_reset / reset_password
+// run only when evercareSbEnabled() is false (?sheets=1 or evercare_sheets=1).
+function aideEmailsMatch(resolved,entered){
+  const got=String(resolved||'').trim().toLowerCase();
+  const want=String(entered||'').trim().toLowerCase();
+  return !!got&&!!want&&got===want;
+}
+async function verifyAideResetSupabase(username,email){
+  const user=String(username||'').trim().toLowerCase();
+  const entered=String(email||'').trim().toLowerCase();
+  if(!user||!entered)return false;
+  const resolved=await resolveAideAuthEmail(user);
+  return aideEmailsMatch(resolved,entered);
+}
+function resetRpcError(pack){
+  const data=pack&&pack.data;
+  const code=data&&data.code;
+  const raw=String((data&&(data.message||data.error||data.hint))||'');
+  if(code==='PGRST202'||code==='42501'||/could not find the function/i.test(raw)){
+    return 'Could not update the sign-in password. Contact the office.';
+  }
+  if(data&&typeof data==='object'&&(data.ok===false||data.success===false)){
+    return String(data.error||data.message||'Could not reset the password.');
+  }
+  return sbErrMsg(pack,'Could not reset the password.');
+}
+async function resetAidePasswordSupabase(username,email,newPassword){
+  const user=String(username||'').trim().toLowerCase();
+  const entered=String(email||'').trim().toLowerCase();
+  const pwd=String(newPassword==null?'':newPassword);
+  if(!user||!entered)throw new Error('Username and email do not match.');
+  if(!pwd)throw new Error('Enter a new password.');
+  const resolved=await resolveAideAuthEmail(user);
+  if(!aideEmailsMatch(resolved,entered))throw new Error('Username and email do not match.');
+  const pack=await sbRead(await fetch(SUPABASE_URL+'/rest/v1/rpc/reset_aide_own_password',{
+    method:'POST',
+    headers:sbAnonHeaders(),
+    body:JSON.stringify({
+      p_username:user,
+      p_email:entered,
+      p_new_password:pwd,
+      p_org_slug:'evercare'
+    })
+  }));
+  const data=pack&&pack.data;
+  const failed=data&&typeof data==='object'&&(data.ok===false||data.success===false);
+  if(!pack.ok||failed)throw new Error(resetRpcError(pack));
+  return true;
+}
 function showResetModal(){
   document.getElementById('reset_user').value='';document.getElementById('reset_email').value='';
   if(document.getElementById('reset_newpwd'))document.getElementById('reset_newpwd').value='';
@@ -2766,6 +2833,12 @@ function showResetModal(){
 async function verifyReset(){
   const user=document.getElementById('reset_user').value.trim().toLowerCase(),email=document.getElementById('reset_email').value.trim().toLowerCase(),err=document.getElementById('resetErr');
   try{
+    if(evercareSbEnabled()){
+      const ok=await verifyAideResetSupabase(user,email);
+      if(ok){document.getElementById('reset_new_pass').style.display='block';document.getElementById('reset_verify_btn').style.display='none';err.style.display='none';}
+      else{err.textContent='Username and email do not match.';err.style.display='block';}
+      return;
+    }
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'verify_reset',username:user,email})});
     const data=await res.json();
     if(data.success){document.getElementById('reset_new_pass').style.display='block';document.getElementById('reset_verify_btn').style.display='none';err.style.display='none';}
@@ -2773,8 +2846,20 @@ async function verifyReset(){
   }catch(e){err.textContent='Network error.';err.style.display='block';}
 }
 async function doResetPassword(){
-  const user=document.getElementById('reset_user').value.trim().toLowerCase(),newpwd=document.getElementById('reset_newpwd').value;
+  const user=document.getElementById('reset_user').value.trim().toLowerCase(),email=document.getElementById('reset_email').value.trim().toLowerCase(),newpwd=document.getElementById('reset_newpwd').value,err=document.getElementById('resetErr');
   if(!newpwd){alert('Enter new password.');return;}
+  if(evercareSbEnabled()){
+    try{
+      await resetAidePasswordSupabase(user,email,newpwd);
+      closeModal('resetModal');
+      showTempMsg('✅ Password reset! Please log in.','var(--success)');
+    }catch(e){
+      const raw=(e&&e.message)||'';
+      const msg=raw==='login_failed'?'Network error.':(raw||'Could not reset the password.');
+      if(err){err.textContent=msg;err.style.display='block';}
+    }
+    return;
+  }
   try{await apiPost({action:'reset_password',username:user,password:newpwd});cacheInvalidate('get_users');}catch(e){}
   closeModal('resetModal');showTempMsg('✅ Password reset! Please log in.','var(--success)');
 }
