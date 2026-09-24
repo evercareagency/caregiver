@@ -38,11 +38,8 @@ const save = extractFn(html, 'function saveDayData(i,dayObj)');
 const enqueueAt = save.indexOf('cgEnqueueSaveDay');
 const syncAt = save.indexOf('if(sbDataEnabled())sbSyncSavedDay');
 assert.ok(enqueueAt > 0 && syncAt > enqueueAt, 'offline queue stays before the live sync');
-assert.ok(save.indexOf('Check at least one service before saving.') < save.indexOf('backToTSHome()'), 'a day with no service stays on the timesheet');
-assert.ok(save.indexOf('Aide and Client signatures required to save this day') < save.indexOf('backToTSHome()'), 'a day missing signatures stays on the timesheet');
-assert.ok(save.indexOf('backToTSHome()', enqueueAt) > enqueueAt, 'queued Save Day returns home after the enqueue');
-assert.ok(save.indexOf('backToTSHome()', enqueueAt) < syncAt, 'queued Save Day goes home before the live sync call');
-assert.ok(save.indexOf('backToTSHome()', syncAt) > syncAt, 'online Save Day returns home after the sync starts');
+assert.ok(!save.includes('backToTSHome'), 'Save Day stays on the timesheet');
+assert.ok(!save.includes('showCaregiverHome'), 'Save Day does not open Home');
 
 const fin = extractFn(html, 'async function doFinalSubmit()');
 const rejectAt = fin.indexOf('if(!data||data.success!==true)');
@@ -100,23 +97,24 @@ assert.strictEqual(blocked._stored, undefined, 'empty services do not save');
 
 const unsigned = runSave({ink:false, live:true});
 assert.strictEqual(unsigned._home, undefined, 'missing signatures do not go Home');
+assert.strictEqual(unsigned._stored, undefined, 'missing signatures do not save');
 
 const live = runSave({live:true});
 assert.strictEqual(live._synced, true, 'online Save Day still syncs');
 assert.strictEqual(live._queued, undefined, 'online Save Day does not queue');
-assert.strictEqual(live._home, 1, 'online Save Day goes Home');
-assert.strictEqual(live._homeAfterSync, true, 'Home is after the sync starts');
+assert.strictEqual(live._stored, true, 'online Save Day still stores the day');
+assert.strictEqual(live._home, undefined, 'online Save Day stays on the timesheet');
 
 const offline = runSave({live:false});
 assert.strictEqual(offline._synced, undefined, 'offline Save Day does not live-sync');
 assert.strictEqual(offline._queued, true, 'offline Save Day still queues');
 assert.strictEqual(offline._painted, true, 'offline Save Day still paints the queue');
-assert.strictEqual(offline._home, 1, 'offline Save Day goes Home');
-assert.strictEqual(offline._homeAfterQueue, true, 'Home is after the enqueue');
+assert.strictEqual(offline._home, undefined, 'offline Save Day stays on the timesheet');
 
 const sheets = runSave({sheets:true, live:false});
 assert.strictEqual(sheets._queued, undefined, 'sheets rollback still does not queue');
-assert.strictEqual(sheets._home, 1, 'sheets Save Day still goes Home after the local save');
+assert.strictEqual(sheets._stored, true, 'sheets Save Day still stores locally');
+assert.strictEqual(sheets._home, undefined, 'sheets Save Day stays on the timesheet');
 
 const views = {cgHomeView:el('cgHomeView',{style:{display:'none'}}), cgFormView:el('cgFormView',{style:{display:'block'}}), cgSuccessView:el('cgSuccessView',{style:{display:'block'}})};
 const homeBox = {
