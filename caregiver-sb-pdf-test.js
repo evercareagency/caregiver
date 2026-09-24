@@ -36,7 +36,12 @@ assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-cg-pdf
 assert.ok(!html.includes('v=pdf1p'), 'caregiver marker does not use Admin v=pdf1p');
 assert.ok(html.includes('@page{size:letter portrait;margin:0;}'), 'print page margin is 0');
 assert.ok(/@media print\{[\s\S]*footer\{display:none !important;/.test(html), 'print hides the site footer');
-assert.ok(html.includes('const TS_PDF_PAGE_SLACK_PT=14;'), 'letter slack keeps the address on page 1');
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-pdf-1page-print v=cgpdf1p2 —'), 'print one-page marker');
+assert.ok(html.includes('v=cgpdf1p2'), 'print one-page probe');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-pdf-1page-print">'), 'print one-page meta');
+assert.ok(html.includes('v=norbkup1'), 'remove-backup marker stays');
+assert.ok(html.includes('const TS_PDF_PAGE_SLACK_PT=72;'), 'letter slack keeps the address on page 1');
+assert.ok(html.includes('height:9.6in !important'), 'print sheet is shorter than Letter');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-save-home v=home1 —'), 'save-home build marker');
 assert.ok(html.includes('v=home1'), 'save-home probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-save-home">'), 'save-home build meta');
