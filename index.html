@@ -5,6 +5,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="caregiver-build" content="2026-09-24-sb-auth-login">
+<!-- caregiver-build: 2026-09-24-sb-dual-write — ?sb=1 Save Day, submit, backup soft-delete, and inservice insert use Supabase; flag off stays on Sheets /exec -->
 <!-- caregiver-build: 2026-09-24-sb-auth-login — ?sb=1 or evercare_sb=1 signs in with Supabase Auth; flag off stays on Sheets /exec -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
@@ -411,6 +412,7 @@ else setupEverCarePWA();
       </button>
       <div id="cgHomeBackup" class="action-stack" style="display:none;margin-bottom:14px">
         <button class="btn btn-teal btn-full" id="cgBackupBtn" onclick="askCloudBackup()">☁️ Back up this week's draft</button>
+        <button class="btn btn-ghost btn-full" type="button" id="cgDeleteBackupBtn" style="display:none;margin-top:8px" onclick="askDeleteCloudBackup()">Remove office backup</button>
         <p class="backup-help">This saves an <strong>office copy</strong> of this week's draft — it is <strong>not</strong> a final submit. Use if you're changing phones or about to reset/clear this phone.</p>
       </div>
       <div class="notice">
@@ -2290,6 +2292,10 @@ function saveDayData(i,dayObj){
   if(activeDayIdx===i)activeDayIdx=null;
   refreshSaveDayState();
   showTempMsg(`✅ ${DAYS[i]} saved!`,'var(--success)');window.scrollTo(0,0);
+  if(evercareSbEnabled()&&!sbDataEnabled()){
+    showTempMsg('Saved on this phone. Sign in again to back it up.','var(--warn)');
+    return;
+  }
   if(sbDataEnabled())sbSyncSavedDay(i,wd[i]||dayObj);
 }
 
@@ -2607,7 +2613,8 @@ async function doFinalSubmit(){
   const submitted=new Date().toLocaleString();
   let data=null;
   try{
-    if(sbDataEnabled()){
+    if(evercareSbEnabled()){
+      if(!sbDataEnabled())throw new Error('Sign in again.');
       const client=getSelectedClient();
       const row=await sbUpsertTimesheet({
         clientId:(client&&client.id)||'',
@@ -2620,9 +2627,7 @@ async function doFinalSubmit(){
           emp_name:currentUser.name,
           client_name:(client&&client.name)||clientName,
           username:currentUser.username,
-          svc_type:svcType,
-          header_aide_sig:hdr.headerAideSig||'',
-          header_client_sig:hdr.headerClientSig||''
+          svc_type:svcType
         }
       });
       data={success:true,id:row&&row.id};
@@ -2632,7 +2637,7 @@ async function doFinalSubmit(){
       data=await apiPost({action:'submit',submitted,username:currentUser.username,emp_name:currentUser.name,client_name:clientName,svc_type:svcType,week_start:weekStart,total_hours:totalHrs,notes,days:weekData,...hdr});
     }
   }catch(e){
-    showTempMsg((sbDataEnabled()&&e&&e.message)||'Submit failed — check connection.','var(--danger)');
+    showTempMsg((evercareSbEnabled()&&e&&e.message)||'Submit failed — check connection.','var(--danger)');
     window._cgSubmitInFlight=false;
     return;
   }
@@ -3431,7 +3436,8 @@ async function doCloudBackup(){
   if(ts.cloudBackupId)payload.id=ts.cloudBackupId;
   try{
     showTempMsg('Backing up to office...','var(--teal)');
-    if(sbDataEnabled()){
+    if(evercareSbEnabled()){
+      if(!sbDataEnabled())throw new Error('Sign in again.');
       const row=await sbUpsertTimesheet({
         clientId:clientId,
         weekStart:weekStart,
@@ -3448,6 +3454,7 @@ async function doCloudBackup(){
       });
       if(row&&row.id)updateTSMeta(ts.id,{cloudBackupId:row.id,clientId:clientId||ts.clientId||''});
       showTempMsg('✅ Backed up to office!','var(--success)');
+      renderTSHome();
       return;
     }
     const data=await apiPost(payload);
@@ -3458,7 +3465,32 @@ async function doCloudBackup(){
       showTempMsg((data&&data.error)||'Backup failed. Try again.','var(--danger)');
     }
   }catch(e){
-    showTempMsg('Backup failed — check connection.','var(--danger)');
+    showTempMsg((evercareSbEnabled()&&e&&e.message)||'Backup failed — check connection.','var(--danger)');
+  }
+}
+
+async function deleteTimesheetBackup(id){
+  if(id==null||String(id).trim()==='')throw new Error('Backup id missing.');
+  if(evercareSbEnabled()){
+    if(!sbDataEnabled())throw new Error('Sign in again.');
+    return sbSoftDeleteBackup(id);
+  }
+  return apiPost({action:'delete_timesheet_backup',username:currentUser&&currentUser.username,id:id});
+}
+async function askDeleteCloudBackup(){
+  if(!currentUser){showTempMsg('Please log in first.','var(--danger)');return;}
+  const ts=getBackupTargetTS();
+  if(!ts||!ts.cloudBackupId){showTempMsg('No office backup to remove.','var(--danger)');return;}
+  if(!evercareSbEnabled())return;
+  if(!confirm('Remove the office backup of this draft? The copy on this phone stays.'))return;
+  try{
+    showTempMsg('Removing office backup...','var(--teal)');
+    await deleteTimesheetBackup(ts.cloudBackupId);
+    updateTSMeta(ts.id,{cloudBackupId:''});
+    showTempMsg('Office backup removed.','var(--success)');
+    renderTSHome();
+  }catch(e){
+    showTempMsg((e&&e.message)||'Could not remove the office backup.','var(--danger)');
   }
 }
 
@@ -3619,6 +3651,11 @@ function renderTSHome(){
   const el=document.getElementById('cgTSList');
   const backupBox=document.getElementById('cgHomeBackup');
   if(backupBox)backupBox.style.display=drafts.length?'block':'none';
+  const delBtn=document.getElementById('cgDeleteBackupBtn');
+  if(delBtn){
+    const target=getBackupTargetTS();
+    delBtn.style.display=(evercareSbEnabled()&&target&&target.cloudBackupId)?'block':'none';
+  }
   if(!el)return;
   if(!list.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:20px;color:var(--muted)"><p>No draft or sent-back timesheets.</p><p style="font-size:0.78rem;margin-top:6px">Tap "+ Start Another Timesheet" to start a new blank week.</p></div>';
@@ -3738,22 +3775,9 @@ function sbTimesheetToBackup(row){
 async function sbListTimesheetsForHome(){
   const select='id,aide_id,client_id,username,emp_name,client_name,svc_type,week_start,total_hours,notes,days,status,is_active,updated_at';
   const backups=await sbRest('timesheets?select='+encodeURIComponent(select)+'&is_active=eq.true&status=eq.backup&order=updated_at.desc');
-  let weekRows=[];
-  const week=typeof currentWeekSunday==='function'?currentWeekSunday():'';
-  if(week){
-    try{
-      weekRows=await sbRest('timesheets?select='+encodeURIComponent(select)+'&is_active=eq.true&week_start=eq.'+encodeURIComponent(week)+'&order=updated_at.desc');
-    }catch(e){weekRows=[];}
-  }
-  const seen={};
-  const merged=[];
-  (Array.isArray(backups)?backups:[]).concat(Array.isArray(weekRows)?weekRows:[]).forEach(function(row){
-    if(!row||!row.id||seen[row.id])return;
-    const st=String(row.status||'').toLowerCase();
-    if(st!=='backup'&&st!=='draft')return;
-    seen[row.id]=1;
-    merged.push(sbTimesheetToBackup(row));
-  });
+  const merged=(Array.isArray(backups)?backups:[]).filter(function(row){
+    return row&&row.id&&String(row.status||'').toLowerCase()==='backup';
+  }).map(sbTimesheetToBackup);
   return {success:true,data:merged};
 }
 function sbDayWire(day){
@@ -3775,6 +3799,36 @@ function sbDayWire(day){
   if(day.verified!=null)out.verified=day.verified;
   if(day.distanceFt!=null)out.distanceFt=day.distanceFt;
   if(day.distanceMi!=null)out.distanceMi=day.distanceMi;
+  else if(day.distanceFt!=null&&isFinite(Number(day.distanceFt)))out.distanceMi=Math.round(Number(day.distanceFt)/5280*100)/100;
+  return out;
+}
+function sbWeekSunday(value){
+  const s=String(value||'').trim().slice(0,10);
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if(!m)return s;
+  const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));
+  if(isNaN(d.getTime()))return s;
+  d.setDate(d.getDate()-d.getDay());
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function sbDayIndex(key){
+  const nameToIdx={sun:0,sunday:0,mon:1,monday:1,tue:2,tues:2,tuesday:2,wed:3,wednesday:3,thu:4,thur:4,thurs:4,thursday:4,fri:5,friday:5,sat:6,saturday:6};
+  const s=String(key==null?'':key).trim();
+  if(/^[0-6]$/.test(s))return s;
+  if(/^\d+$/.test(s)){
+    const n=Number(s);
+    if(n>=0&&n<=6)return String(n);
+  }
+  const mapped=nameToIdx[s.toLowerCase()];
+  return mapped==null?null:String(mapped);
+}
+function sbNormalizeDays(days){
+  const out={};
+  Object.keys(days||{}).forEach(function(k){
+    const idx=sbDayIndex(k);
+    if(idx==null)return;
+    out[idx]=Object.assign({},out[idx]||{},sbDayWire(days[k]));
+  });
   return out;
 }
 async function sbFindWeekRow(aideId,clientId,weekStart,status){
@@ -3798,14 +3852,14 @@ async function sbUpsertTimesheet(opts){
   opts=opts||{};
   const aideId=currentUser&&currentUser.sbAideId;
   const clientId=opts.clientId;
-  const weekStart=opts.weekStart;
+  const weekStart=sbWeekSunday(opts.weekStart);
   const status=opts.status==='submitted'?'submitted':'backup';
   if(!aideId||!clientId||!weekStart)throw new Error('Choose a client and week before saving.');
   const orgId=await sbEnsureOrgId();
   const header=opts.header||{};
-  const incoming=opts.days||{};
-  const existing=await sbFindWeekRow(aideId,clientId,weekStart,status==='backup'?'backup':'');
-  const days=status==='submitted'?incoming:sbMergeDays(existing&&existing.days,incoming);
+  const incoming=sbNormalizeDays(opts.days||{});
+  const existing=await sbFindWeekRow(aideId,clientId,weekStart,'');
+  const days=status==='submitted'?incoming:sbMergeDays(sbNormalizeDays(existing&&existing.days),incoming);
   const body={
     days:days,
     total_hours:header.total_hours||'',
@@ -3815,12 +3869,13 @@ async function sbUpsertTimesheet(opts){
     username:header.username||(currentUser&&currentUser.username)||'',
     svc_type:header.svc_type||''
   };
-  if(header.header_aide_sig)body.header_aide_sig=header.header_aide_sig;
-  if(header.header_client_sig)body.header_client_sig=header.header_client_sig;
   if(existing&&existing.id){
     if(status==='submitted'){
       body.status='submitted';
       body.submitted_at=new Date().toISOString();
+    }else{
+      body.status='backup';
+      body.submitted_at=null;
     }
     const updated=await sbRest('timesheets?id=eq.'+encodeURIComponent(existing.id),{
       method:'PATCH',
@@ -3848,9 +3903,6 @@ async function sbUpsertTimesheet(opts){
     if(!sbIsConflict(err))throw err;
     const again=await sbFindWeekRow(aideId,clientId,weekStart,'');
     if(!again||!again.id)throw err;
-    if(status!=='submitted'&&again.status&&String(again.status).toLowerCase()!=='backup'&&String(again.status).toLowerCase()!=='draft'){
-      throw new Error('That week is already submitted.');
-    }
     const retry=Object.assign({},body);
     delete retry.org_id;delete retry.aide_id;delete retry.client_id;delete retry.week_start;delete retry.is_active;
     if(status==='submitted'){
@@ -3858,8 +3910,8 @@ async function sbUpsertTimesheet(opts){
       retry.submitted_at=new Date().toISOString();
     }else{
       retry.days=sbMergeDays(again.days,incoming);
-      delete retry.status;
-      delete retry.submitted_at;
+      retry.status='backup';
+      retry.submitted_at=null;
     }
     const updated=await sbRest('timesheets?id=eq.'+encodeURIComponent(again.id),{
       method:'PATCH',
@@ -3896,6 +3948,94 @@ function sbSyncSavedDay(i,dayObj){
   }).catch(function(){
     showTempMsg('Saved on this phone. Office backup did not sync.','var(--warn)');
   });
+}
+// GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1 §5.4 — soft-delete frees the week natural key.
+async function sbSoftDeleteBackup(id){
+  if(id==null||String(id).trim()==='')throw new Error('Backup id missing.');
+  const updated=await sbRest('timesheets?id=eq.'+encodeURIComponent(id),{
+    method:'PATCH',
+    headers:{Prefer:'return=representation'},
+    body:{is_active:false}
+  });
+  const row=Array.isArray(updated)?updated[0]:updated;
+  if(!row||!row.id)throw new Error('Office backup was not removed.');
+  return row;
+}
+function sbAnswerList(raw){
+  let ans=raw;
+  if(typeof ans==='string'){
+    try{ans=JSON.parse(ans);}catch(e){ans=[];}
+  }
+  return Array.isArray(ans)?ans:[];
+}
+function sbGradeInservice(topicId,answers){
+  const topic=(typeof INSERVICES!=='undefined'?INSERVICES:[]).find(function(t){return String(t.id)===String(topicId);});
+  const qs=topic&&topic.questions?topic.questions:[];
+  const ans=sbAnswerList(answers);
+  let correct=0;
+  const items=qs.map(function(q,i){
+    const sel=ans[i];
+    const selNum=(sel==null||sel==='')?null:Number(sel);
+    const ok=selNum!=null&&!isNaN(selNum)&&Number(selNum)===Number(q.answer);
+    if(ok)correct++;
+    const opts=q.options||[];
+    return {
+      index:i,
+      qIndex:i,
+      selected:selNum,
+      correct:q.answer,
+      prompt:q.q,
+      question:q.q,
+      options:opts,
+      isCorrect:ok,
+      aideAnswer:(selNum!=null&&opts[selNum]!=null)?opts[selNum]:'',
+      correctAnswer:opts[q.answer]!=null?opts[q.answer]:''
+    };
+  });
+  const total=qs.length;
+  const pct=total?Math.round(correct/total*100):0;
+  return {
+    score_correct:correct,
+    score_total:total,
+    score_pct:pct,
+    graded_detail:{scoreCorrect:correct,scoreTotal:total,scorePct:pct,items:items}
+  };
+}
+// GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1 §5.5 — caregiver INSERT only. No update.
+async function sbSubmitInservice(payload){
+  payload=payload||{};
+  const aideId=currentUser&&currentUser.sbAideId;
+  if(!aideId)throw new Error('Sign in again.');
+  const orgId=await sbEnsureOrgId();
+  if(!orgId)throw new Error('Missing office id for this account.');
+  const answers=sbAnswerList(payload.answers);
+  const graded=sbGradeInservice(payload.topic_id,answers);
+  const body={
+    org_id:orgId,
+    aide_id:aideId,
+    username:payload.username||(currentUser&&currentUser.username)||'',
+    emp_name:payload.emp_name||(currentUser&&currentUser.name)||'',
+    topic_id:payload.topic_id==null?'':String(payload.topic_id),
+    topic_title:payload.topic_title||'',
+    answers:answers,
+    signature:payload.signature||'',
+    score_correct:graded.score_correct,
+    score_total:graded.score_total,
+    score_pct:graded.score_pct,
+    graded_detail:graded.graded_detail,
+    completed:payload.completed||'',
+    status:'Active',
+    submitted_at:new Date().toISOString(),
+    legacy_id:String(Date.now())
+  };
+  const inserted=await sbRest('inservice_results?select='+encodeURIComponent('id,legacy_id,score_correct,score_total,score_pct,submitted_at'),{
+    method:'POST',
+    headers:{Prefer:'return=representation'},
+    body:body
+  });
+  const row=Array.isArray(inserted)?inserted[0]:inserted;
+  if(!row||!row.id)throw new Error('Inservice did not reach the office.');
+  return row;
 }
 function sbLoadHomeLists(restoreBackups){
   if(restoreBackups&&typeof restoreCloudBackups==='function'){
@@ -4164,19 +4304,45 @@ async function submitInservice(){
   const now=new Date();
   const completedDate=formatCertDate(now);
   const completedTime=now.toLocaleString();
+  if(evercareSbEnabled()&&!sbDataEnabled()){
+    showTempMsg('Sign in again.','var(--danger)');
+    return;
+  }
   const isData=getISData();
   isData['completed_'+currentIS.id]=completedDate;
   isData['completedAt_'+currentIS.id]=now.toISOString();
   isData['sig_'+currentIS.id]=sigData;
   isData['answers_'+currentIS.id]=JSON.stringify(isAnswers);
   saveISData(isData);
-  fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({action:'submit_inservice',username:currentUser.username,emp_name:currentUser.name,
-    topic_id:currentIS.id,topic_title:currentIS.title,completed:completedTime,
-    answers:JSON.stringify(isAnswers),signature:sigData})}).catch(()=>{});
+  if(evercareSbEnabled()){
+    try{
+      await sbSubmitInservice({
+        username:currentUser.username,
+        emp_name:currentUser.name,
+        topic_id:currentIS.id,
+        topic_title:currentIS.title,
+        completed:completedTime,
+        answers:isAnswers.slice(),
+        signature:sigData
+      });
+    }catch(e){
+      delete isData['completed_'+currentIS.id];
+      delete isData['completedAt_'+currentIS.id];
+      delete isData['sig_'+currentIS.id];
+      delete isData['answers_'+currentIS.id];
+      saveISData(isData);
+      showTempMsg((e&&e.message)||'Inservice did not reach the office.','var(--danger)');
+      return;
+    }
+  }else{
+    fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'submit_inservice',username:currentUser.username,emp_name:currentUser.name,
+      topic_id:currentIS.id,topic_title:currentIS.title,completed:completedTime,
+      answers:JSON.stringify(isAnswers),signature:sigData})}).catch(()=>{});
+  }
   document.getElementById('isSuccessMsg').textContent='You have completed this month inservice: "'+currentIS.shortTitle+'". Great job! The office has been notified.';
   showScreen('isSuccessScreen');
-  checkISNotif();
+  if(!evercareSbEnabled())checkISNotif();
 }
 
 function escapeHtml(str){
