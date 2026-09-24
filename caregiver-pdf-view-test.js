@@ -35,7 +35,8 @@ assert.ok(html.includes('v=home1'), 'save-home marker stays');
 assert.ok(html.includes('v=nocert1'), 'nocert marker stays');
 assert.ok(html.includes('v=sbseal1'), 'auth seal marker stays');
 assert.ok(html.includes('v=offline1'), 'offline marker stays');
-assert.ok(html.includes('const TS_PDF_PAGE_SLACK_PT=14;'), '14pt slack stays');
+assert.ok(html.includes('const TS_PDF_PAGE_SLACK_PT=72;'), '72pt slack keeps the address on page 1');
+assert.ok(html.includes('v=cgpdf1p2'), 'print one-page marker stays');
 
 const btnAt = html.indexOf('id="viewPdfBtn"');
 const saveAt = html.indexOf('id="saveDayBtn"');

@@ -4,6 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-pdf-1page-print">
+<meta name="caregiver-build" content="2026-09-24-no-rm-backup">
 <meta name="caregiver-build" content="2026-09-24-pw-reset-ux">
 <meta name="caregiver-build" content="2026-09-24-is-assign-unlock">
 <meta name="caregiver-build" content="2026-09-24-aide-portal">
@@ -15,6 +17,8 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-pdf-1page-print v=cgpdf1p2 — Friday GO 2026-09-24. Saved timesheet PDF and browser/iOS Letter print are one page. The blank form is inset by TS_PDF_PAGE_SLACK_PT (72) so 5510 Pearl Rd stays on page 1 at 100% scale. Print of the open timesheet shows that sheet only. v=norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-24-no-rm-backup v=norbkup1 — Friday GO 2026-09-24. More no longer offers a control that deletes the office copy of a draft, and that confirm is gone. Back up this week's draft, Log out, and the 8-hour stay-signed-in note stay. v=pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-pw-reset-ux v=pwreset1 — Friday GO 2026-09-24. After the email link saves a new password (PUT /auth/v1/user on the recovery session), the reset page stays on “Password saved”. Primary button “Open ECA Aide Portal” goes to the LIVE Pages login https://evercareagency.github.io/caregiver/ . On caregiver Pages, including a tip preview, that button uses location.origin+pathname instead, so the preview login still opens. Forgot redirect_to stays location.origin+pathname (LIVE host, not a localhost redirect). The page follows that login after about 3 seconds. Soft copy: if you use the app icon on your phone, open it from there after this. No Universal Links. v=portal1 and the Ace Auth recovery path stay. -->
 <!-- caregiver-build: 2026-09-24-is-assign-unlock v=isassign1 — Friday GO 2026-09-24. My Inservices unlock and the home due-this-month banner read aide-JWT POST /rest/v1/rpc/my_inservice_topics (a set of topic_id strings). A topic in that set with no Active completion is startable. Completed still hydrates from inservice_results (v=ishydr1). Sheets get_assigned_topic and get_is_reminder are not on the unlock path. Aides still have no Print or View Certificate. v=portal1, ishydr1, cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-aide-portal v=portal1 — Friday GO 2026-09-24. Visible chrome is ECA Aide Portal (title, login headers, home header, PWA name and short_name). Bottom nav is Home, Timesheet, Inservices, More. Clients stay on Home only. Deleting a draft asks first. Client and aide signatures use Confirm and Redo, and each one asks before it keeps or clears the ink. Stay-logged-in TTL is CG_SESSION_MS (8 hours from loginAt). A foreground check clears the session and returns to login when that window ends. Icons A defaults: PORTAL_MARK_HANDS (teal hands+heart) and PORTAL_MARK_CLIPBOARD (navy clipboard). Same drawings live in brand/eca-hands-heart.svg and brand/eca-clipboard.svg for a later pass. The login photo is unchanged. v=cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -250,20 +254,31 @@ body.has-bottom-nav footer{margin-bottom:76px;}
 .ts-pdf-sheet .ts-fill-other{font-size:7pt;max-width:12%;overflow:hidden;}
 .ts-pdf-sheet .ts-fill-notes{font-size:8pt;font-weight:400;white-space:normal;max-width:46%;line-height:1.3;transform:none;}
 .ts-pdf-sheet .ts-sig{position:absolute;z-index:2;width:11%;height:1.6%;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none;}
-/* 100% Letter print: an 11in sheet plus the site footer crosses the page break and leaves the Pearl Rd line on page 2. */
+#tsPrintRoot{display:none;}
+/* 100% Letter print (v=cgpdf1p2). A full 11in sheet leaves the Pearl Rd line in the overflow, so the printed form is 9.6in tall and the site footer is not a second page. */
 @media print{
   @page{size:letter portrait;margin:0;}
   footer{display:none !important;}
-  .ts-pdf-sheet{
-    width:8.5in !important;
-    height:10.85in !important;
-    max-height:10.85in !important;
-    margin:0 !important;
-    padding:0 !important;
+  html.ts-printing,html.ts-printing body{
+    margin:0 !important;padding:0 !important;background:#fff !important;
+    width:8.5in !important;height:9.6in !important;min-height:0 !important;max-height:9.6in !important;
     overflow:hidden !important;
+  }
+  html.ts-printing body>*:not(#tsPrintRoot),
+  html.ts-printing body .screen,
+  html.ts-printing body .screen.active,
+  html.ts-printing body footer,
+  html.ts-printing body .bottom-nav{display:none !important;}
+  html.ts-printing #tsPrintRoot{
+    display:block !important;position:static !important;
+    width:8.5in;height:9.6in;margin:0;padding:0;overflow:hidden;background:#fff;
+  }
+  html.ts-printing #tsPrintRoot .ts-pdf-sheet{
+    width:7.418in !important;height:9.6in !important;max-height:9.6in !important;
+    margin:0 auto !important;padding:0 !important;overflow:hidden !important;
+    position:relative !important;left:auto !important;top:0 !important;
     box-shadow:none !important;
-    break-after:avoid-page;
-    page-break-after:avoid;
+    break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid;
   }
 }
 </style>
@@ -524,7 +539,6 @@ else setupEverCarePWA();
       </button>
       <div id="cgHomeBackup" class="action-stack" style="display:none;margin-bottom:14px">
         <button class="btn btn-teal btn-full" id="cgBackupBtn" onclick="askCloudBackup()">☁️ Back up this week's draft</button>
-        <button class="btn btn-ghost btn-full" type="button" id="cgDeleteBackupBtn" style="display:none;margin-top:8px" onclick="askDeleteCloudBackup()">Remove office backup</button>
         <p class="backup-help">This saves an <strong>office copy</strong> of this week's draft — it is <strong>not</strong> a final submit. Use if you're changing phones or about to reset/clear this phone.</p>
       </div>
       <div class="notice">
@@ -857,7 +871,6 @@ else setupEverCarePWA();
     </div>
     <div class="action-stack">
       <button class="btn btn-teal btn-full" type="button" onclick="askCloudBackup()">Back up this week's draft</button>
-      <button class="btn btn-ghost btn-full" type="button" onclick="askDeleteCloudBackup()">Remove office backup</button>
       <button class="btn btn-ghost btn-full ec-install-cta" type="button" onclick="installPWA()"><span class="ec-install-cta-label">Add to Home Screen</span></button>
       <button class="btn btn-navy btn-full" type="button" onclick="confirmLogout()">Log out</button>
     </div>
@@ -902,6 +915,7 @@ else setupEverCarePWA();
 </div>
 
 <footer>5510 Pearl Rd Ste 200, Cleveland, OH 44129 &nbsp;|&nbsp; (216) 377-5991 &nbsp;|&nbsp; ECA Aide Portal</footer>
+<div id="tsPrintRoot" aria-hidden="true"></div>
 
 <script>
 const SHEETS_URL='https://script.google.com/macros/s/AKfycbwSZbOtThwwwiu5pojn7reMvaygQ2tDQgxfidaytVZBykIvl-yT3X0qgnpufAg6Xku4/exec';
@@ -1259,6 +1273,7 @@ function syncPortalChrome(screenId){
     else b.removeAttribute('aria-current');
   });
   if(typeof paintPortalMarks==='function')paintPortalMarks();
+  try{if(typeof cgSyncTimesheetPrint==='function')cgSyncTimesheetPrint(active==='timesheet');}catch(e){}
 }
 function showMoreScreen(){
   if(!currentUser)return;
@@ -1334,11 +1349,12 @@ function switchTab(tab){
 
 // Friday GO 2026-09-24 cut (v=sbseal1). Default true. No new Ace RPC.
 // Offline Save Day queue (v=offline1) flushes through Supabase when a caregiver JWT is valid.
-// Letter PDF is one page (v=cgpdf1).
+// Letter PDF is one page (v=cgpdf1). Print inset keeps Pearl Rd on that page (v=cgpdf1p2).
 // View PDF after Save Day (v=cgpdfv1). Shown once a day is saved. Not gated on cloudBackupId or pdf_storage_path.
 // Inservice Completed hydrates from inservice_results (v=ishydr1). No aide certificate.
 // Assigned unlock and the home due banner read rpc my_inservice_topics (v=isassign1). No Sheets get_assigned_topic.
 // Backup UUID guard (v=bakuuid1). Phone Date.now / ts_* ids never enter uuid columns.
+// More has no office-backup delete control (v=norbkup1). Backup, Log out, and the 8h note stay.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
 // surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
@@ -4133,22 +4149,6 @@ async function deleteTimesheetBackup(id){
   }
   return apiPost({action:'delete_timesheet_backup',username:currentUser&&currentUser.username,id:id});
 }
-async function askDeleteCloudBackup(){
-  if(!currentUser){showTempMsg('Please log in first.','var(--danger)');return;}
-  const ts=getBackupTargetTS();
-  if(!ts||!ts.cloudBackupId){showTempMsg('No office backup to remove.','var(--danger)');return;}
-  if(!evercareSbEnabled())return;
-  if(!confirm('Remove the office backup of this draft? The copy on this phone stays.'))return;
-  try{
-    showTempMsg('Removing office backup...','var(--teal)');
-    await deleteTimesheetBackup(ts.cloudBackupId);
-    updateTSMeta(ts.id,{cloudBackupId:''});
-    showTempMsg('Office backup removed.','var(--success)');
-    renderTSHome();
-  }catch(e){
-    showTempMsg((e&&e.message)||'Could not remove the office backup.','var(--danger)');
-  }
-}
 
 function _wdIsEmpty(wd){
   if(!wd||typeof wd!=='object')return true;
@@ -4308,11 +4308,6 @@ function renderTSHome(){
   const el=document.getElementById('cgTSList');
   const backupBox=document.getElementById('cgHomeBackup');
   if(backupBox)backupBox.style.display=drafts.length?'block':'none';
-  const delBtn=document.getElementById('cgDeleteBackupBtn');
-  if(delBtn){
-    const target=getBackupTargetTS();
-    delBtn.style.display=(evercareSbEnabled()&&target&&target.cloudBackupId)?'block':'none';
-  }
   if(!el)return;
   if(!list.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:20px;color:var(--muted)"><p>No draft or sent-back timesheets.</p><p style="font-size:0.78rem;margin-top:6px">Tap "+ Start Another Timesheet" to start a new blank week.</p></div>';
@@ -5376,9 +5371,9 @@ const SB_PDF_BUCKET='evercare-pdfs';
 const SB_PDF_MAX_BYTES=25*1024*1024;
 const SB_PDF_TARGET_BYTES=2*1024*1024;
 const TS_PDF_BLANK='assets/blank-letter.png?v=a713ovl';
-// Points of white kept inside the Letter page so a 100% scale print does not
-// push the form address (about 0.38in above the sheet edge) onto page 2.
-const TS_PDF_PAGE_SLACK_PT=14;
+// Points of white kept under the form so a 100% Letter print does not push the
+// Pearl Rd line (about 0.38in above the form edge) onto page 2. 72pt is 1in.
+const TS_PDF_PAGE_SLACK_PT=72;
 const TS_FORM_PT={
   sheetW:612,sheetH:792,
   nameX:110,clientNameY:101.8,caregiverNameY:126.3,
@@ -5638,7 +5633,29 @@ function sbJpegLetterPdf(canvas,quality){
   }catch(e){}
   return pdf.output('blob');
 }
+function cgMountTimesheetPrintSheet(record){
+  let root=document.getElementById('tsPrintRoot');
+  if(!root){
+    root=document.createElement('div');
+    root.id='tsPrintRoot';
+    root.setAttribute('aria-hidden','true');
+    document.body.appendChild(root);
+  }
+  let rec=record;
+  if(!rec){
+    try{rec=sbTimesheetPdfRecord();}catch(e){rec={};}
+  }
+  root.innerHTML='<div class="ts-pdf-sheet">'+buildTimesheetPrintHtml(rec||{})+'</div>';
+}
+function cgSyncTimesheetPrint(on){
+  const htmlEl=document.documentElement;
+  if(!htmlEl)return;
+  if(!on){htmlEl.classList.remove('ts-printing');return;}
+  try{cgMountTimesheetPrintSheet();}catch(e){}
+  htmlEl.classList.add('ts-printing');
+}
 async function renderTimesheetPdfBlob(r){
+  try{cgMountTimesheetPrintSheet(r);}catch(e){}
   if(!sbPdfLibsReady())throw new Error('pdf lib');
   const container=document.createElement('div');
   container.className='ts-pdf-sheet';
@@ -5922,6 +5939,7 @@ function cgShowTimesheetPdf(blob){
 function cgNoteSavedDayPdf(){
   try{window.__cgViewPdfBlob=null;}catch(e){}
   cgPaintViewPdf();
+  try{cgSyncTimesheetPrint(true);}catch(e){}
   const syncing=typeof evercareSbEnabled==='function'&&evercareSbEnabled()&&typeof cgShouldSyncNow==='function'&&cgShouldSyncNow();
   if(syncing)return;
   const seq=(window.__cgViewPdfSeq=(window.__cgViewPdfSeq||0)+1);
