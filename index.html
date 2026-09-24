@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-no-rm-backup">
 <meta name="caregiver-build" content="2026-09-24-pw-reset-ux">
 <meta name="caregiver-build" content="2026-09-24-is-assign-unlock">
 <meta name="caregiver-build" content="2026-09-24-aide-portal">
@@ -15,6 +16,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-no-rm-backup v=norbkup1 — Friday GO 2026-09-24. More no longer offers a control that deletes the office copy of a draft, and that confirm is gone. Back up this week's draft, Log out, and the 8-hour stay-signed-in note stay. v=pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-pw-reset-ux v=pwreset1 — Friday GO 2026-09-24. After the email link saves a new password (PUT /auth/v1/user on the recovery session), the reset page stays on “Password saved”. Primary button “Open ECA Aide Portal” goes to the LIVE Pages login https://evercareagency.github.io/caregiver/ . On caregiver Pages, including a tip preview, that button uses location.origin+pathname instead, so the preview login still opens. Forgot redirect_to stays location.origin+pathname (LIVE host, not a localhost redirect). The page follows that login after about 3 seconds. Soft copy: if you use the app icon on your phone, open it from there after this. No Universal Links. v=portal1 and the Ace Auth recovery path stay. -->
 <!-- caregiver-build: 2026-09-24-is-assign-unlock v=isassign1 — Friday GO 2026-09-24. My Inservices unlock and the home due-this-month banner read aide-JWT POST /rest/v1/rpc/my_inservice_topics (a set of topic_id strings). A topic in that set with no Active completion is startable. Completed still hydrates from inservice_results (v=ishydr1). Sheets get_assigned_topic and get_is_reminder are not on the unlock path. Aides still have no Print or View Certificate. v=portal1, ishydr1, cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-aide-portal v=portal1 — Friday GO 2026-09-24. Visible chrome is ECA Aide Portal (title, login headers, home header, PWA name and short_name). Bottom nav is Home, Timesheet, Inservices, More. Clients stay on Home only. Deleting a draft asks first. Client and aide signatures use Confirm and Redo, and each one asks before it keeps or clears the ink. Stay-logged-in TTL is CG_SESSION_MS (8 hours from loginAt). A foreground check clears the session and returns to login when that window ends. Icons A defaults: PORTAL_MARK_HANDS (teal hands+heart) and PORTAL_MARK_CLIPBOARD (navy clipboard). Same drawings live in brand/eca-hands-heart.svg and brand/eca-clipboard.svg for a later pass. The login photo is unchanged. v=cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -524,7 +526,6 @@ else setupEverCarePWA();
       </button>
       <div id="cgHomeBackup" class="action-stack" style="display:none;margin-bottom:14px">
         <button class="btn btn-teal btn-full" id="cgBackupBtn" onclick="askCloudBackup()">☁️ Back up this week's draft</button>
-        <button class="btn btn-ghost btn-full" type="button" id="cgDeleteBackupBtn" style="display:none;margin-top:8px" onclick="askDeleteCloudBackup()">Remove office backup</button>
         <p class="backup-help">This saves an <strong>office copy</strong> of this week's draft — it is <strong>not</strong> a final submit. Use if you're changing phones or about to reset/clear this phone.</p>
       </div>
       <div class="notice">
@@ -857,7 +858,6 @@ else setupEverCarePWA();
     </div>
     <div class="action-stack">
       <button class="btn btn-teal btn-full" type="button" onclick="askCloudBackup()">Back up this week's draft</button>
-      <button class="btn btn-ghost btn-full" type="button" onclick="askDeleteCloudBackup()">Remove office backup</button>
       <button class="btn btn-ghost btn-full ec-install-cta" type="button" onclick="installPWA()"><span class="ec-install-cta-label">Add to Home Screen</span></button>
       <button class="btn btn-navy btn-full" type="button" onclick="confirmLogout()">Log out</button>
     </div>
@@ -1339,6 +1339,7 @@ function switchTab(tab){
 // Inservice Completed hydrates from inservice_results (v=ishydr1). No aide certificate.
 // Assigned unlock and the home due banner read rpc my_inservice_topics (v=isassign1). No Sheets get_assigned_topic.
 // Backup UUID guard (v=bakuuid1). Phone Date.now / ts_* ids never enter uuid columns.
+// More has no office-backup delete control (v=norbkup1). Backup, Log out, and the 8h note stay.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
 // surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
@@ -4133,22 +4134,6 @@ async function deleteTimesheetBackup(id){
   }
   return apiPost({action:'delete_timesheet_backup',username:currentUser&&currentUser.username,id:id});
 }
-async function askDeleteCloudBackup(){
-  if(!currentUser){showTempMsg('Please log in first.','var(--danger)');return;}
-  const ts=getBackupTargetTS();
-  if(!ts||!ts.cloudBackupId){showTempMsg('No office backup to remove.','var(--danger)');return;}
-  if(!evercareSbEnabled())return;
-  if(!confirm('Remove the office backup of this draft? The copy on this phone stays.'))return;
-  try{
-    showTempMsg('Removing office backup...','var(--teal)');
-    await deleteTimesheetBackup(ts.cloudBackupId);
-    updateTSMeta(ts.id,{cloudBackupId:''});
-    showTempMsg('Office backup removed.','var(--success)');
-    renderTSHome();
-  }catch(e){
-    showTempMsg((e&&e.message)||'Could not remove the office backup.','var(--danger)');
-  }
-}
 
 function _wdIsEmpty(wd){
   if(!wd||typeof wd!=='object')return true;
@@ -4308,11 +4293,6 @@ function renderTSHome(){
   const el=document.getElementById('cgTSList');
   const backupBox=document.getElementById('cgHomeBackup');
   if(backupBox)backupBox.style.display=drafts.length?'block':'none';
-  const delBtn=document.getElementById('cgDeleteBackupBtn');
-  if(delBtn){
-    const target=getBackupTargetTS();
-    delBtn.style.display=(evercareSbEnabled()&&target&&target.cloudBackupId)?'block':'none';
-  }
   if(!el)return;
   if(!list.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:20px;color:var(--muted)"><p>No draft or sent-back timesheets.</p><p style="font-size:0.78rem;margin-top:6px">Tap "+ Start Another Timesheet" to start a new blank week.</p></div>';

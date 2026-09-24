@@ -22,6 +22,9 @@ function extractFn(src, sig){
   throw new Error('unclosed ' + sig);
 }
 
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-no-rm-backup">'), 'no-rm-backup meta');
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-no-rm-backup v=norbkup1 —'), 'no-rm-backup comment');
+assert.ok(html.includes('v=norbkup1'), 'no-rm-backup probe');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-aide-portal">'), 'portal meta');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-aide-portal v=portal1 —'), 'portal comment');
 assert.ok(html.includes('v=portal1'), 'portal probe');
@@ -36,6 +39,17 @@ assert.ok(html.includes('short_name:PORTAL_SHORT_NAME'), 'manifest uses short na
 assert.ok(html.includes('content="ECA Aide Portal"'), 'apple title');
 assert.ok(html.includes('>ECA Aide Portal</h2>'), 'home header');
 assert.ok(html.includes('class="auth-title">ECA Aide Portal</div>'), 'login title');
+
+const more = html.slice(html.indexOf('id="moreScreen"'), html.indexOf('id="bottomNav"'));
+assert.ok(more.includes("Back up this week's draft"), 'more still backs up');
+assert.ok(more.includes('>Log out</button>'), 'more still logs out');
+assert.ok(more.includes('8 hours'), 'more still documents the 8 hour stay');
+assert.ok(!/Remove office backup/i.test(more), 'more has no remove-office-backup control');
+assert.ok(!html.includes('askDeleteCloudBackup'), 'remove-office-backup handler is gone');
+assert.ok(!html.includes('cgDeleteBackupBtn'), 'hidden home remove button is gone');
+assert.ok(!html.includes('Remove the office backup of this draft'), 'remove-office-backup confirm is gone');
+assert.ok(html.includes('id="backupConfirmModal"'), 'backup confirm stays');
+assert.ok(html.includes('async function deleteTimesheetBackup(id)'), 'draft delete can still drop an office row');
 
 const nav = html.slice(html.indexOf('id="bottomNav"'), html.indexOf('id="deleteDraftModal"'));
 assert.ok(nav.includes('>Home</span>'), 'home tab');
@@ -201,7 +215,13 @@ async function runBrowser(){
     }, {timeout:5000});
     const moreText = await page.$eval('#moreScreen', function(el){return el.innerText;});
     assert.ok(moreText.indexOf('8 hours')>=0, 'more documents the 8 hour stay');
+    assert.ok(moreText.indexOf('Back up this week')>=0, 'more can back up');
     assert.ok(moreText.indexOf('Log out')>=0, 'more can log out');
+    assert.ok(moreText.indexOf('Remove office backup')<0, 'more has no remove office backup');
+    const moreLabels = await page.$$eval('#moreScreen .action-stack button', function(btns){
+      return btns.map(function(b){return b.textContent.replace(/\s+/g,' ').trim();});
+    });
+    assert.ok(moreLabels.indexOf('Remove office backup')<0, 'more buttons omit remove office backup');
 
     await page.evaluate(function(){
       const raw=localStorage.getItem('cg_session');
