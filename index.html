@@ -3848,29 +3848,6 @@ function sbMergeDays(base,incoming){
   });
   return days;
 }
-function sbDayFullness(day){
-  if(!day||typeof day!=='object')return 0;
-  let n=0;
-  if(day.date)n+=1;
-  if(day.tin||day.in)n+=1;
-  if(day.tout||day.out)n+=1;
-  if(day.hrs)n+=1;
-  if(Array.isArray(day.svcs))n+=day.svcs.length;
-  if(day.aideSig)n+=1;
-  if(day.clientSig)n+=1;
-  if(day.location)n+=1;
-  return n;
-}
-function sbMergeDaysIfFuller(base,incoming){
-  const days=Object.assign({},base||{});
-  Object.keys(incoming||{}).forEach(function(k){
-    const key=String(k);
-    const prev=days[key]||{};
-    const next=incoming[k]||{};
-    if(sbDayFullness(next)>=sbDayFullness(prev))days[key]=Object.assign({},next);
-  });
-  return days;
-}
 function sbMergeDaysReplace(base,incoming){
   const days=Object.assign({},base||{});
   Object.keys(incoming||{}).forEach(function(k){
@@ -3894,7 +3871,7 @@ async function sbUpsertTimesheet(opts){
   const existing=await sbFindWeekRow(aideId,clientId,weekStart,'');
   const keepSubmitted=sbKeepSubmitted(existing,status);
   const baseDays=sbNormalizeDays(existing&&existing.days);
-  const days=status==='submitted'?incoming:(keepSubmitted?sbMergeDaysIfFuller(baseDays,incoming):sbMergeDays(baseDays,incoming));
+  const days=status==='submitted'?incoming:sbMergeDaysReplace(baseDays,incoming);
   const body={
     days:days,
     total_hours:header.total_hours||'',
@@ -3945,11 +3922,11 @@ async function sbUpsertTimesheet(opts){
       retry.status='submitted';
       retry.submitted_at=new Date().toISOString();
     }else if(keepAgain){
-      retry.days=sbMergeDaysIfFuller(sbNormalizeDays(again.days),incoming);
+      retry.days=sbMergeDaysReplace(sbNormalizeDays(again.days),incoming);
       delete retry.status;
       delete retry.submitted_at;
     }else{
-      retry.days=sbMergeDays(again.days,incoming);
+      retry.days=sbMergeDaysReplace(sbNormalizeDays(again.days),incoming);
       retry.status='backup';
       retry.submitted_at=null;
     }
@@ -3992,11 +3969,15 @@ function sbSyncSavedDay(i,dayObj){
     showTempMsg('Couldn\'t upload — tap to retry','var(--warn)');
   });
 }
-// GHOST-OFFLINE-SAVE-DAY-SYNC-CONTRACT-v1 — device queue. Ghost decides when to flush.
-// Kinds: save_day | submit | pdf_upload. client_op_id is a device uuid.
-// PDF bytes stay out of this JSON mirror until flush (memory + IndexedDB).
+// GHOST-OFFLINE-SAVE-DAY-SYNC-CONTRACT-v1 — device queue only. No Ace table and no new RPC.
+// Fields: local_id, client_op_id, kind, created_at, attempt_count, last_error, status,
+// org_id, aide_id, client_id, week_start, day_index, day_patch, days, header, timesheet_id.
+// client_op_id stays on the phone. Idempotency is the week natural key on REST.
+// PDF bytes live in a separate blob store. Flush PDF only after timesheet_id is known.
+// Ghost owns online detect and backoff (1s, then double, cap 60s). Ace Sunday is catch-up only.
 // Per week: save_day and submit first, then pdf_upload. Sheets rollback does not queue.
 const CG_OFFLINE_QUEUE_KEY='evercare_offline_ops';
+const CG_QUEUE_FIELDS=['local_id','client_op_id','kind','created_at','attempt_count','last_error','status','org_id','aide_id','client_id','week_start','day_index','day_patch','days','header','timesheet_id','next_attempt_at'];
 function cgNetOnline(){
   try{
     if(typeof navigator!=='undefined'&&navigator&&navigator.onLine===false)return false;
@@ -4016,7 +3997,8 @@ function cgIsNetErr(err){
   if(!cgNetOnline())return true;
   if(!err)return false;
   if(err.name==='TypeError')return true;
-  return /failed to fetch|network|load failed|offline/i.test(String(err&&err.message||''));
+  const msg=String(err&&err.message||'');
+  return /failed to fetch|network error|networkerror/i.test(msg)||/(?:^|[^a-z])load failed/i.test(msg)||/\boffline\b/i.test(msg);
 }
 function cgDeviceOpId(){
   try{
@@ -4037,10 +4019,11 @@ function cgReadQueue(){
 function cgWriteQueue(ops){
   const clean=(ops||[]).map(function(op){
     const copy={};
-    Object.keys(op||{}).forEach(function(k){
-      if(k==='pdf_bytes'||k==='pdfBytes'||k==='bytes')return;
+    CG_QUEUE_FIELDS.forEach(function(k){
+      if(!op||!Object.prototype.hasOwnProperty.call(op,k))return;
       const val=op[k];
       if(typeof val==='string'&&val.indexOf('%PDF-')===0)return;
+      if(k==='pdf_bytes'||k==='pdfBytes'||k==='bytes')return;
       copy[k]=val;
     });
     return copy;
@@ -4049,10 +4032,75 @@ function cgWriteQueue(ops){
 }
 function cgSameWeek(a,b){
   a=a||{};b=b||{};
-  return String(a.username||'')===String(b.username||'')
+  return String(a.org_id||'')===String(b.org_id||'')
     && String(a.aide_id||'')===String(b.aide_id||'')
     && String(a.client_id||'')===String(b.client_id||'')
     && String(a.week_start||'')===String(b.week_start||'');
+}
+function cgBackoffMs(attemptCount){
+  let n=Number(attemptCount);
+  if(!n||n<1)n=1;
+  if(n>16)n=16;
+  let ms=1000*Math.pow(2,n-1);
+  if(ms>60000)ms=60000;
+  return ms;
+}
+function cgPlainError(err,op){
+  const offlineSentence='Saved on this phone — will upload when you\'re back online';
+  if(!cgNetOnline())return offlineSentence;
+  if(cgIsAuthErr(err))return 'Sign in again — this phone kept your day.';
+  const status=err&&err.pack?Number(err.pack.status):0;
+  const msg=String(err&&err.message||'');
+  const pdf=op&&op.kind==='pdf_upload';
+  if(pdf&&(status===413||/too large|25MB|entity too large/i.test(msg)))return 'That PDF is too big to upload.';
+  if(status===409||/23505|duplicate key|already exists/i.test(msg))return 'This week is already saved. Tap to retry.';
+  if(status===400||status===422)return 'The office couldn\'t read this day. Tap to retry.';
+  if(pdf)return 'Saved at the office. The PDF still needs to upload — tap to retry.';
+  if(err&&cgIsNetErr(err)&&!status)return offlineSentence;
+  if(status>=500)return 'The office couldn\'t take the upload. Tap to retry.';
+  return 'Couldn\'t upload — tap to retry';
+}
+function cgOpReady(op,force){
+  if(force)return true;
+  if(!op)return false;
+  const t=Date.parse(op.next_attempt_at||'');
+  return !(t&&t>Date.now());
+}
+function cgUpdateOp(id,patch){
+  const ops=cgReadQueue();
+  let hit=null;
+  ops.forEach(function(op){
+    if(op.client_op_id!==id&&op.local_id!==id)return;
+    Object.keys(patch||{}).forEach(function(k){
+      if(CG_QUEUE_FIELDS.indexOf(k)>=0)op[k]=patch[k];
+    });
+    hit=op;
+  });
+  if(hit)cgWriteQueue(ops);
+  return hit;
+}
+function cgFailOp(op,err){
+  if(!op)return null;
+  const attempt=(Number(op.attempt_count)||0)+1;
+  return cgUpdateOp(op.client_op_id,{
+    attempt_count:attempt,
+    last_error:cgPlainError(err,op),
+    status:'error',
+    next_attempt_at:new Date(Date.now()+cgBackoffMs(attempt)).toISOString()
+  });
+}
+function cgScheduleBackoff(){
+  if(typeof setTimeout!=='function'||typeof window==='undefined')return;
+  let soon=0;
+  cgReadQueue().forEach(function(op){
+    const t=Date.parse(op.next_attempt_at||'');
+    if(t&&(!soon||t<soon))soon=t;
+  });
+  if(window._cgBackoffTimer&&typeof clearTimeout==='function')clearTimeout(window._cgBackoffTimer);
+  window._cgBackoffTimer=null;
+  if(!soon)return;
+  const wait=Math.max(0,soon-Date.now());
+  window._cgBackoffTimer=setTimeout(function(){cgFlushOfflineQueue();},wait);
 }
 function cgSlimRecord(record){
   record=record||{};
@@ -4072,18 +4120,23 @@ function cgQueueWeekOp(kind,payload){
   payload=payload||{};
   const weekRaw=payload.week_start||payload.weekStart||'';
   const draft={
+    local_id:payload.local_id||cgDeviceOpId(),
     client_op_id:payload.client_op_id||cgDeviceOpId(),
     kind:kind,
-    username:(currentUser&&currentUser.username)||payload.username||'',
+    created_at:payload.created_at||new Date().toISOString(),
+    attempt_count:0,
+    last_error:'',
+    status:'pending',
     org_id:(currentUser&&currentUser.sbOrgId)||payload.org_id||'',
     aide_id:(currentUser&&currentUser.sbAideId)||payload.aide_id||'',
     client_id:payload.client_id||payload.clientId||'',
     week_start:typeof sbWeekSunday==='function'?sbWeekSunday(weekRaw):weekRaw,
+    day_index:payload.day_index==null||payload.day_index===''?'':String(payload.day_index),
+    day_patch:payload.day_patch||null,
     days:payload.days||{},
     header:payload.header||{},
-    record:payload.record?cgSlimRecord(payload.record):null,
     timesheet_id:payload.timesheet_id||'',
-    created_at:payload.created_at||new Date().toISOString()
+    next_attempt_at:''
   };
   const ops=cgReadQueue();
   let prev=null;
@@ -4093,21 +4146,27 @@ function cgQueueWeekOp(kind,payload){
   if(prev){
     if(kind==='save_day'){
       prev.days=sbMergeDaysReplace(prev.days||{},draft.days||{});
+      if(draft.day_index!=='')prev.day_index=draft.day_index;
+      if(draft.day_patch)prev.day_patch=draft.day_patch;
       if(draft.header)prev.header=draft.header;
     }else if(kind==='submit'){
       prev.days=draft.days||prev.days;
       if(draft.header)prev.header=draft.header;
-    }
-    if(draft.record){
-      if(kind==='pdf_upload'&&prev.record&&prev.record.days){
-        const mergedDays=sbMergeDaysReplace(prev.record.days,draft.record.days||{});
-        draft.record.days=mergedDays;
-      }
-      prev.record=draft.record;
+      prev.day_index='';
+      prev.day_patch=null;
+    }else if(kind==='pdf_upload'){
+      prev.days=sbMergeDaysReplace(prev.days||{},draft.days||{});
+      if(draft.header&&Object.keys(draft.header).length)prev.header=draft.header;
+      if(draft.day_index!=='')prev.day_index=draft.day_index;
+      if(draft.day_patch)prev.day_patch=draft.day_patch;
     }
     if(draft.timesheet_id)prev.timesheet_id=draft.timesheet_id;
     if(draft.org_id)prev.org_id=draft.org_id;
     if(draft.aide_id)prev.aide_id=draft.aide_id;
+    prev.attempt_count=0;
+    prev.last_error='';
+    prev.status='pending';
+    prev.next_attempt_at='';
     cgWriteQueue(ops);
     return prev;
   }
@@ -4135,26 +4194,63 @@ function cgEnqueueSaveDay(i,dayObj){
     username:(currentUser&&currentUser.username)||'',
     svc_type:ts.svcType||(svcEl&&svcEl.value)||''
   };
-  const saved=cgQueueWeekOp('save_day',{client_id:clientId,week_start:weekStart,days:days,header:header});
-  let record=null;
-  try{record=sbTimesheetPdfRecord(weekDays);}catch(e){
-    record=cgSlimRecord({days:weekDays,weekStart:weekStart,clientName:header.client_name,empName:header.emp_name,username:header.username,notes:header.notes,svcType:header.svc_type,totalHrs:header.total_hours});
-  }
-  cgQueueWeekOp('pdf_upload',{client_id:clientId,week_start:weekStart,record:record,days:days});
+  const saved=cgQueueWeekOp('save_day',{
+    client_id:clientId,
+    week_start:weekStart,
+    days:days,
+    header:header,
+    day_index:String(i),
+    day_patch:days[String(i)]||null
+  });
+  let pdfDays=days;
+  try{pdfDays=sbTimesheetPdfRecord(weekDays).days||days;}catch(e){pdfDays=days;}
+  cgQueueWeekOp('pdf_upload',{
+    client_id:clientId,
+    week_start:weekStart,
+    days:pdfDays,
+    header:header,
+    day_index:String(i),
+    day_patch:days[String(i)]||null
+  });
   return saved;
 }
 function cgEnqueueSubmit(payload){
   payload=payload||{};
   const saved=cgQueueWeekOp('submit',payload);
+  const record=payload.record||{};
+  const header=payload.header||{
+    total_hours:record.totalHrs||record.total_hours||'',
+    notes:record.notes||'',
+    emp_name:record.empName||record.emp_name||'',
+    client_name:record.clientName||record.client_name||'',
+    username:record.username||'',
+    svc_type:record.svcType||record.svc_type||''
+  };
   cgQueueWeekOp('pdf_upload',{
     client_id:payload.client_id,
     week_start:payload.week_start,
-    record:payload.record,
-    days:payload.days,
+    days:(record.days||payload.days||{}),
+    header:header,
     aide_id:payload.aide_id,
     org_id:payload.org_id
   });
   return saved;
+}
+function cgPdfRecordFromOp(op){
+  op=op||{};
+  const header=op.header||{};
+  const days=Object.assign({},op.days||{});
+  if(op.day_index!==''&&op.day_index!=null&&op.day_patch&&!days[String(op.day_index)])days[String(op.day_index)]=op.day_patch;
+  return {
+    clientName:header.client_name||'',
+    empName:header.emp_name||'',
+    username:header.username||'',
+    weekStart:op.week_start||'',
+    svcType:header.svc_type||'',
+    totalHrs:header.total_hours||'',
+    notes:header.notes||'',
+    days:days
+  };
 }
 function cgRequeuePdfAfterMiss(timesheetId,record){
   try{
@@ -4165,7 +4261,15 @@ function cgRequeuePdfAfterMiss(timesheetId,record){
       client_id:(client&&client.id)||'',
       week_start:slim.weekStart||'',
       timesheet_id:timesheetId||'',
-      record:slim
+      days:slim.days||{},
+      header:{
+        total_hours:slim.totalHrs||'',
+        notes:slim.notes||'',
+        emp_name:slim.empName||'',
+        client_name:slim.clientName||'',
+        username:slim.username||'',
+        svc_type:slim.svcType||''
+      }
     });
     if(typeof window!=='undefined')window._cgQueuePhase='error';
     cgPaintOfflineQueue();
@@ -4305,10 +4409,10 @@ async function cgFlushPdfOp(op){
   if(!bytes){
     try{
       if(typeof sbEnsurePdfLibs==='function'&&await sbEnsurePdfLibs()&&typeof renderTimesheetPdfBlob==='function'){
-        bytes=await renderTimesheetPdfBlob(op.record||{days:op.days||{}});
+        bytes=await renderTimesheetPdfBlob(cgPdfRecordFromOp(op));
       }
     }catch(e){bytes=null;}
-    if(bytes)await cgPdfBytesPut(op.client_op_id,bytes);
+    if(bytes)await cgPdfBytesPut(op.client_op_id||op.local_id,bytes);
   }
   const orgId=op.org_id||(typeof sbEnsureOrgId==='function'?await sbEnsureOrgId():'');
   if(!orgId||!bytes)return false;
@@ -4330,17 +4434,19 @@ function cgWeekGroups(ops){
   });
   return groups;
 }
-async function cgFlushWeek(ops){
+async function cgFlushWeek(ops,force){
   const dataOps=ops.filter(function(op){return op.kind==='save_day'||op.kind==='submit';}).sort(function(a,b){
     return String(a.created_at||'').localeCompare(String(b.created_at||''));
   });
   const pdfOps=ops.filter(function(op){return op.kind==='pdf_upload';}).sort(function(a,b){
     return String(a.created_at||'').localeCompare(String(b.created_at||''));
   });
+  if(dataOps.some(function(op){return !cgOpReady(op,force);}))return 'wait';
   let authRetried=false;
   for(let i=0;i<dataOps.length;i++){
     const op=dataOps[i];
     try{
+      cgUpdateOp(op.client_op_id,{status:'uploading',last_error:''});
       const row=await sbUpsertTimesheet({
         clientId:op.client_id,
         weekStart:op.week_start,
@@ -4351,25 +4457,32 @@ async function cgFlushWeek(ops){
       if(row&&row.id)cgStampWeekTimesheetId(op,row.id);
       cgRemoveOp(op.client_op_id);
     }catch(e){
-      if(cgIsAuthErr(e)){
-        if(authRetried)return 'auth';
+      if(cgIsAuthErr(e)&&!authRetried){
         authRetried=true;
         const ok=await sbRefreshCaregiverJwt();
-        if(!ok)return 'auth';
-        i-=1;
-        continue;
+        if(ok){i-=1;continue;}
       }
+      cgFailOp(op,e);
+      if(cgIsAuthErr(e))return 'auth';
       if(cgIsNetErr(e))return 'net';
       return 'error';
     }
   }
+  if(pdfOps.some(function(op){return !cgOpReady(op,force);}))return 'wait';
   for(let p=0;p<pdfOps.length;p++){
     const live=cgReadQueue().filter(function(item){return item.client_op_id===pdfOps[p].client_op_id;})[0]||pdfOps[p];
     try{
+      cgUpdateOp(live.client_op_id,{status:'uploading',last_error:''});
       const ok=await cgFlushPdfOp(live);
-      if(!ok)return 'error';
+      if(!ok){
+        const miss=new Error('pdf');
+        miss.pdfMiss=true;
+        cgFailOp(live,miss);
+        return 'error';
+      }
       cgRemoveOp(live.client_op_id);
     }catch(e){
+      cgFailOp(live,e);
       if(cgIsAuthErr(e))return 'auth';
       if(cgIsNetErr(e))return 'net';
       return 'error';
@@ -4377,16 +4490,23 @@ async function cgFlushWeek(ops){
   }
   return 'ok';
 }
-async function cgFlushOfflineQueue(){
+async function cgFlushOfflineQueue(force){
   if(typeof evercareSbEnabled==='function'&&!evercareSbEnabled())return;
   if(typeof window!=='undefined'&&window._cgFlushBusy)return;
-  if(!cgReadQueue().length){
+  const queued=cgReadQueue();
+  if(!queued.length){
     cgPaintOfflineQueue();
     return;
   }
   if(!cgNetOnline()){
     if(typeof window!=='undefined')window._cgQueuePhase='offline';
     cgPaintOfflineQueue();
+    return;
+  }
+  if(!force&&!queued.some(function(op){return cgOpReady(op,false);})){
+    if(typeof window!=='undefined')window._cgQueuePhase='error';
+    cgPaintOfflineQueue();
+    cgScheduleBackoff();
     return;
   }
   if(typeof window!=='undefined'){
@@ -4397,11 +4517,16 @@ async function cgFlushOfflineQueue(){
   let phase='uploaded';
   try{
     const authed=await sbEnsureCaregiverJwt();
-    if(!authed)phase='error';
-    else{
+    if(!authed){
+      cgReadQueue().forEach(function(op){
+        if(cgOpReady(op,force))cgFailOp(op,{message:'Sign in again.',pack:{status:401}});
+      });
+      phase='error';
+    }else{
       const groups=cgWeekGroups(cgReadQueue());
       for(let g=0;g<groups.length;g++){
-        const result=await cgFlushWeek(groups[g]);
+        const result=await cgFlushWeek(groups[g],force);
+        if(result==='wait'){phase='error';continue;}
         if(result!=='ok'){phase='error';break;}
       }
       if(cgReadQueue().length)phase='error';
@@ -4414,6 +4539,11 @@ async function cgFlushOfflineQueue(){
     window._cgQueuePhase=phase;
   }
   cgPaintOfflineQueue();
+  if(cgReadQueue().length)cgScheduleBackoff();
+  else if(typeof window!=='undefined'&&window._cgBackoffTimer&&typeof clearTimeout==='function'){
+    clearTimeout(window._cgBackoffTimer);
+    window._cgBackoffTimer=null;
+  }
   if(phase==='uploaded'&&typeof setTimeout==='function'&&typeof window!=='undefined'){
     const mark=Date.now();
     window._cgUploadedMark=mark;
@@ -4449,13 +4579,18 @@ function cgPaintOfflineQueue(){
     if(retry&&retry.style)retry.style.display='none';
     return;
   }
+  const errOp=null;
+  let queuedError='';
+  for(let i=0;i<ops.length;i++){
+    if(ops[i]&&ops[i].last_error){queuedError=ops[i].last_error;break;}
+  }
   if(!cgNetOnline()){
     status.textContent='Saved on this phone — will upload when you\'re back online';
     if(retry&&retry.style)retry.style.display='inline-flex';
     return;
   }
-  if(phase==='error'||phase==='auth'){
-    status.textContent='Couldn\'t upload — tap to retry';
+  if(phase==='error'||phase==='auth'||queuedError){
+    status.textContent=queuedError||'Couldn\'t upload — tap to retry';
     if(retry&&retry.style)retry.style.display='inline-flex';
     return;
   }
@@ -4468,8 +4603,11 @@ function cgRetryOfflineQueue(){
     cgPaintOfflineQueue();
     return Promise.resolve();
   }
+  const ops=cgReadQueue();
+  ops.forEach(function(op){op.next_attempt_at='';op.status='pending';});
+  if(ops.length)cgWriteQueue(ops);
   if(typeof window!=='undefined')window._cgQueuePhase='';
-  return cgFlushOfflineQueue();
+  return cgFlushOfflineQueue(true);
 }
 // GHOST-TIMESHEET-PDF-WRITE-CONTRACT-v1 — client blank-letter JPEG overlay. No Edge function and no render RPC.
 // After Save Day (backup row id) or Submit, uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
@@ -5615,7 +5753,14 @@ window.addEventListener('load',()=>{
     else afterLogin();
   }
 });
-window.addEventListener('online',function(){try{cgFlushOfflineQueue();}catch(e){}});
+window.addEventListener('online',function(){
+  try{
+    const ops=cgReadQueue();
+    ops.forEach(function(op){op.next_attempt_at='';});
+    if(ops.length)cgWriteQueue(ops);
+    cgFlushOfflineQueue();
+  }catch(e){}
+});
 window.addEventListener('offline',function(){try{window._cgQueuePhase='offline';cgPaintOfflineQueue();}catch(e){}});
 window.addEventListener('pageshow',()=>{enforceCgSessionTimeout();});
 document.addEventListener('visibilitychange',()=>{

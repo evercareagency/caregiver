@@ -49,8 +49,7 @@ const src = [
   extractFn(html, 'function sbDayWire(day)'),
   extractFn(html, 'async function sbFindWeekRow(aideId,clientId,weekStart,status)'),
   extractFn(html, 'function sbMergeDays(base,incoming)'),
-  extractFn(html, 'function sbDayFullness(day)'),
-  extractFn(html, 'function sbMergeDaysIfFuller(base,incoming)'),
+  extractFn(html, 'function sbMergeDaysReplace(base,incoming)'),
   extractFn(html, 'function sbKeepSubmitted(existing,status)'),
   extractFn(html, 'function sbWeekSunday(value)'),
   extractFn(html, 'function sbDayIndex(key)'),
@@ -256,11 +255,10 @@ function run(opts){
   const remarkBody = JSON.parse(clash.calls.find(function(c){return c.init.method==='PATCH';}).init.body);
   assert.strictEqual(remarkBody.status, undefined, 'save day must not downgrade a submitted week');
   assert.strictEqual(remarkBody.submitted_at, undefined, 'submitted_at stays on the server');
-  assert.strictEqual(remarkBody.days['0'].tin, '08:00', 'a thinner day does not replace a fuller submitted day');
-  assert.strictEqual(remarkBody.days['0'].tout, '12:00');
-  assert.deepStrictEqual(remarkBody.days['0'].svcs, ['Bathing']);
+  assert.strictEqual(remarkBody.days['0'].tin, '09:00', 'later flush wins that day');
+  assert.strictEqual(remarkBody.days['0'].tout, '', 'later day replaces that index');
   assert.strictEqual(remarkBody.days['1'].tin, '10:00', 'a new day is merged');
-  assert.strictEqual(remarkBody.days['2'].tin, '11:00', 'a fuller later day wins that index');
+  assert.strictEqual(remarkBody.days['2'].tin, '11:00', 'later day replaces that index');
   assert.ok(!clash.calls.some(function(c){return c.init.method==='POST';}), 'save day updates the active week row');
 
   // GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1: soft-delete is PATCH is_active=false, not DELETE.

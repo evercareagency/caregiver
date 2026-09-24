@@ -57,6 +57,7 @@ const sheetsUrl = (html.match(/const SHEETS_URL='([^']+)'/) || [])[1];
 const src = [
   'const store={get:function(k){try{var raw=localStorage.getItem(k);return raw==null?null:JSON.parse(raw);}catch(e){return null;}},set:function(k,v){localStorage.setItem(k,JSON.stringify(v));},del:function(k){localStorage.removeItem(k);}};',
   "const CG_OFFLINE_QUEUE_KEY='evercare_offline_ops';",
+  "const CG_QUEUE_FIELDS=['local_id','client_op_id','kind','created_at','attempt_count','last_error','status','org_id','aide_id','client_id','week_start','day_index','day_patch','days','header','timesheet_id','next_attempt_at'];",
   extractFn(html, 'function evercareSbEnabled()'),
   extractFn(html, 'function sbAnonHeaders()'),
   extractFn(html, 'function sbUserHeaders(token)'),
@@ -74,8 +75,6 @@ const src = [
   extractFn(html, 'function sbNormalizeDays(days)'),
   extractFn(html, 'async function sbFindWeekRow(aideId,clientId,weekStart,status)'),
   extractFn(html, 'function sbMergeDays(base,incoming)'),
-  extractFn(html, 'function sbDayFullness(day)'),
-  extractFn(html, 'function sbMergeDaysIfFuller(base,incoming)'),
   extractFn(html, 'function sbMergeDaysReplace(base,incoming)'),
   extractFn(html, 'function sbKeepSubmitted(existing,status)'),
   extractFn(html, 'async function sbUpsertTimesheet(opts)'),
@@ -87,7 +86,14 @@ const src = [
   extractFn(html, 'function cgReadQueue()'),
   extractFn(html, 'function cgWriteQueue(ops)'),
   extractFn(html, 'function cgSameWeek(a,b)'),
+  extractFn(html, 'function cgBackoffMs(attemptCount)'),
+  extractFn(html, 'function cgPlainError(err,op)'),
+  extractFn(html, 'function cgOpReady(op,force)'),
+  extractFn(html, 'function cgUpdateOp(id,patch)'),
+  extractFn(html, 'function cgFailOp(op,err)'),
+  extractFn(html, 'function cgScheduleBackoff()'),
   extractFn(html, 'function cgSlimRecord(record)'),
+  extractFn(html, 'function cgPdfRecordFromOp(op)'),
   extractFn(html, 'function cgQueueWeekOp(kind,payload)'),
   extractFn(html, 'function cgEnqueueSaveDay(i,dayObj)'),
   extractFn(html, 'function cgEnqueueSubmit(payload)'),
@@ -103,8 +109,8 @@ const src = [
   extractFn(html, 'async function sbEnsureCaregiverJwt()'),
   extractFn(html, 'async function cgFlushPdfOp(op)'),
   extractFn(html, 'function cgWeekGroups(ops)'),
-  extractFn(html, 'async function cgFlushWeek(ops)'),
-  extractFn(html, 'async function cgFlushOfflineQueue()'),
+  extractFn(html, 'async function cgFlushWeek(ops,force)'),
+  extractFn(html, 'async function cgFlushOfflineQueue(force)'),
   extractFn(html, 'function cgPaintOfflineQueue()'),
   extractFn(html, 'function cgRetryOfflineQueue()'),
   extractFn(html, 'function saveDayData(i,dayObj)')
@@ -206,6 +212,9 @@ function run(opts){
       if(u.indexOf('script.google.com') >= 0 || u === sheetsUrl){
         return pack(500, '{"unexpected":true}');
       }
+      if(u.indexOf('/rest/v1/timesheets') >= 0 && method !== 'GET' && opts.failTimesheet){
+        return pack(500, JSON.stringify({message:'upstream'}));
+      }
       if(u.indexOf('/rest/v1/timesheets') >= 0 && method === 'GET'){
         return pack(200, JSON.stringify(box.weekRow ? [box.weekRow] : []));
       }
@@ -240,10 +249,22 @@ function queueOf(box){
   assert.strictEqual(queued.length, 2, 'save day queues the week row and a pdf op');
   assert.strictEqual(queued[0].kind, 'save_day');
   assert.strictEqual(queued[1].kind, 'pdf_upload');
-  assert.ok(queued[0].client_op_id && queued[0].client_op_id !== queued[1].client_op_id);
+  assert.ok(queued[0].local_id && queued[0].client_op_id && queued[0].local_id !== queued[0].client_op_id);
+  assert.ok(queued[0].client_op_id !== queued[1].client_op_id);
+  assert.strictEqual(queued[0].status, 'pending');
+  assert.strictEqual(queued[0].attempt_count, 0);
+  assert.strictEqual(queued[0].last_error, '');
+  assert.strictEqual(queued[0].org_id, '33333333-3333-3333-3333-333333333333');
+  assert.strictEqual(queued[0].aide_id, '22222222-2222-2222-2222-222222222222');
+  assert.strictEqual(queued[0].day_index, '0');
+  assert.strictEqual(queued[0].day_patch.tin, '08:00');
+  assert.strictEqual(queued[0].timesheet_id, '');
+  assert.strictEqual(queued[0].record, undefined, 'the JSON mirror has no record blob');
   assert.strictEqual(queued[0].client_id, 'c-1');
   assert.strictEqual(queued[0].week_start, '2026-09-20');
   assert.strictEqual(queued[0].days['0'].tin, '08:00');
+  const sealed = ['local_id','client_op_id','kind','created_at','attempt_count','last_error','status','org_id','aide_id','client_id','week_start','day_index','day_patch','days','header','timesheet_id','next_attempt_at'];
+  Object.keys(queued[0]).forEach(function(k){assert.ok(sealed.indexOf(k) >= 0, 'unexpected queue field ' + k);});
   assert.ok(offline.localStorage.dump().evercare_offline_ops.indexOf('%PDF-') < 0, 'pdf bytes are not in the JSON mirror');
   assert.ok(offline.msgs.some(function(m){return m.indexOf("Saved on this phone — will upload when you're back online") >= 0;}));
   assert.strictEqual(offline.els.offlineQueueStatus.textContent, "Saved on this phone — will upload when you're back online");
@@ -261,19 +282,33 @@ function queueOf(box){
   assert.strictEqual(queueOf(live).length, 0);
 
   const merged = run({onLine:false});
-  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},created_at:"2026-09-24T01:00:00.000Z"})', merged);
+  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",tout:"12:00",svcs:["Bathing"]}},created_at:"2026-09-24T01:00:00.000Z"})', merged);
+  const firstId = queueOf(merged)[0].client_op_id;
   vm.runInContext('cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"09:00",svcs:["Dressing"]},"1":{tin:"10:00"}},created_at:"2026-09-24T01:05:00.000Z"})', merged);
   const one = queueOf(merged).filter(function(op){return op.kind === 'save_day';});
   assert.strictEqual(one.length, 1, 'later save day for the week updates the same op');
+  assert.strictEqual(one[0].client_op_id, firstId, 'a later save keeps the same device op');
   assert.strictEqual(one[0].days['0'].tin, '09:00', 'later flush wins that day');
   assert.deepStrictEqual(one[0].days['0'].svcs, ['Dressing']);
+  assert.strictEqual(one[0].days['0'].tout, undefined, 'later day replaces that index');
   assert.strictEqual(one[0].days['1'].tin, '10:00');
+  assert.strictEqual(vm.runInContext('cgBackoffMs(1)', merged), 1000);
+  assert.strictEqual(vm.runInContext('cgBackoffMs(2)', merged), 2000);
+  assert.strictEqual(vm.runInContext('cgBackoffMs(6)', merged), 32000);
+  assert.strictEqual(vm.runInContext('cgBackoffMs(7)', merged), 60000);
+  assert.strictEqual(vm.runInContext('cgBackoffMs(8)', merged), 60000);
+  const plain = run({onLine:true});
+  assert.strictEqual(vm.runInContext('cgPlainError({message:"jwt expired",pack:{status:401}},{kind:"save_day"})', plain), 'Sign in again — this phone kept your day.');
+  assert.strictEqual(vm.runInContext('cgPlainError({message:"duplicate key value",pack:{status:409}},{kind:"save_day"})', plain), 'This week is already saved. Tap to retry.');
+  assert.strictEqual(vm.runInContext('cgPlainError({message:"bad",pack:{status:422}},{kind:"save_day"})', plain), "The office couldn't read this day. Tap to retry.");
+  assert.strictEqual(vm.runInContext('cgPlainError({message:"entity too large",pack:{status:413}},{kind:"pdf_upload"})', plain), 'That PDF is too big to upload.');
+  assert.strictEqual(vm.runInContext('cgPlainError({message:"storage",pack:{status:500}},{kind:"pdf_upload"})', plain), 'Saved at the office. The PDF still needs to upload — tap to retry.');
 
   const flush = run({onLine:true});
   vm.runInContext([
     'cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"},created_at:"2026-09-24T01:00:00.000Z"})',
-    'cgQueueWeekOp("pdf_upload",{client_id:"c-1",week_start:"2026-09-20",record:{clientName:"Ada Client",days:{"0":{tin:"08:00"}}},created_at:"2026-09-24T01:00:01.000Z"})',
-    'cgQueueWeekOp("submit",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]},"1":{tin:"09:00",svcs:["Laundry"]}},header:{total_hours:"8:00",client_name:"Ada Client"},record:{clientName:"Ada Client",days:{"1":{tin:"09:00"}}},created_at:"2026-09-24T02:00:00.000Z"})'
+    'cgQueueWeekOp("pdf_upload",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00"}},header:{client_name:"Ada Client",total_hours:"4:00"},created_at:"2026-09-24T01:00:01.000Z"})',
+    'cgQueueWeekOp("submit",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]},"1":{tin:"09:00",svcs:["Laundry"]}},header:{total_hours:"8:00",client_name:"Ada Client"},created_at:"2026-09-24T02:00:00.000Z"})'
   ].join('\n'), flush);
   await vm.runInContext('cgFlushOfflineQueue()', flush);
   assert.ok(!flush.calls.some(function(c){return c.url === sheetsUrl || c.url.indexOf('script.google.com') >= 0;}), 'flush does not call Sheets');
@@ -281,8 +316,14 @@ function queueOf(box){
   const patch = flush.calls.find(function(c){return c.init.method === 'PATCH' && c.url.indexOf('/rest/v1/timesheets') >= 0;});
   assert.ok(post && patch, 'flush writes the week then submits it');
   assert.ok(flush.calls.indexOf(post) < flush.calls.indexOf(patch), 'save_day before submit');
-  assert.strictEqual(JSON.parse(post.init.body).status, 'backup');
+  const postBody = JSON.parse(post.init.body);
+  assert.strictEqual(postBody.status, 'backup');
+  assert.strictEqual(postBody.client_op_id, undefined, 'client_op_id stays on the phone');
   const submitBody = JSON.parse(patch.init.body);
+  assert.strictEqual(submitBody.client_op_id, undefined);
+  const weekGet = flush.calls.find(function(c){return c.url.indexOf('/rest/v1/timesheets') >= 0 && (c.init.method || 'GET') === 'GET';});
+  assert.ok(decodeURIComponent(weekGet.url).indexOf('is_active=eq.true') >= 0, 'idempotency is the active week natural key');
+  assert.ok(!flush.calls.some(function(c){return c.url.indexOf('/rpc/') >= 0;}), 'flush adds no RPC');
   assert.strictEqual(submitBody.status, 'submitted');
   assert.ok(submitBody.submitted_at);
   assert.strictEqual(submitBody.days['1'].tin, '09:00');
@@ -310,7 +351,8 @@ function queueOf(box){
   const mirror = pdfFail.localStorage.dump().evercare_offline_ops;
   assert.ok(mirror.indexOf('%PDF-') < 0, 'failed pdf bytes stay out of the JSON mirror');
   assert.ok(pdfFail.__cgPdfBytes && pdfFail.__cgPdfBytes[left[0].client_op_id], 'bytes remain on the device');
-  assert.strictEqual(pdfFail.els.offlineQueueStatus.textContent, "Couldn't upload — tap to retry");
+  assert.strictEqual(pdfFail.els.offlineQueueStatus.textContent, 'Saved at the office. The PDF still needs to upload — tap to retry.');
+  assert.strictEqual(left[0].attempt_count, 1);
   const posts = pdfFail.calls.filter(function(c){return c.init.method === 'POST' && c.url.indexOf('/rest/v1/timesheets') >= 0;}).length;
   pdfFail.failPdf = false;
   await vm.runInContext('cgRetryOfflineQueue()', pdfFail);
@@ -326,7 +368,8 @@ function queueOf(box){
   await vm.runInContext('cgFlushOfflineQueue()', auth);
   assert.strictEqual(auth.calls.length, 0, 'auth failure does not call the data API');
   assert.strictEqual(queueOf(auth).length, 1, 'auth failure keeps the op');
-  assert.strictEqual(auth.els.offlineQueueStatus.textContent, "Couldn't upload — tap to retry");
+  assert.strictEqual(auth.els.offlineQueueStatus.textContent, 'Sign in again — this phone kept your day.');
+  assert.strictEqual(queueOf(auth)[0].attempt_count, 1);
 
   const held = run({onLine:false});
   vm.runInContext('cgQueueWeekOp("submit",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00"}},header:{total_hours:"4:00"}})', held);
@@ -344,6 +387,20 @@ function queueOf(box){
   assert.ok(wrote, 'save still writes after refresh');
   assert.strictEqual(wrote.init.headers.Authorization, 'Bearer jwt-refreshed');
   assert.ok(refresh.calls.indexOf(refreshCall) < refresh.calls.indexOf(wrote));
+
+  const backed = run({onLine:true, failTimesheet:true});
+  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"}})', backed);
+  await vm.runInContext('cgFlushOfflineQueue()', backed);
+  const heldOp = queueOf(backed).filter(function(op){return op.kind === 'save_day';})[0];
+  assert.ok(heldOp, 'a failed write stays queued');
+  assert.strictEqual(heldOp.attempt_count, 1);
+  assert.strictEqual(heldOp.last_error, "The office couldn't take the upload. Tap to retry.");
+  const waitMs = Date.parse(heldOp.next_attempt_at) - Date.now();
+  assert.ok(waitMs > 200 && waitMs <= 1500, 'first retry waits about 1s');
+  const tried = backed.calls.filter(function(c){return c.url.indexOf('/rest/v1/timesheets') >= 0 && c.init.method === 'POST';}).length;
+  assert.ok(tried >= 1);
+  await vm.runInContext('cgFlushOfflineQueue()', backed);
+  assert.strictEqual(backed.calls.filter(function(c){return c.url.indexOf('/rest/v1/timesheets') >= 0 && c.init.method === 'POST';}).length, tried, 'backoff holds the next automatic flush');
 
   console.log('caregiver offline save checks ok');
 })().catch(function(err){
