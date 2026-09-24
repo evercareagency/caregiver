@@ -50,6 +50,10 @@ const src = [
   extractFn(html, 'async function sbFindWeekRow(aideId,clientId,weekStart,status)'),
   extractFn(html, 'function sbMergeDays(base,incoming)'),
   extractFn(html, 'async function sbUpsertTimesheet(opts)'),
+  extractFn(html, 'async function sbSoftDeleteBackup(id)'),
+  extractFn(html, 'function sbAnswerList(raw)'),
+  extractFn(html, 'function sbGradeInservice(topicId,answers)'),
+  extractFn(html, 'async function sbSubmitInservice(payload)'),
   'function currentWeekSunday(){return "2026-09-20";}',
   'function persistCgSession(sess){currentUser=sess;return sess;}'
 ].join('\n');
@@ -156,7 +160,7 @@ function run(opts){
 
   const merge = run({
     routes:[{
-      test:/status=eq\.backup/,
+      test:/limit=1/,
       res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-1', status:'backup', days:{'0':{tin:'08:00', svcs:['Bathing']}}}])}
     },{
       test:/\/timesheets\?id=eq\.ts-1/,
@@ -174,12 +178,14 @@ function run(opts){
   assert.strictEqual(patchBody.days['1'].tin, '09:00');
   assert.strictEqual(patchBody.total_hours, '4:00');
   assert.strictEqual(patchBody.emp_name, 'Aide One');
+  assert.strictEqual(patchBody.status, 'backup');
+  assert.strictEqual(patchBody.submitted_at, null);
   assert.strictEqual(patch.init.headers.Prefer, 'return=representation');
   assert.strictEqual(patch.init.headers.Authorization, 'Bearer jwt-test-token');
 
   const created = run({
     routes:[{
-      test:/status=eq\.backup/,
+      test:/limit=1/,
       res:{ok:true, status:200, raw:'[]'}
     },{
       test:/\/rest\/v1\/timesheets$/,
@@ -222,13 +228,7 @@ function run(opts){
 
   const clash = run({
     routes:[{
-      test:/status=eq\.backup/,
-      res:{ok:true, status:200, raw:'[]'}
-    },{
-      test:/\/rest\/v1\/timesheets$/,
-      res:{ok:false, status:409, raw:JSON.stringify({code:'23505', message:'duplicate key value violates unique constraint'})}
-    },{
-      test:/aide_id=eq\./,
+      test:/limit=1/,
       res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'submitted', days:{}}])}
     }]
   });
@@ -236,6 +236,76 @@ function run(opts){
     function(){return vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"backup",days:{"0":{tin:"08:00"}},header:{}})', clash);},
     /already submitted/
   );
+  assert.ok(!clash.calls.some(function(c){return c.init.method==='POST'||c.init.method==='PATCH';}), 'save day does not write over a submitted week');
+
+  // GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1: soft-delete is PATCH is_active=false, not DELETE.
+  const removed = run({
+    routes:[{
+      test:/\/timesheets\?id=eq\.bak-1$/,
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'bak-1', is_active:false, status:'backup'}])}
+    }]
+  });
+  const gone = await vm.runInContext('sbSoftDeleteBackup("bak-1")', removed);
+  assert.strictEqual(gone.is_active, false);
+  assert.strictEqual(removed.calls.length, 1);
+  assert.strictEqual(removed.calls[0].init.method, 'PATCH');
+  assert.deepStrictEqual(JSON.parse(removed.calls[0].init.body), {is_active:false});
+  assert.strictEqual(removed.calls[0].init.headers.Prefer, 'return=representation');
+  assert.strictEqual(removed.calls[0].init.headers.Authorization, 'Bearer jwt-test-token');
+  assert.ok(removed.calls[0].url.indexOf('/rest/v1/timesheets?id=eq.bak-1')>=0);
+
+  const ins = run({
+    routes:[{
+      test:/\/inservice_results\?/,
+      res:{ok:true, status:201, raw:JSON.stringify([{id:'ir-1', legacy_id:'1', score_correct:1, score_total:2, score_pct:50, submitted_at:'2026-09-24T00:00:00.000Z'}])}
+    }]
+  });
+  vm.runInContext('INSERVICES=[{id:1,title:"Diabetes",questions:[{q:"Q1",options:["a","b"],answer:1},{q:"Q2",options:["c","d"],answer:0}]}]', ins);
+  const graded = await vm.runInContext('sbSubmitInservice({username:"aide.one",emp_name:"Aide One",topic_id:1,topic_title:"Diabetes",answers:[1,1],signature:"sig",completed:"Sep 24, 2026"})', ins);
+  assert.strictEqual(graded.id, 'ir-1');
+  assert.strictEqual(ins.calls.length, 1);
+  const insPost = ins.calls[0];
+  assert.strictEqual(insPost.init.method, 'POST');
+  assert.ok(insPost.url.indexOf('/rest/v1/inservice_results?')>=0);
+  assert.ok(decodeURIComponent(insPost.url).indexOf('id,legacy_id,score_correct,score_total,score_pct,submitted_at')>=0);
+  const insBody = JSON.parse(insPost.init.body);
+  assert.strictEqual(insBody.org_id, '33333333-3333-3333-3333-333333333333');
+  assert.strictEqual(insBody.aide_id, '22222222-2222-2222-2222-222222222222');
+  assert.strictEqual(insBody.topic_id, '1');
+  assert.strictEqual(insBody.status, 'Active');
+  assert.strictEqual(insBody.score_correct, 1);
+  assert.strictEqual(insBody.score_total, 2);
+  assert.strictEqual(insBody.score_pct, 50);
+  assert.deepStrictEqual(insBody.answers, [1, 1]);
+  assert.strictEqual(insBody.graded_detail.items[0].isCorrect, true);
+  assert.strictEqual(insBody.graded_detail.items[1].isCorrect, false);
+  assert.strictEqual(insBody.signature, 'sig');
+  assert.ok(insBody.submitted_at);
+  assert.ok(insBody.legacy_id);
+  assert.strictEqual(insPost.init.headers.Prefer, 'return=representation');
+  assert.ok(!ins.calls.some(function(c){return c.init.method==='PATCH'||c.init.method==='PUT'||c.init.method==='DELETE';}));
+
+  const noAide = run({currentUser:{username:'aide.one', name:'Aide One', sbAccessToken:'jwt-test-token', sbUserId:'11111111-1111-1111-1111-111111111111', sbOrgId:'33333333-3333-3333-3333-333333333333'}});
+  await assert.rejects(function(){return vm.runInContext('sbSubmitInservice({topic_id:1,answers:[1]})', noAide);}, /Sign in again/);
+  assert.strictEqual(noAide.calls.length, 0, 'missing aide id does not write inservice_results');
+
+  const submitIs = extractFn(html, 'async function submitInservice()');
+  assert.ok(submitIs.includes("action:'submit_inservice'"), 'flag off inservice still posts Sheets');
+  assert.ok(submitIs.includes('SHEETS_URL'));
+  assert.ok(submitIs.indexOf('evercareSbEnabled()') < submitIs.indexOf('SHEETS_URL'), 'flag check precedes the sheets inservice post');
+  assert.ok(submitIs.includes('sbSubmitInservice('), 'flag on inserts inservice_results');
+  const delFn = extractFn(html, 'async function deleteTimesheetBackup(id)');
+  assert.ok(delFn.includes("action:'delete_timesheet_backup'"), 'flag off delete still posts Sheets');
+  assert.ok(delFn.indexOf('evercareSbEnabled()') < delFn.indexOf('delete_timesheet_backup'));
+  assert.ok(delFn.includes('sbSoftDeleteBackup(id)'));
+  const saveDay = extractFn(html, 'function saveDayData(i,dayObj)');
+  assert.ok(saveDay.includes('sbSyncSavedDay'), 'flag on Save Day syncs the open day');
+  const fin = extractFn(html, 'async function doFinalSubmit()');
+  assert.ok(fin.includes("action:'submit'"), 'flag off submit stays on /exec');
+  assert.ok(fin.indexOf('evercareSbEnabled()') < fin.indexOf("action:'submit'"));
+  const sheetsBackup = extractFn(html, 'async function doCloudBackup()');
+  assert.ok(sheetsBackup.includes("action:'save_timesheet_backup'"));
+  assert.ok(sheetsBackup.indexOf('evercareSbEnabled()') < sheetsBackup.indexOf('apiPost(payload)'));
 
   console.log('caregiver-sb-data checks ok');
 })().catch(function(err){
