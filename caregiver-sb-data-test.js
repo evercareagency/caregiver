@@ -215,15 +215,15 @@ function run(opts){
       res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-1', status:'submitted'}])}
     }]
   });
-  const submitted = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"submitted",days:{"0":{tin:"08:00",svcs:["Bathing"]},"1":{tin:"10:00",svcs:["Laundry"]}},header:{total_hours:"8:00",header_aide_sig:"sig-a",header_client_sig:"sig-c"}})', submit);
+  const submitted = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"submitted",days:{"0":{tin:"08:00",svcs:["Bathing"]},"1":{tin:"10:00",svcs:["Laundry"]}},header:{total_hours:"8:00"}})', submit);
   assert.strictEqual(submitted.status, 'submitted');
   const submitPatch = submit.calls.find(function(c){return c.init.method === 'PATCH';});
   const submitBody = JSON.parse(submitPatch.init.body);
   assert.strictEqual(submitBody.status, 'submitted');
   assert.ok(submitBody.submitted_at);
   assert.strictEqual(submitBody.days['1'].tin, '10:00', 'submit writes the full days object');
-  assert.strictEqual(submitBody.header_aide_sig, 'sig-a');
-  assert.strictEqual(submitBody.header_client_sig, 'sig-c');
+  assert.strictEqual(submitBody.header_aide_sig, undefined);
+  assert.strictEqual(submitBody.header_client_sig, undefined);
   assert.ok(!submit.calls.some(function(c){return c.init.method === 'POST';}));
 
   const clash = run({

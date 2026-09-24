@@ -2627,9 +2627,7 @@ async function doFinalSubmit(){
           emp_name:currentUser.name,
           client_name:(client&&client.name)||clientName,
           username:currentUser.username,
-          svc_type:svcType,
-          header_aide_sig:hdr.headerAideSig||'',
-          header_client_sig:hdr.headerClientSig||''
+          svc_type:svcType
         }
       });
       data={success:true,id:row&&row.id};
@@ -3858,8 +3856,6 @@ async function sbUpsertTimesheet(opts){
     username:header.username||(currentUser&&currentUser.username)||'',
     svc_type:header.svc_type||''
   };
-  if(header.header_aide_sig)body.header_aide_sig=header.header_aide_sig;
-  if(header.header_client_sig)body.header_client_sig=header.header_client_sig;
   if(existing&&existing.id){
     if(status==='submitted'){
       body.status='submitted';
