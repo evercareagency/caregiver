@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-23-sb-dual-caregiver">
-<!-- caregiver-build: 2026-09-23-sb-dual-caregiver — soft sb dual-verify after sheets login; flag off unless ?sb=1 or evercare_sb=1 -->
+<meta name="caregiver-build" content="2026-09-24-sb-auth-login">
+<!-- caregiver-build: 2026-09-24-sb-auth-login — ?sb=1 or evercare_sb=1 signs in with Supabase Auth; flag off stays on Sheets /exec -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
@@ -853,6 +853,21 @@ function startCgSession(user){
     needsEmail:aideTruth(user&&user.needsEmail)
   };
   if(user&&user.email)sess.email=String(user.email).trim();
+  if(user&&user.sbAccessToken){
+    sess.sbAccessToken=user.sbAccessToken;
+    sess.sbRefreshToken=user.sbRefreshToken||'';
+    sess.sbExpiresAt=user.sbExpiresAt||0;
+    sess.sbUserId=user.sbUserId||'';
+    sess.sbAideId=user.sbAideId||'';
+    sess.sbEmail=user.sbEmail||'';
+    sbPersistAuth({
+      access_token:sess.sbAccessToken,
+      refresh_token:sess.sbRefreshToken,
+      expires_at:sess.sbExpiresAt,
+      user_id:sess.sbUserId,
+      email:sess.sbEmail||sess.email||''
+    });
+  }
   return persistCgSession(sess);
 }
 function backfillCgSessionLoginAt(sess){
@@ -878,6 +893,15 @@ function restoreCgSession(){
     return false;
   }
   persistCgSession(sess);
+  if(sess.sbAccessToken){
+    sbPersistAuth({
+      access_token:sess.sbAccessToken,
+      refresh_token:sess.sbRefreshToken||'',
+      expires_at:sess.sbExpiresAt||0,
+      user_id:sess.sbUserId||'',
+      email:sess.sbEmail||sess.email||''
+    });
+  }
   return true;
 }
 function enforceCgSessionTimeout(){
@@ -1126,6 +1150,217 @@ function softSbDualVerify(username,password){
   }
 }
 
+function sbAnonHeaders(){
+  return {
+    apikey:SUPABASE_ANON_KEY,
+    Authorization:'Bearer '+SUPABASE_ANON_KEY,
+    'Content-Type':'application/json'
+  };
+}
+function sbUserHeaders(token){
+  return {
+    apikey:SUPABASE_ANON_KEY,
+    Authorization:'Bearer '+token,
+    'Content-Type':'application/json'
+  };
+}
+function sbPersistAuth(session){
+  if(!session||!session.access_token)return;
+  window.__sbSession={
+    access_token:session.access_token,
+    refresh_token:session.refresh_token||'',
+    expires_at:session.expires_at||0,
+    user_id:session.user_id||'',
+    email:session.email||''
+  };
+  try{sessionStorage.setItem('evercare_sb_session',JSON.stringify(window.__sbSession));}catch(e){}
+  try{localStorage.setItem('evercare_sb_session',JSON.stringify(window.__sbSession));}catch(e){}
+}
+function sbClearAuth(){
+  window.__sbSession=null;
+  try{sessionStorage.removeItem('evercare_sb_session');}catch(e){}
+  try{localStorage.removeItem('evercare_sb_session');}catch(e){}
+}
+async function sbRead(res){
+  let raw='';
+  try{raw=await res.text();}catch(e){}
+  let data=null;
+  let parsed=false;
+  if(raw==null||raw==='')parsed=true;
+  else{try{data=JSON.parse(raw);parsed=true;}catch(e){parsed=false;}}
+  return {ok:!!(res&&res.ok),status:res&&res.status,raw:raw,data:data,parsed:parsed};
+}
+function sbErrMsg(pack,fallback){
+  const data=pack&&pack.data;
+  let msg=(data&&(data.error_description||data.msg||data.message||data.error||data.hint))||(pack&&!pack.ok?('HTTP '+(pack.status||'')):'')||fallback||'Request failed.';
+  if(msg&&typeof msg==='object')msg=msg.message||JSON.stringify(msg);
+  return String(msg);
+}
+function sbJwtSub(token){
+  try{
+    const part=String(token||'').split('.')[1]||'';
+    if(!part)return '';
+    let b64=part.replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length%4)b64+='=';
+    const json=JSON.parse(atob(b64));
+    return json&&json.sub?String(json.sub):'';
+  }catch(e){return '';}
+}
+function sbExpiresMs(auth){
+  if(!auth)return 0;
+  const at=Number(auth.expires_at);
+  if(Number.isFinite(at)&&at>0)return at<1e12?at*1000:at;
+  const inn=Number(auth.expires_in);
+  if(Number.isFinite(inn)&&inn>0)return Date.now()+inn*1000;
+  return 0;
+}
+function aideEmailNeedsSetup(email){
+  return !String(email==null?'':email).trim();
+}
+function sbWorkingEmail(submitted,authEmail,aideEmail){
+  const sub=String(submitted||'').trim();
+  const auth=String(authEmail||'').trim();
+  const cur=String(aideEmail||'').trim();
+  if(auth&&sub.toLowerCase()===auth.toLowerCase())return sub;
+  if(cur)return cur;
+  return auth;
+}
+// Flag on: this is the real sign-in. RPC → password grant → own aides row.
+// Blank aides.email still sets needsEmail. Failures throw so Sign In stays on the same error.
+async function loginAideWithSupabase(username,password){
+  const user=String(username||'').trim().toLowerCase();
+  if(!user){
+    const miss=new Error('login_failed');
+    throw miss;
+  }
+  const headers=sbAnonHeaders();
+  const rpcRes=await fetch(SUPABASE_URL+'/rest/v1/rpc/resolve_username_email',{
+    method:'POST',
+    headers:headers,
+    body:JSON.stringify({p_username:user,p_org_slug:'evercare'})
+  });
+  const rpc=await sbRead(rpcRes);
+  if(!rpc.ok||!rpc.parsed||(rpc.data!=null&&typeof rpc.data!=='string')){
+    const rpcErr=new Error('login_failed');
+    throw rpcErr;
+  }
+  const email=rpc.data==null?'':String(rpc.data).trim();
+  if(!email){
+    const noEmail=new Error('login_failed');
+    throw noEmail;
+  }
+  const authRes=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+    method:'POST',
+    headers:headers,
+    body:JSON.stringify({email:email,password:password})
+  });
+  const auth=await sbRead(authRes);
+  const token=auth.data&&auth.data.access_token;
+  if(!auth.ok||!token){
+    const authErr=new Error('login_failed');
+    throw authErr;
+  }
+  const uid=(auth.data.user&&auth.data.user.id)||sbJwtSub(token);
+  if(!uid){
+    const uidErr=new Error('login_failed');
+    throw uidErr;
+  }
+  const select='id,username,full_name,email,must_change_password,is_active,org_id,profile_id';
+  const aideUrl=SUPABASE_URL+'/rest/v1/aides?select='+encodeURIComponent(select)+'&profile_id=eq.'+encodeURIComponent(uid)+'&is_active=eq.true&limit=1';
+  const aideRes=await fetch(aideUrl,{method:'GET',headers:sbUserHeaders(token)});
+  const aidePack=await sbRead(aideRes);
+  const rows=aidePack.ok&&Array.isArray(aidePack.data)?aidePack.data:[];
+  const aide=rows[0]||null;
+  if(!aide||aide.is_active===false||!aide.profile_id){
+    const rowErr=new Error('login_failed');
+    throw rowErr;
+  }
+  const refresh=auth.data.refresh_token||'';
+  const expiresAt=sbExpiresMs(auth.data);
+  const aideEmail=aide.email==null?'':String(aide.email).trim();
+  sbPersistAuth({
+    access_token:token,
+    refresh_token:refresh,
+    expires_at:expiresAt,
+    user_id:uid,
+    email:email
+  });
+  return {
+    username:String(aide.username||user).trim().toLowerCase(),
+    name:String(aide.full_name||aide.username||user).trim(),
+    email:aideEmail,
+    mustChangePassword:aide.must_change_password,
+    needsEmail:aideEmailNeedsSetup(aideEmail),
+    sbAccessToken:token,
+    sbRefreshToken:refresh,
+    sbExpiresAt:expiresAt,
+    sbUserId:uid,
+    sbAideId:aide.id||'',
+    sbEmail:email
+  };
+}
+// Password update goes to Auth. aides.email stays the address GoTrue will accept
+// (mailer does not autoconfirm), and must_change_password is cleared on that row.
+async function completeAideSetupSupabase(currentPassword,newPassword,email){
+  const sess=currentUser;
+  const authEmail=String((sess&&(sess.sbEmail||sess.email))||'').trim();
+  const tokenHave=sess&&sess.sbAccessToken;
+  if(!authEmail||!tokenHave)throw new Error('Sign in again to finish setup.');
+  const sameEmail=String(email||'').trim().toLowerCase()===authEmail.toLowerCase();
+  const check=await sbRead(await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+    method:'POST',
+    headers:sbAnonHeaders(),
+    body:JSON.stringify({email:authEmail,password:currentPassword})
+  }));
+  const token=check.data&&check.data.access_token;
+  if(!check.ok||!token)throw new Error('Current password is incorrect.');
+  const refresh=(check.data&&check.data.refresh_token)||sess.sbRefreshToken||'';
+  const userBody=sameEmail?{password:newPassword,email:String(email||'').trim()}:{password:newPassword};
+  const upd=await sbRead(await fetch(SUPABASE_URL+'/auth/v1/user',{
+    method:'PUT',
+    headers:sbUserHeaders(token),
+    body:JSON.stringify(userBody)
+  }));
+  if(!upd.ok)throw new Error(sbErrMsg(upd,'Could not update the password.'));
+  const authNow=String((upd.data&&(upd.data.email||(upd.data.user&&upd.data.user.email)))||authEmail).trim();
+  const loginEmail=sbWorkingEmail(email,authNow||authEmail,sess.email);
+  const uid=sess.sbUserId||(check.data.user&&check.data.user.id)||sbJwtSub(token);
+  const filter=sess.sbAideId?('id=eq.'+encodeURIComponent(sess.sbAideId)):('profile_id=eq.'+encodeURIComponent(uid));
+  const patchBody={must_change_password:false};
+  if(loginEmail)patchBody.email=loginEmail;
+  const patch=await sbRead(await fetch(SUPABASE_URL+'/rest/v1/aides?'+filter,{
+    method:'PATCH',
+    headers:Object.assign(sbUserHeaders(token),{Prefer:'return=representation'}),
+    body:JSON.stringify(patchBody)
+  }));
+  if(!patch.ok||!Array.isArray(patch.data)||!patch.data[0])throw new Error(sbErrMsg(patch,'Could not update the aide profile.'));
+  if(aideTruth(patch.data[0].must_change_password))throw new Error('Password setup did not clear.');
+  if(uid&&loginEmail){
+    try{
+      await fetch(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+encodeURIComponent(uid),{
+        method:'PATCH',
+        headers:Object.assign(sbUserHeaders(token),{Prefer:'return=minimal'}),
+        body:JSON.stringify({email:loginEmail})
+      });
+    }catch(e){}
+  }
+  sess.sbAccessToken=token;
+  sess.sbRefreshToken=refresh;
+  sess.sbUserId=uid||sess.sbUserId||'';
+  sess.sbEmail=authNow||authEmail;
+  if(loginEmail)sess.email=loginEmail;
+  sess.mustChangePassword=false;
+  sess.needsEmail=false;
+  sbPersistAuth({
+    access_token:token,
+    refresh_token:refresh,
+    expires_at:sbExpiresMs(check.data),
+    user_id:sess.sbUserId,
+    email:sess.sbEmail
+  });
+  clearAideSetupGate();
+}
+
 function togglePasswordVisibility(id,btn){
   const el=document.getElementById(id);
   if(!el)return;
@@ -1142,17 +1377,26 @@ async function doLogin(){
   const btn=document.getElementById('loginBtn');
   if(btn){btn.textContent='Signing in...';btn.disabled=true;}
   try{
+    if(evercareSbEnabled()){
+      sbClearAuth();
+      const signed=await loginAideWithSupabase(user,pass);
+      window._aceLoginOk=true;window._aceHealthBad=false;startCgSession(signed);window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
+    }
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
     if(data.success){
       try{softSbDualVerify(user,pass);}catch(sbErr){}
+      try{sbClearAuth();}catch(sbClr){}
       window._aceLoginOk=true;window._aceHealthBad=false;startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
     }
     else{document.getElementById('loginErr').style.display='block';}
   }catch(e){
-    const users=store.get('cg_users')||{};
-    if(users[user]&&users[user].password===pass){startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
-    else{document.getElementById('loginErr').style.display='block';}
+    if(evercareSbEnabled()){document.getElementById('loginErr').style.display='block';}
+    else{
+      const users=store.get('cg_users')||{};
+      if(users[user]&&users[user].password===pass){startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
+      else{document.getElementById('loginErr').style.display='block';}
+    }
   }finally{
     window._cgLoginInFlight=false;
     if(btn){btn.textContent='Sign In →';btn.disabled=false;}
@@ -1193,7 +1437,7 @@ function headerBack(){
   confirmLogout();
 }
 
-function caregiverLogout(){store.del('cg_session');clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
+function caregiverLogout(){store.del('cg_session');sbClearAuth();clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
 
 // SANDATA GATE + LOCATION (once after login, again on save / submit)
 const SANDATA_ACK_KEY='sandata_ack_session';
@@ -1365,6 +1609,18 @@ async function submitAideSetup(){
   if(newPassword===currentPassword){showErr('New password must be different from the current password.');return;}
   if(btn){btn.disabled=true;btn.textContent='Saving...';}
   try{
+    if(evercareSbEnabled()&&currentUser&&currentUser.sbAccessToken){
+      await completeAideSetupSupabase(currentPassword,newPassword,email);
+      window._aceLoginOk=true;
+      window._aceHealthBad=false;
+      window._aideSetupCurrentPassword='';
+      if(err)err.style.display='none';
+      showTempMsg('Account setup complete.','var(--success)');
+      const fresh=!!window._cgFreshLogin;
+      window._cgFreshLogin=false;
+      afterLogin({freshLogin:fresh});
+      return;
+    }
     const res=await postAideAction('complete_aide_setup','set_password',{
       username:currentUser.username,
       currentPassword:currentPassword,
