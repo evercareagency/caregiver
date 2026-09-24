@@ -30,9 +30,9 @@ function extractConst(name){
   return html.slice(start, end + 2);
 }
 
-assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-sb-cut v=sbcut1 —'), 'cut build marker');
-assert.ok(html.includes('v=sbcut1'), 'probe marker');
-assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-cut">'), 'cut build meta');
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-offline-save v=offline1 —'), 'offline build marker');
+assert.ok(html.includes('v=offline1'), 'probe marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-offline-save">'), 'offline build meta');
 assert.ok(html.includes('Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf'), 'emergency sheets pdf path is documented');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
 assert.ok(html.includes("const SB_PDF_BUCKET='evercare-pdfs'"), 'bucket is evercare-pdfs');
@@ -120,6 +120,9 @@ const src = [
   extractFn(html, 'function sbNormalizeDays(days)'),
   extractFn(html, 'async function sbFindWeekRow(aideId,clientId,weekStart,status)'),
   extractFn(html, 'function sbMergeDays(base,incoming)'),
+  extractFn(html, 'function sbDayFullness(day)'),
+  extractFn(html, 'function sbMergeDaysIfFuller(base,incoming)'),
+  extractFn(html, 'function sbKeepSubmitted(existing,status)'),
   extractFn(html, 'async function sbUpsertTimesheet(opts)'),
   sync,
   pdfBlock

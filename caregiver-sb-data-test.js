@@ -49,6 +49,9 @@ const src = [
   extractFn(html, 'function sbDayWire(day)'),
   extractFn(html, 'async function sbFindWeekRow(aideId,clientId,weekStart,status)'),
   extractFn(html, 'function sbMergeDays(base,incoming)'),
+  extractFn(html, 'function sbDayFullness(day)'),
+  extractFn(html, 'function sbMergeDaysIfFuller(base,incoming)'),
+  extractFn(html, 'function sbKeepSubmitted(existing,status)'),
   extractFn(html, 'function sbWeekSunday(value)'),
   extractFn(html, 'function sbDayIndex(key)'),
   extractFn(html, 'function sbNormalizeDays(days)'),
@@ -242,18 +245,22 @@ function run(opts){
   const clash = run({
     routes:[{
       test:/limit=1/,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'submitted', days:{'0':{tin:'08:00'}}}])}
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'submitted', days:{'0':{tin:'08:00', tout:'12:00', svcs:['Bathing'], aideSig:'a'}, '2':{tin:'07:00'}}}])}
     },{
       test:/\/timesheets\?id=eq\.ts-sub/,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'backup'}])}
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'submitted'}])}
     }]
   });
-  const remarked = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"backup",days:{"0":{tin:"08:00"}},header:{}})', clash);
+  const remarked = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"backup",days:{"0":{tin:"09:00"},"1":{tin:"10:00"},"2":{tin:"11:00",tout:"15:00",svcs:["Laundry"]}},header:{}})', clash);
   assert.strictEqual(remarked.id, 'ts-sub');
   const remarkBody = JSON.parse(clash.calls.find(function(c){return c.init.method==='PATCH';}).init.body);
-  assert.strictEqual(remarkBody.status, 'backup');
-  assert.strictEqual(remarkBody.submitted_at, null);
-  assert.strictEqual(remarkBody.days['0'].tin, '08:00');
+  assert.strictEqual(remarkBody.status, undefined, 'save day must not downgrade a submitted week');
+  assert.strictEqual(remarkBody.submitted_at, undefined, 'submitted_at stays on the server');
+  assert.strictEqual(remarkBody.days['0'].tin, '08:00', 'a thinner day does not replace a fuller submitted day');
+  assert.strictEqual(remarkBody.days['0'].tout, '12:00');
+  assert.deepStrictEqual(remarkBody.days['0'].svcs, ['Bathing']);
+  assert.strictEqual(remarkBody.days['1'].tin, '10:00', 'a new day is merged');
+  assert.strictEqual(remarkBody.days['2'].tin, '11:00', 'a fuller later day wins that index');
   assert.ok(!clash.calls.some(function(c){return c.init.method==='POST';}), 'save day updates the active week row');
 
   // GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1: soft-delete is PATCH is_active=false, not DELETE.

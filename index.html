@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-24-sb-cut">
-<!-- caregiver-build: 2026-09-24-sb-cut v=sbcut1 — Friday GO 2026-09-24. org portal_data_backend=supabase. Default (no ?sb=1) is Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds), SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: signup, verify_reset/reset_password, get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
+<meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-offline-save v=offline1 — Offline Save Day queue. Default Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Save Day and Submit queue on the phone when offline and flush through the existing Supabase upsert then PDF upload when a caregiver JWT is valid. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec for those surfaces. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds; PDF re-queues only), bucket evercare-pdfs, SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: signup, verify_reset/reset_password, get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
@@ -401,6 +401,10 @@ else setupEverCarePWA();
       <h2>EverCare Home Agency</h2>
       <p id="hdr_name">Weekly Timesheet</p>
     </div>
+  </div>
+  <div id="offlineQueueBanner" role="status" style="display:none;background:#fff8f0;border-bottom:1px solid #e6c48a;padding:10px 14px;">
+    <p id="offlineQueueStatus" style="font-size:0.84rem;font-weight:700;color:#1a2744;line-height:1.45;margin:0"></p>
+    <button class="btn btn-warn" type="button" id="offlineQueueRetry" onclick="cgRetryOfflineQueue()" style="display:none;margin-top:8px">Tap to retry</button>
   </div>
   <!-- HOME VIEW - shows list of active timesheets -->
   <div id="cgHomeView">
@@ -1082,7 +1086,7 @@ function switchTab(tab){
 
 // AUTH
 
-// Friday GO 2026-09-24 cut (v=sbcut1). Default true.
+// Friday GO 2026-09-24 cut, offline save queue v=offline1. Default true.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
 // surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
@@ -1761,6 +1765,10 @@ function loadCaregiverScreen(){
     fillDates();
   }
   scheduleHomeBackgroundLoads();
+  try{cgPaintOfflineQueue();}catch(e){}
+  if(typeof cgNetOnline!=='function'||cgNetOnline()){
+    try{cgFlushOfflineQueue();}catch(e){}
+  }
 }
 
 function syncCorrectionsFromAdmin(rows){
@@ -2237,8 +2245,12 @@ function saveDayData(i,dayObj){
   if(activeDayIdx===i)activeDayIdx=null;
   refreshSaveDayState();
   showTempMsg(`✅ ${DAYS[i]} saved!`,'var(--success)');window.scrollTo(0,0);
-  if(evercareSbEnabled()&&!sbDataEnabled()){
-    showTempMsg('Saved on this phone. Sign in again to back it up.','var(--warn)');
+  if(!evercareSbEnabled())return;
+  if(!cgShouldSyncNow()){
+    try{cgEnqueueSaveDay(i,wd[i]||dayObj);}catch(e){}
+    if(!sbDataEnabled())showTempMsg('Saved on this phone. Sign in again to back it up.','var(--warn)');
+    else showTempMsg('Saved on this phone — will upload when you\'re back online','var(--teal)');
+    try{window._cgQueuePhase=cgNetOnline()?'error':'offline';cgPaintOfflineQueue();}catch(e){}
     return;
   }
   if(sbDataEnabled())sbSyncSavedDay(i,wd[i]||dayObj);
@@ -2557,15 +2569,14 @@ async function doFinalSubmit(){
   if(currentTS)updateTSMeta(currentTS,hdr);
   const submitted=new Date().toLocaleString();
   let data=null;
+  let offlineSubmit=null;
   try{
     if(evercareSbEnabled()){
-      if(!sbDataEnabled())throw new Error('Sign in again.');
       const client=getSelectedClient();
-      const row=await sbUpsertTimesheet({
-        clientId:(client&&client.id)||'',
-        weekStart:weekStart,
+      offlineSubmit={
+        client_id:(client&&client.id)||'',
+        week_start:weekStart,
         days:weekData,
-        status:'submitted',
         header:{
           total_hours:totalHrs,
           notes:notes,
@@ -2573,19 +2584,58 @@ async function doFinalSubmit(){
           client_name:(client&&client.name)||clientName,
           username:currentUser.username,
           svc_type:svcType
+        },
+        record:{
+          clientName:(client&&client.name)||clientName,
+          empName:currentUser.name,
+          username:currentUser.username,
+          weekStart:weekStart,
+          svcType:svcType,
+          totalHrs:totalHrs,
+          notes:notes,
+          days:weekData
         }
-      });
-      data={success:true,id:row&&row.id};
-      try{if(row&&row.id)sbRefreshTimesheetPdf(row.id,weekData);}catch(e){}
+      };
+      if(!cgShouldSyncNow()){
+        cgEnqueueSubmit(offlineSubmit);
+        if(!sbDataEnabled())throw new Error('Sign in again.');
+        window._cgQueuePhase=cgNetOnline()?'error':'offline';
+        try{cgPaintOfflineQueue();}catch(p){}
+        data={success:true,queued:true};
+      }else{
+        const row=await sbUpsertTimesheet({
+          clientId:(client&&client.id)||'',
+          weekStart:weekStart,
+          days:weekData,
+          status:'submitted',
+          header:offlineSubmit.header
+        });
+        data={success:true,id:row&&row.id};
+        try{if(row&&row.id)sbRefreshTimesheetPdf(row.id,weekData);}catch(e){}
+      }
     }else if(correctionMode&&correctionData){
       data=await apiPost({action:'resubmit',id:correctionData.id,days:weekData,total_hours:totalHrs,client_name:clientName,notes,...hdr});
     }else{
       data=await apiPost({action:'submit',submitted,username:currentUser.username,emp_name:currentUser.name,client_name:clientName,svc_type:svcType,week_start:weekStart,total_hours:totalHrs,notes,days:weekData,...hdr});
     }
   }catch(e){
-    showTempMsg((evercareSbEnabled()&&e&&e.message)||'Submit failed — check connection.','var(--danger)');
-    window._cgSubmitInFlight=false;
-    return;
+    if(evercareSbEnabled()&&offlineSubmit&&(cgIsNetErr(e)||cgIsAuthErr(e))){
+      try{cgEnqueueSubmit(offlineSubmit);}catch(q){}
+      if(cgIsNetErr(e)&&!cgIsAuthErr(e)){
+        data={success:true,queued:true};
+        window._cgQueuePhase='offline';
+        try{cgPaintOfflineQueue();}catch(p){}
+      }else{
+        try{window._cgQueuePhase='error';cgPaintOfflineQueue();}catch(p){}
+        showTempMsg((e&&e.message)||'Couldn\'t upload — tap to retry','var(--danger)');
+        window._cgSubmitInFlight=false;
+        return;
+      }
+    }else{
+      showTempMsg((evercareSbEnabled()&&e&&e.message)||'Submit failed — check connection.','var(--danger)');
+      window._cgSubmitInFlight=false;
+      return;
+    }
   }
   if(!data||data.success!==true){
     showTempMsg(aceRejectMessage(data),'var(--danger)');
@@ -2608,6 +2658,10 @@ async function doFinalSubmit(){
   showScreen('caregiverScreen');
   document.getElementById('cgFormView').style.display='none';
   document.getElementById('cgSuccessView').style.display='block';
+  if(data&&data.queued){
+    const successP=document.querySelector('#cgSuccessView p');
+    if(successP)successP.textContent='Saved on this phone — will upload when you\'re back online';
+  }
   window.scrollTo(0,0);
   setTimeout(()=>window.scrollTo(0,0),50);
 }
@@ -3794,6 +3848,39 @@ function sbMergeDays(base,incoming){
   });
   return days;
 }
+function sbDayFullness(day){
+  if(!day||typeof day!=='object')return 0;
+  let n=0;
+  if(day.date)n+=1;
+  if(day.tin||day.in)n+=1;
+  if(day.tout||day.out)n+=1;
+  if(day.hrs)n+=1;
+  if(Array.isArray(day.svcs))n+=day.svcs.length;
+  if(day.aideSig)n+=1;
+  if(day.clientSig)n+=1;
+  if(day.location)n+=1;
+  return n;
+}
+function sbMergeDaysIfFuller(base,incoming){
+  const days=Object.assign({},base||{});
+  Object.keys(incoming||{}).forEach(function(k){
+    const key=String(k);
+    const prev=days[key]||{};
+    const next=incoming[k]||{};
+    if(sbDayFullness(next)>=sbDayFullness(prev))days[key]=Object.assign({},next);
+  });
+  return days;
+}
+function sbMergeDaysReplace(base,incoming){
+  const days=Object.assign({},base||{});
+  Object.keys(incoming||{}).forEach(function(k){
+    days[String(k)]=Object.assign({},incoming[k]||{});
+  });
+  return days;
+}
+function sbKeepSubmitted(existing,status){
+  return !!(existing&&String(existing.status||'').toLowerCase()==='submitted'&&status!=='submitted');
+}
 async function sbUpsertTimesheet(opts){
   opts=opts||{};
   const aideId=currentUser&&currentUser.sbAideId;
@@ -3805,7 +3892,9 @@ async function sbUpsertTimesheet(opts){
   const header=opts.header||{};
   const incoming=sbNormalizeDays(opts.days||{});
   const existing=await sbFindWeekRow(aideId,clientId,weekStart,'');
-  const days=status==='submitted'?incoming:sbMergeDays(sbNormalizeDays(existing&&existing.days),incoming);
+  const keepSubmitted=sbKeepSubmitted(existing,status);
+  const baseDays=sbNormalizeDays(existing&&existing.days);
+  const days=status==='submitted'?incoming:(keepSubmitted?sbMergeDaysIfFuller(baseDays,incoming):sbMergeDays(baseDays,incoming));
   const body={
     days:days,
     total_hours:header.total_hours||'',
@@ -3819,7 +3908,7 @@ async function sbUpsertTimesheet(opts){
     if(status==='submitted'){
       body.status='submitted';
       body.submitted_at=new Date().toISOString();
-    }else{
+    }else if(!keepSubmitted){
       body.status='backup';
       body.submitted_at=null;
     }
@@ -3851,9 +3940,14 @@ async function sbUpsertTimesheet(opts){
     if(!again||!again.id)throw err;
     const retry=Object.assign({},body);
     delete retry.org_id;delete retry.aide_id;delete retry.client_id;delete retry.week_start;delete retry.is_active;
+    const keepAgain=sbKeepSubmitted(again,status);
     if(status==='submitted'){
       retry.status='submitted';
       retry.submitted_at=new Date().toISOString();
+    }else if(keepAgain){
+      retry.days=sbMergeDaysIfFuller(sbNormalizeDays(again.days),incoming);
+      delete retry.status;
+      delete retry.submitted_at;
     }else{
       retry.days=sbMergeDays(again.days,incoming);
       retry.status='backup';
@@ -3893,8 +3987,489 @@ function sbSyncSavedDay(i,dayObj){
     if(row&&row.id&&currentTS&&typeof updateTSMeta==='function')updateTSMeta(currentTS,{cloudBackupId:row.id,clientId:clientId});
     if(row&&row.id)sbRefreshTimesheetPdf(row.id);
   }).catch(function(){
-    showTempMsg('Saved on this phone. Office backup did not sync.','var(--warn)');
+    try{cgEnqueueSaveDay(i,dayObj);}catch(e){}
+    try{window._cgQueuePhase='error';cgPaintOfflineQueue();}catch(e){}
+    showTempMsg('Couldn\'t upload — tap to retry','var(--warn)');
   });
+}
+// GHOST-OFFLINE-SAVE-DAY-SYNC-CONTRACT-v1 — device queue. Ghost decides when to flush.
+// Kinds: save_day | submit | pdf_upload. client_op_id is a device uuid.
+// PDF bytes stay out of this JSON mirror until flush (memory + IndexedDB).
+// Per week: save_day and submit first, then pdf_upload. Sheets rollback does not queue.
+const CG_OFFLINE_QUEUE_KEY='evercare_offline_ops';
+function cgNetOnline(){
+  try{
+    if(typeof navigator!=='undefined'&&navigator&&navigator.onLine===false)return false;
+  }catch(e){}
+  return true;
+}
+function cgShouldSyncNow(){
+  return !!(typeof evercareSbEnabled==='function'&&evercareSbEnabled()&&cgNetOnline()&&typeof sbDataEnabled==='function'&&sbDataEnabled());
+}
+function cgIsAuthErr(err){
+  const pack=err&&err.pack;
+  const status=pack&&pack.status;
+  if(status===401||status===403)return true;
+  return /sign in again|jwt expired|invalid jwt|unauthorized/i.test(String(err&&err.message||''));
+}
+function cgIsNetErr(err){
+  if(!cgNetOnline())return true;
+  if(!err)return false;
+  if(err.name==='TypeError')return true;
+  return /failed to fetch|network|load failed|offline/i.test(String(err&&err.message||''));
+}
+function cgDeviceOpId(){
+  try{
+    if(typeof crypto!=='undefined'&&crypto&&typeof crypto.randomUUID==='function')return crypto.randomUUID();
+  }catch(e){}
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
+    const r=Math.random()*16|0;
+    const v=c==='x'?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+function cgReadQueue(){
+  let raw=null;
+  try{raw=(typeof store!=='undefined'&&store&&store.get)?store.get(CG_OFFLINE_QUEUE_KEY):null;}catch(e){raw=null;}
+  if(!Array.isArray(raw))return [];
+  return raw.filter(function(op){return op&&op.client_op_id&&op.kind;});
+}
+function cgWriteQueue(ops){
+  const clean=(ops||[]).map(function(op){
+    const copy={};
+    Object.keys(op||{}).forEach(function(k){
+      if(k==='pdf_bytes'||k==='pdfBytes'||k==='bytes')return;
+      const val=op[k];
+      if(typeof val==='string'&&val.indexOf('%PDF-')===0)return;
+      copy[k]=val;
+    });
+    return copy;
+  });
+  try{if(typeof store!=='undefined'&&store&&store.set)store.set(CG_OFFLINE_QUEUE_KEY,clean);}catch(e){}
+}
+function cgSameWeek(a,b){
+  a=a||{};b=b||{};
+  return String(a.username||'')===String(b.username||'')
+    && String(a.aide_id||'')===String(b.aide_id||'')
+    && String(a.client_id||'')===String(b.client_id||'')
+    && String(a.week_start||'')===String(b.week_start||'');
+}
+function cgSlimRecord(record){
+  record=record||{};
+  return {
+    clientName:record.clientName||record.client_name||'',
+    empName:record.empName||record.emp_name||'',
+    username:record.username||'',
+    weekStart:record.weekStart||record.week_start||'',
+    svcType:record.svcType||record.svc_type||'',
+    totalHrs:record.totalHrs||record.total_hours||'',
+    notes:record.notes||'',
+    days:record.days||{}
+  };
+}
+function cgQueueWeekOp(kind,payload){
+  if(typeof evercareSbEnabled==='function'&&!evercareSbEnabled())return null;
+  payload=payload||{};
+  const weekRaw=payload.week_start||payload.weekStart||'';
+  const draft={
+    client_op_id:payload.client_op_id||cgDeviceOpId(),
+    kind:kind,
+    username:(currentUser&&currentUser.username)||payload.username||'',
+    org_id:(currentUser&&currentUser.sbOrgId)||payload.org_id||'',
+    aide_id:(currentUser&&currentUser.sbAideId)||payload.aide_id||'',
+    client_id:payload.client_id||payload.clientId||'',
+    week_start:typeof sbWeekSunday==='function'?sbWeekSunday(weekRaw):weekRaw,
+    days:payload.days||{},
+    header:payload.header||{},
+    record:payload.record?cgSlimRecord(payload.record):null,
+    timesheet_id:payload.timesheet_id||'',
+    created_at:payload.created_at||new Date().toISOString()
+  };
+  const ops=cgReadQueue();
+  let prev=null;
+  for(let i=0;i<ops.length;i++){
+    if(ops[i].kind===kind&&cgSameWeek(ops[i],draft)){prev=ops[i];break;}
+  }
+  if(prev){
+    if(kind==='save_day'){
+      prev.days=sbMergeDaysReplace(prev.days||{},draft.days||{});
+      if(draft.header)prev.header=draft.header;
+    }else if(kind==='submit'){
+      prev.days=draft.days||prev.days;
+      if(draft.header)prev.header=draft.header;
+    }
+    if(draft.record){
+      if(kind==='pdf_upload'&&prev.record&&prev.record.days){
+        const mergedDays=sbMergeDaysReplace(prev.record.days,draft.record.days||{});
+        draft.record.days=mergedDays;
+      }
+      prev.record=draft.record;
+    }
+    if(draft.timesheet_id)prev.timesheet_id=draft.timesheet_id;
+    if(draft.org_id)prev.org_id=draft.org_id;
+    if(draft.aide_id)prev.aide_id=draft.aide_id;
+    cgWriteQueue(ops);
+    return prev;
+  }
+  ops.push(draft);
+  cgWriteQueue(ops);
+  return draft;
+}
+function cgEnqueueSaveDay(i,dayObj){
+  if(typeof evercareSbEnabled==='function'&&!evercareSbEnabled())return null;
+  const ts=(typeof getAllTimesheets==='function'?getAllTimesheets():[]).find(function(t){return t&&t.id===currentTS;})||{};
+  const client=typeof getSelectedClient==='function'?getSelectedClient():null;
+  const weekEl=typeof document!=='undefined'&&document.getElementById?document.getElementById('cg_weekstart'):null;
+  const notesEl=typeof document!=='undefined'&&document.getElementById?document.getElementById('cg_notes'):null;
+  const svcEl=typeof document!=='undefined'&&document.getElementById?document.getElementById('cg_svctype'):null;
+  const weekStart=(weekEl&&weekEl.value)||ts.weekStart||'';
+  const clientId=(client&&client.id)||ts.clientId||'';
+  const days={};
+  days[String(i)]=typeof sbDayWire==='function'?sbDayWire(dayObj):(dayObj||{});
+  const weekDays=typeof getUserWeekData==='function'?getUserWeekData():days;
+  const header={
+    total_hours:typeof totalHoursFromWeekData==='function'?totalHoursFromWeekData(weekDays):(dayObj&&dayObj.hrs)||'',
+    notes:ts.notes||(notesEl&&notesEl.value)||'',
+    emp_name:(currentUser&&currentUser.name)||'',
+    client_name:(client&&client.name)||ts.clientName||'',
+    username:(currentUser&&currentUser.username)||'',
+    svc_type:ts.svcType||(svcEl&&svcEl.value)||''
+  };
+  const saved=cgQueueWeekOp('save_day',{client_id:clientId,week_start:weekStart,days:days,header:header});
+  let record=null;
+  try{record=sbTimesheetPdfRecord(weekDays);}catch(e){
+    record=cgSlimRecord({days:weekDays,weekStart:weekStart,clientName:header.client_name,empName:header.emp_name,username:header.username,notes:header.notes,svcType:header.svc_type,totalHrs:header.total_hours});
+  }
+  cgQueueWeekOp('pdf_upload',{client_id:clientId,week_start:weekStart,record:record,days:days});
+  return saved;
+}
+function cgEnqueueSubmit(payload){
+  payload=payload||{};
+  const saved=cgQueueWeekOp('submit',payload);
+  cgQueueWeekOp('pdf_upload',{
+    client_id:payload.client_id,
+    week_start:payload.week_start,
+    record:payload.record,
+    days:payload.days,
+    aide_id:payload.aide_id,
+    org_id:payload.org_id
+  });
+  return saved;
+}
+function cgRequeuePdfAfterMiss(timesheetId,record){
+  try{
+    if(typeof evercareSbEnabled==='function'&&!evercareSbEnabled())return;
+    const client=typeof getSelectedClient==='function'?getSelectedClient():null;
+    const slim=cgSlimRecord(record||{});
+    cgQueueWeekOp('pdf_upload',{
+      client_id:(client&&client.id)||'',
+      week_start:slim.weekStart||'',
+      timesheet_id:timesheetId||'',
+      record:slim
+    });
+    if(typeof window!=='undefined')window._cgQueuePhase='error';
+    cgPaintOfflineQueue();
+  }catch(e){}
+}
+function cgRemoveOp(id){
+  cgWriteQueue(cgReadQueue().filter(function(op){return op.client_op_id!==id;}));
+}
+function cgStampWeekTimesheetId(sample,id){
+  if(!id)return;
+  const ops=cgReadQueue();
+  let changed=false;
+  ops.forEach(function(item){
+    if(item.kind==='pdf_upload'&&cgSameWeek(item,sample)){
+      item.timesheet_id=id;
+      changed=true;
+    }
+  });
+  if(changed)cgWriteQueue(ops);
+}
+function cgPdfMem(){
+  if(typeof window==='undefined')return null;
+  if(!window.__cgPdfBytes)window.__cgPdfBytes={};
+  return window.__cgPdfBytes;
+}
+function cgPdfDb(){
+  if(typeof indexedDB==='undefined'||!indexedDB||typeof indexedDB.open!=='function')return Promise.resolve(null);
+  return new Promise(function(resolve){
+    let req;
+    try{req=indexedDB.open('evercare_offline_pdf',1);}catch(e){resolve(null);return;}
+    req.onupgradeneeded=function(){
+      try{
+        const db=req.result;
+        if(db&&!db.objectStoreNames.contains('bytes'))db.createObjectStore('bytes');
+      }catch(e){}
+    };
+    req.onsuccess=function(){resolve(req.result||null);};
+    req.onerror=function(){resolve(null);};
+  });
+}
+async function cgPdfBytesPut(id,bytes){
+  if(!id||!bytes)return;
+  const mem=cgPdfMem();
+  if(mem)mem[id]=bytes;
+  const db=await cgPdfDb();
+  if(!db)return;
+  await new Promise(function(resolve){
+    try{
+      const tx=db.transaction('bytes','readwrite');
+      tx.objectStore('bytes').put(bytes,id);
+      tx.oncomplete=function(){resolve();};
+      tx.onerror=function(){resolve();};
+    }catch(e){resolve();}
+  });
+}
+async function cgPdfBytesGet(id){
+  const mem=cgPdfMem();
+  if(mem&&mem[id])return mem[id];
+  const db=await cgPdfDb();
+  if(!db)return null;
+  return new Promise(function(resolve){
+    try{
+      const tx=db.transaction('bytes','readonly');
+      const req=tx.objectStore('bytes').get(id);
+      req.onsuccess=function(){resolve(req.result||null);};
+      req.onerror=function(){resolve(null);};
+    }catch(e){resolve(null);}
+  });
+}
+async function cgPdfBytesDel(id){
+  const mem=cgPdfMem();
+  if(mem)delete mem[id];
+  const db=await cgPdfDb();
+  if(!db)return;
+  await new Promise(function(resolve){
+    try{
+      const tx=db.transaction('bytes','readwrite');
+      tx.objectStore('bytes').delete(id);
+      tx.oncomplete=function(){resolve();};
+      tx.onerror=function(){resolve();};
+    }catch(e){resolve();}
+  });
+}
+async function sbRefreshCaregiverJwt(){
+  const refresh=(currentUser&&currentUser.sbRefreshToken)||(typeof window!=='undefined'&&window.__sbSession&&window.__sbSession.refresh_token)||'';
+  if(!refresh||typeof SUPABASE_URL!=='string')return false;
+  let pack;
+  try{
+    const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{
+      method:'POST',
+      headers:typeof sbAnonHeaders==='function'?sbAnonHeaders():{'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:refresh})
+    });
+    pack=await sbRead(res);
+  }catch(e){return false;}
+  const token=pack&&pack.data&&pack.data.access_token;
+  if(!pack||!pack.ok||!token)return false;
+  const expiresAt=typeof sbExpiresMs==='function'?sbExpiresMs(pack.data):0;
+  const nextRefresh=(pack.data&&pack.data.refresh_token)||refresh;
+  if(currentUser){
+    currentUser.sbAccessToken=token;
+    currentUser.sbRefreshToken=nextRefresh;
+    currentUser.sbExpiresAt=expiresAt;
+    if(typeof persistCgSession==='function'){
+      try{persistCgSession(currentUser);}catch(e){}
+    }
+  }
+  if(typeof sbPersistAuth==='function'){
+    sbPersistAuth({
+      access_token:token,
+      refresh_token:nextRefresh,
+      expires_at:expiresAt,
+      user_id:(currentUser&&currentUser.sbUserId)||(typeof sbJwtSub==='function'?sbJwtSub(token):''),
+      email:(currentUser&&(currentUser.sbEmail||currentUser.email))||''
+    });
+  }
+  return true;
+}
+async function sbEnsureCaregiverJwt(){
+  if(typeof evercareSbEnabled==='function'&&!evercareSbEnabled())return false;
+  const token=typeof sbToken==='function'?sbToken():'';
+  const exp=currentUser&&Number(currentUser.sbExpiresAt);
+  const fresh=!!token&&!(exp>0&&exp<=Date.now()+60000);
+  if(fresh)return true;
+  return sbRefreshCaregiverJwt();
+}
+async function cgFlushPdfOp(op){
+  op=op||{};
+  let timesheetId=op.timesheet_id||'';
+  if(!timesheetId&&op.aide_id&&op.client_id&&op.week_start&&typeof sbFindWeekRow==='function'){
+    const row=await sbFindWeekRow(op.aide_id,op.client_id,op.week_start,'');
+    timesheetId=(row&&row.id)||'';
+    if(timesheetId)op.timesheet_id=timesheetId;
+  }
+  if(!timesheetId)return false;
+  let bytes=await cgPdfBytesGet(op.client_op_id);
+  if(!bytes){
+    try{
+      if(typeof sbEnsurePdfLibs==='function'&&await sbEnsurePdfLibs()&&typeof renderTimesheetPdfBlob==='function'){
+        bytes=await renderTimesheetPdfBlob(op.record||{days:op.days||{}});
+      }
+    }catch(e){bytes=null;}
+    if(bytes)await cgPdfBytesPut(op.client_op_id,bytes);
+  }
+  const orgId=op.org_id||(typeof sbEnsureOrgId==='function'?await sbEnsureOrgId():'');
+  if(!orgId||!bytes)return false;
+  if(typeof sbPdfMagicOk==='function'&&!(await sbPdfMagicOk(bytes)))return false;
+  if(typeof sbPdfSize==='function'&&sbPdfSize(bytes)<1024)return false;
+  await uploadTimesheetPdf({orgId:orgId,timesheetId:timesheetId,pdfBytes:bytes});
+  await cgPdfBytesDel(op.client_op_id);
+  return true;
+}
+function cgWeekGroups(ops){
+  const groups=[];
+  (ops||[]).forEach(function(op){
+    let found=null;
+    for(let i=0;i<groups.length;i++){
+      if(cgSameWeek(groups[i][0],op)){found=groups[i];break;}
+    }
+    if(!found){found=[];groups.push(found);}
+    found.push(op);
+  });
+  return groups;
+}
+async function cgFlushWeek(ops){
+  const dataOps=ops.filter(function(op){return op.kind==='save_day'||op.kind==='submit';}).sort(function(a,b){
+    return String(a.created_at||'').localeCompare(String(b.created_at||''));
+  });
+  const pdfOps=ops.filter(function(op){return op.kind==='pdf_upload';}).sort(function(a,b){
+    return String(a.created_at||'').localeCompare(String(b.created_at||''));
+  });
+  let authRetried=false;
+  for(let i=0;i<dataOps.length;i++){
+    const op=dataOps[i];
+    try{
+      const row=await sbUpsertTimesheet({
+        clientId:op.client_id,
+        weekStart:op.week_start,
+        days:op.days,
+        status:op.kind==='submit'?'submitted':'backup',
+        header:op.header||{}
+      });
+      if(row&&row.id)cgStampWeekTimesheetId(op,row.id);
+      cgRemoveOp(op.client_op_id);
+    }catch(e){
+      if(cgIsAuthErr(e)){
+        if(authRetried)return 'auth';
+        authRetried=true;
+        const ok=await sbRefreshCaregiverJwt();
+        if(!ok)return 'auth';
+        i-=1;
+        continue;
+      }
+      if(cgIsNetErr(e))return 'net';
+      return 'error';
+    }
+  }
+  for(let p=0;p<pdfOps.length;p++){
+    const live=cgReadQueue().filter(function(item){return item.client_op_id===pdfOps[p].client_op_id;})[0]||pdfOps[p];
+    try{
+      const ok=await cgFlushPdfOp(live);
+      if(!ok)return 'error';
+      cgRemoveOp(live.client_op_id);
+    }catch(e){
+      if(cgIsAuthErr(e))return 'auth';
+      if(cgIsNetErr(e))return 'net';
+      return 'error';
+    }
+  }
+  return 'ok';
+}
+async function cgFlushOfflineQueue(){
+  if(typeof evercareSbEnabled==='function'&&!evercareSbEnabled())return;
+  if(typeof window!=='undefined'&&window._cgFlushBusy)return;
+  if(!cgReadQueue().length){
+    cgPaintOfflineQueue();
+    return;
+  }
+  if(!cgNetOnline()){
+    if(typeof window!=='undefined')window._cgQueuePhase='offline';
+    cgPaintOfflineQueue();
+    return;
+  }
+  if(typeof window!=='undefined'){
+    window._cgFlushBusy=true;
+    window._cgQueuePhase='uploading';
+  }
+  cgPaintOfflineQueue();
+  let phase='uploaded';
+  try{
+    const authed=await sbEnsureCaregiverJwt();
+    if(!authed)phase='error';
+    else{
+      const groups=cgWeekGroups(cgReadQueue());
+      for(let g=0;g<groups.length;g++){
+        const result=await cgFlushWeek(groups[g]);
+        if(result!=='ok'){phase='error';break;}
+      }
+      if(cgReadQueue().length)phase='error';
+    }
+  }catch(e){
+    phase='error';
+  }
+  if(typeof window!=='undefined'){
+    window._cgFlushBusy=false;
+    window._cgQueuePhase=phase;
+  }
+  cgPaintOfflineQueue();
+  if(phase==='uploaded'&&typeof setTimeout==='function'&&typeof window!=='undefined'){
+    const mark=Date.now();
+    window._cgUploadedMark=mark;
+    setTimeout(function(){
+      if(window._cgUploadedMark===mark&&window._cgQueuePhase==='uploaded'&&!cgReadQueue().length){
+        window._cgQueuePhase='';
+        cgPaintOfflineQueue();
+      }
+    },4000);
+  }
+}
+function cgPaintOfflineQueue(){
+  if(typeof document==='undefined'||!document.getElementById)return;
+  const banner=document.getElementById('offlineQueueBanner');
+  const status=document.getElementById('offlineQueueStatus');
+  const retry=document.getElementById('offlineQueueRetry');
+  if(!banner||!status||!banner.style)return;
+  const ops=cgReadQueue();
+  const phase=(typeof window!=='undefined'&&window._cgQueuePhase)||'';
+  if(!ops.length&&phase!=='uploaded'){
+    banner.style.display='none';
+    if(retry&&retry.style)retry.style.display='none';
+    return;
+  }
+  banner.style.display='block';
+  if(phase==='uploading'){
+    status.textContent='Uploading…';
+    if(retry&&retry.style)retry.style.display='none';
+    return;
+  }
+  if(!ops.length&&phase==='uploaded'){
+    status.textContent='Uploaded';
+    if(retry&&retry.style)retry.style.display='none';
+    return;
+  }
+  if(!cgNetOnline()){
+    status.textContent='Saved on this phone — will upload when you\'re back online';
+    if(retry&&retry.style)retry.style.display='inline-flex';
+    return;
+  }
+  if(phase==='error'||phase==='auth'){
+    status.textContent='Couldn\'t upload — tap to retry';
+    if(retry&&retry.style)retry.style.display='inline-flex';
+    return;
+  }
+  status.textContent='Uploading…';
+  if(retry&&retry.style)retry.style.display='none';
+}
+function cgRetryOfflineQueue(){
+  if(!cgNetOnline()){
+    if(typeof window!=='undefined')window._cgQueuePhase='offline';
+    cgPaintOfflineQueue();
+    return Promise.resolve();
+  }
+  if(typeof window!=='undefined')window._cgQueuePhase='';
+  return cgFlushOfflineQueue();
 }
 // GHOST-TIMESHEET-PDF-WRITE-CONTRACT-v1 — client blank-letter JPEG overlay. No Edge function and no render RPC.
 // After Save Day (backup row id) or Submit, uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
@@ -4349,8 +4924,12 @@ function sbRefreshTimesheetPdf(timesheetId,daysSource){
   try{record=sbTimesheetPdfRecord(daysSource);}catch(e){record={days:daysSource||{}};}
   return Promise.resolve().then(function(){
     return sbWriteTimesheetPdf(timesheetId,record);
+  }).then(function(ok){
+    if(!ok)cgRequeuePdfAfterMiss(timesheetId,record);
+    return ok;
   }).catch(function(err){
     try{console.warn('timesheet pdf',err&&err.message||err);}catch(e){}
+    try{cgRequeuePdfAfterMiss(timesheetId,record);}catch(e){}
     return false;
   });
 }
@@ -5036,6 +5615,8 @@ window.addEventListener('load',()=>{
     else afterLogin();
   }
 });
+window.addEventListener('online',function(){try{cgFlushOfflineQueue();}catch(e){}});
+window.addEventListener('offline',function(){try{window._cgQueuePhase='offline';cgPaintOfflineQueue();}catch(e){}});
 window.addEventListener('pageshow',()=>{enforceCgSessionTimeout();});
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible')enforceCgSessionTimeout();
