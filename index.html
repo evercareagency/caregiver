@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-is-hydrate">
 <meta name="caregiver-build" content="2026-09-24-cg-pdf-view">
 <meta name="caregiver-build" content="2026-09-24-backup-uuid">
 <meta name="caregiver-build" content="2026-09-24-cg-pdf-1page">
@@ -11,6 +12,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-is-hydrate v=ishydr1 — Friday GO 2026-09-24. My Inservices hydrates Completed from inservice_results with the aide JWT (username + topic_id) before the list paints. Badge and date come from that row when the office has one. The phone store stays as a cache and in-progress answers are kept. Aides still have no Print or View Certificate. v=cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cg-pdf-view v=cgpdfv1 — Friday GO 2026-09-24. After Save Day, View PDF opens the 1-page US Letter timesheet (blank-letter overlay, 14pt slack, address on page 1). The button is on the open timesheet once a day is saved, not on Home cards. Save Day still uploads that PDF. bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-backup-uuid v=bakuuid1 — Friday GO 2026-09-24. Backup and the offline Save Day flush send only Supabase UUIDs for timesheets.id, org_id, aide_id, and client_id. INSERT omits id (the server generates it). A draft with no assigned client UUID is blocked with “Pick a client first.” and is not posted. Home cards take the client name from assignments. A Sheets or phone millisecond id may be stored only as legacy_id. Letter PDF v=cgpdf1, Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cg-pdf-1page v=cgpdf1 — Timesheet View PDF / print / Save Day PDF is one US Letter page at 100% scale. The blank-letter overlay stays the paper form; jsPDF insets it by TS_PDF_PAGE_SLACK_PT so the office address stays on page 1. Print CSS uses @page{size:letter;margin:0} and hides the site footer. Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
@@ -1137,6 +1139,7 @@ function switchTab(tab){
 // Offline Save Day queue (v=offline1) flushes through Supabase when a caregiver JWT is valid.
 // Letter PDF is one page (v=cgpdf1).
 // View PDF after Save Day (v=cgpdfv1). Shown once a day is saved. Not gated on cloudBackupId or pdf_storage_path.
+// Inservice Completed hydrates from inservice_results (v=ishydr1). No aide certificate.
 // Backup UUID guard (v=bakuuid1). Phone Date.now / ts_* ids never enter uuid columns.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
@@ -5850,7 +5853,47 @@ async function getAssignedIS(){
   }
 }
 
+async function sbHydrateInserviceCompletions(){
+  if(typeof sbDataEnabled!=='function'||!sbDataEnabled()||!currentUser||!currentUser.username){
+    return typeof getISData==='function'?getISData():{};
+  }
+  const username=String(currentUser.username).trim();
+  if(!username)return getISData();
+  let rows=[];
+  try{
+    const q='inservice_results?select='+encodeURIComponent('topic_id,completed,submitted_at,status,username')
+      +'&username=eq.'+encodeURIComponent(username)
+      +'&order=submitted_at.desc';
+    const got=await sbRest(q);
+    rows=Array.isArray(got)?got:(got?[got]:[]);
+  }catch(e){
+    return getISData();
+  }
+  const isData=getISData()||{};
+  const seen={};
+  let changed=false;
+  rows.forEach(function(row){
+    if(!row)return;
+    if(String(row.status||'Active').toLowerCase()==='archived')return;
+    const who=String(row.username||'').trim().toLowerCase();
+    if(who&&who!==username.toLowerCase())return;
+    const id=row.topic_id==null?'':String(row.topic_id).trim();
+    if(!id||seen[id])return;
+    const at=row.submitted_at||row.completed||'';
+    if(!at)return;
+    seen[id]=true;
+    const done=row.completed||at;
+    const stamp=row.submitted_at||row.completed||at;
+    if(isData['completed_'+id]!==done){isData['completed_'+id]=done;changed=true;}
+    if(isData['completedAt_'+id]!==stamp){isData['completedAt_'+id]=stamp;changed=true;}
+  });
+  if(changed&&typeof saveISData==='function')saveISData(isData);
+  return isData;
+}
 async function checkISNotif(){
+  if(typeof sbHydrateInserviceCompletions==='function'){
+    try{await sbHydrateInserviceCompletions();}catch(e){}
+  }
   const isData=getISData();
   const banner=document.getElementById('isNotifBanner');
   if(!banner)return;
@@ -5883,6 +5926,9 @@ async function renderISList(){
   const el=document.getElementById('isTopicList');
   if(!el)return;
   el.innerHTML='<div style="text-align:center;padding:30px"><div style="font-size:24px;margin-bottom:8px">⏳</div><p style="color:var(--muted);font-size:0.82rem">Loading inservices...</p></div>';
+  if(typeof sbHydrateInserviceCompletions==='function'){
+    try{await sbHydrateInserviceCompletions();}catch(e){}
+  }
   const assigned=await getAssignedIS();
   const isData=getISData();
   el.innerHTML=INSERVICES.map(is=>{
