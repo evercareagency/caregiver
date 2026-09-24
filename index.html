@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-aide-portal">
 <meta name="caregiver-build" content="2026-09-24-is-hydrate">
 <meta name="caregiver-build" content="2026-09-24-cg-pdf-view">
 <meta name="caregiver-build" content="2026-09-24-backup-uuid">
@@ -12,6 +13,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-aide-portal v=portal1 — Friday GO 2026-09-24. Visible chrome is ECA Aide Portal (title, login headers, home header, PWA name and short_name). Bottom nav is Home, Timesheet, Inservices, More. Clients stay on Home only. Deleting a draft asks first. Client and aide signatures use Confirm and Redo, and each one asks before it keeps or clears the ink. Stay-logged-in TTL is CG_SESSION_MS (8 hours from loginAt). A foreground check clears the session and returns to login when that window ends. Icons A defaults: PORTAL_MARK_HANDS (teal hands+heart) and PORTAL_MARK_CLIPBOARD (navy clipboard). Same drawings live in brand/eca-hands-heart.svg and brand/eca-clipboard.svg for a later pass. The login photo is unchanged. v=cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-is-hydrate v=ishydr1 — Friday GO 2026-09-24. My Inservices hydrates Completed from inservice_results with the aide JWT (username + topic_id) before the list paints. Badge and date come from that row when the office has one. The phone store stays as a cache and in-progress answers are kept. Aides still have no Print or View Certificate. v=cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cg-pdf-view v=cgpdfv1 — Friday GO 2026-09-24. After Save Day, View PDF opens the 1-page US Letter timesheet (blank-letter overlay, 14pt slack, address on page 1). The button is on the open timesheet once a day is saved, not on Home cards. Save Day still uploads that PDF. bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-backup-uuid v=bakuuid1 — Friday GO 2026-09-24. Backup and the offline Save Day flush send only Supabase UUIDs for timesheets.id, org_id, aide_id, and client_id. INSERT omits id (the server generates it). A draft with no assigned client UUID is blocked with “Pick a client first.” and is not posted. Home cards take the client name from assignments. A Sheets or phone millisecond id may be stored only as legacy_id. Letter PDF v=cgpdf1, Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
@@ -24,7 +26,7 @@
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>EverCare — Caregiver Timesheet</title>
+<title>ECA Aide Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#2a7f7f;--teal-dark:#1e6060;--teal-light:#e8f4f4;--navy:#1a2744;--off:#f5f8fc;--border:#dce4ef;--text:#1e2a3a;--muted:#6b7a90;--danger:#c0392b;--success:#27ae60;--warn:#e67e22;}
@@ -206,6 +208,31 @@ canvas.sigpad.signed{border-color:var(--success);}
 .success-wrap h2{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--navy);margin-bottom:7px;}
 .success-wrap p{font-size:0.81rem;color:var(--muted);max-width:320px;margin:0 auto 22px;line-height:1.7;}
 footer{text-align:center;padding:11px;font-size:0.7rem;color:var(--muted);border-top:1px solid var(--border);background:white;}
+/* ECA Aide Portal shell — bigger taps, Icons A marks, bottom nav (v=portal1) */
+.hdr-mark{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:block;}
+.card-mark{width:24px;height:24px;border-radius:6px;flex-shrink:0;display:block;}
+.btn{min-height:48px;}
+.btn-full{min-height:52px;padding:14px 18px;}
+.mbtn{min-height:48px;padding:12px 18px;}
+.mbtn-danger{background:var(--danger);color:white;}
+.auth-tab{min-height:48px;}
+.auth-box input[type="text"],.auth-box input[type="password"]{min-height:48px;font-size:1rem;}
+.hdr-back{width:44px;height:44px;font-size:18px;}
+.sig-actions{display:flex;gap:8px;margin-top:6px;}
+.sig-act{flex:1;min-height:48px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;}
+.sig-act-confirm{background:var(--teal);color:#fff;border:none;}
+.sig-act-redo{background:#fff;color:var(--navy);border:1.5px solid var(--border);}
+canvas.sigpad.sig-locked{cursor:default;box-shadow:inset 0 0 0 2px var(--success);}
+.draft-del{min-height:44px;min-width:76px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--danger);background:#fff;color:var(--danger);font-weight:700;font-size:0.82rem;font-family:'DM Sans',sans-serif;cursor:pointer;flex-shrink:0;}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:flex;background:#fff;border-top:1px solid var(--border);padding:4px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(26,39,68,0.08);}
+.bottom-nav[hidden]{display:none !important;}
+.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;border-radius:12px;padding:4px 2px;}
+.bottom-nav button.active{color:var(--teal-dark);background:var(--teal-light);}
+.bottom-nav .bn-img{width:22px;height:22px;border-radius:6px;display:block;}
+.bottom-nav .bn-ico{font-size:1.05rem;line-height:1;}
+body.has-bottom-nav .wrap{padding-bottom:108px;}
+body.has-bottom-nav footer{margin-bottom:76px;}
+#cg_client{min-height:52px;}
 /* Offscreen paper overlay for the soft-flag Storage PDF. Not a print screen. */
 .ts-pdf-sheet{position:relative;width:8.5in;height:11in;background:#fff;overflow:hidden;color:#111;font-family:Times,'Times New Roman',serif;box-sizing:border-box;}
 .ts-pdf-sheet .ts-blank{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:0;border:0;}
@@ -237,12 +264,24 @@ footer{text-align:center;padding:11px;font-size:0.7rem;color:var(--muted);border
 </style>
 
 <!-- PWA -->
-<link rel="manifest" href="data:application/json,{%22name%22:%22EverCare%20Home%20Agency%22,%22short_name%22:%22EverCare%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%232a7f7f%22,%22theme_color%22:%22%232a7f7f%22}">
+<link rel="icon" id="portalFavicon" href="">
+<link rel="manifest" href="data:application/json,{%22name%22:%22ECA%20Aide%20Portal%22,%22short_name%22:%22ECA%20Aide%20Portal%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%232a7f7f%22,%22theme_color%22:%22%232a7f7f%22}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="EverCare">
+<meta name="apple-mobile-web-app-title" content="ECA Aide Portal">
 <meta name="theme-color" content="#2a7f7f">
 <script>
+// Icons A — default brand marks (v=portal1). Edit these two constants (and the matching brand/*.svg files) later.
+// Do not restyle the login photo from here.
+const PORTAL_NAME='ECA Aide Portal';
+const PORTAL_SHORT_NAME='ECA Aide Portal';
+const PORTAL_MARK_HANDS='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#2a7f7f"/><path fill="#ffffff" d="M32 40.5s-10.2-6.2-10.2-12.8c0-3.5 2.6-6.1 5.9-6.1 1.9 0 3.5 1 4.3 2.4.8-1.4 2.4-2.4 4.3-2.4 3.3 0 5.9 2.6 5.9 6.1C42.2 34.3 32 40.5 32 40.5z"/><path fill="#d4ecec" d="M11 40.2c0-2.2 1.8-4.4 4.4-5.4 1.4 6.4 4.6 10.6 8.6 12.8C17.6 46.2 11 43.6 11 40.2z"/><path fill="#d4ecec" d="M53 40.2c0-2.2-1.8-4.4-4.4-5.4-1.4 6.4-4.6 10.6-8.6 12.8C46.4 46.2 53 43.6 53 40.2z"/></svg>');
+const PORTAL_MARK_CLIPBOARD='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#1a2744"/><rect x="18" y="18" width="28" height="34" rx="3" fill="#ffffff"/><rect x="26" y="13" width="12" height="8" rx="2" fill="#2a7f7f"/><rect x="24" y="28" width="16" height="2.5" rx="1.2" fill="#2a7f7f"/><rect x="24" y="34" width="16" height="2.5" rx="1.2" fill="#2a7f7f"/><rect x="24" y="40" width="11" height="2.5" rx="1.2" fill="#2a7f7f"/></svg>');
+(function setPortalFavicon(){
+  let fav=document.getElementById('portalFavicon');
+  if(!fav){fav=document.createElement('link');fav.id='portalFavicon';fav.rel='icon';document.head.appendChild(fav);}
+  fav.href=PORTAL_MARK_HANDS;
+})();
 let deferredPrompt=null;
 function isEverCareStandalone(){
   return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||(!!window.navigator.standalone);
@@ -257,7 +296,7 @@ function setInstallCtaReady(ready){
     el.textContent=ready?'📲 Tap Install':'📱 Add to Home Screen';
   });
   document.querySelectorAll('.ec-install-cta-sub').forEach(el=>{
-    el.textContent=ready?'One tap to add EverCare to your phone':'Quick access — no App Store needed';
+    el.textContent=ready?'One tap to add ECA Aide Portal to your phone':'Quick access — no App Store needed';
   });
   const banBtn=document.getElementById('pwaBannerInstallBtn');
   if(banBtn)banBtn.textContent=ready?'Tap Install':'Install';
@@ -280,32 +319,31 @@ function installPWA(){
   }
   showIosInstallModal();
 }
+function paintPortalMarks(){
+  document.querySelectorAll('.portal-mark-hands').forEach(function(el){el.src=PORTAL_MARK_HANDS;});
+  document.querySelectorAll('.portal-mark-clip').forEach(function(el){el.src=PORTAL_MARK_CLIPBOARD;});
+}
 function setupEverCarePWA(){
+  paintPortalMarks();
+  let apple=document.querySelector('link[rel="apple-touch-icon"]');
+  if(!apple){apple=document.createElement('link');apple.rel='apple-touch-icon';document.head.appendChild(apple);}
+  apple.href=PORTAL_MARK_HANDS;
+  const manifest={
+    name:PORTAL_NAME,
+    short_name:PORTAL_SHORT_NAME,
+    start_url:'.',
+    display:'standalone',
+    background_color:'#2a7f7f',
+    theme_color:'#2a7f7f',
+    icons:[
+      {src:PORTAL_MARK_HANDS,sizes:'any',type:'image/svg+xml',purpose:'any'}
+    ]
+  };
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  let link=document.querySelector('link[rel="manifest"]');
+  if(link)link.href=url;
   if(isEverCareStandalone()){hideEverCareInstallUI();return;}
-  // Build manifest + apple-touch-icon from the embedded login logo
-  const logoImg=document.querySelector('#loginScreen img[src^="data:image"], #authScreen img[src^="data:image"], .login-box img[src^="data:image"], .auth-logo img[src^="data:image"]');
-  const iconSrc=logoImg&&logoImg.src?logoImg.src:null;
-  if(iconSrc){
-    let apple=document.querySelector('link[rel="apple-touch-icon"]');
-    if(!apple){apple=document.createElement('link');apple.rel='apple-touch-icon';document.head.appendChild(apple);}
-    apple.href=iconSrc;
-    const manifest={
-      name:'EverCare Home Agency',
-      short_name:'EverCare',
-      start_url:'.',
-      display:'standalone',
-      background_color:'#2a7f7f',
-      theme_color:'#2a7f7f',
-      icons:[
-        {src:iconSrc,sizes:'192x192',type:'image/jpeg',purpose:'any'},
-        {src:iconSrc,sizes:'512x512',type:'image/jpeg',purpose:'any'}
-      ]
-    };
-    const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
-    const url=URL.createObjectURL(blob);
-    let link=document.querySelector('link[rel="manifest"]');
-    if(link)link.href=url;
-  }
   // iOS: show banner by default (no beforeinstallprompt)
   const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const banner=document.getElementById('pwaBanner');
@@ -327,7 +365,7 @@ else setupEverCarePWA();
 </script>
 </head>
 <body><div id="pwaBanner" style="display:none;background:var(--navy);color:white;padding:12px 14px;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:200">
-  <p style="font-size:0.82rem;line-height:1.35;flex:1">📱 Add EverCare to your <strong>Home Screen</strong> for one-tap login.</p>
+  <p style="font-size:0.82rem;line-height:1.35;flex:1">📱 Add <strong>ECA Aide Portal</strong> to your Home Screen for one-tap login.</p>
   <button id="pwaBannerInstallBtn" onclick="installPWA()" style="background:var(--teal);border:none;color:white;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap">Install</button>
   <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:16px;cursor:pointer" aria-label="Dismiss">&#10005;</button>
 </div>
@@ -335,9 +373,9 @@ else setupEverCarePWA();
 
 <!-- AUTH -->
 <div class="screen active" id="authScreen">
-  <div class="auth-logo"><img src="data:image/jpeg;base64,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" alt="EverCare Home Agency" style="width:120px;height:120px;object-fit:cover;border-radius:50%;border:3px solid rgba(255,255,255,0.3);margin-bottom:16px;"></div>
-  <div class="auth-title">EverCare Home Agency</div>
-  <div class="auth-sub">CAREGIVER TIMESHEET PORTAL</div>
+  <div class="auth-logo"><img src="data:image/jpeg;base64,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" alt="ECA Aide Portal" style="width:120px;height:120px;object-fit:cover;border-radius:50%;border:3px solid rgba(255,255,255,0.3);margin-bottom:16px;"></div>
+  <div class="auth-title">ECA Aide Portal</div>
+  <div class="auth-sub">EVERCARE HOME AGENCY</div>
   <div class="auth-box">
     <h2>Welcome</h2>
     <p>Sign in or create your caregiver account</p>
@@ -373,7 +411,7 @@ else setupEverCarePWA();
 
 <!-- AIDE FIRST-LOGIN SETUP (mandatory — no Skip) -->
 <div class="screen" id="aideSetupScreen">
-  <div class="auth-title" style="margin-top:8px">EverCare Home Agency</div>
+  <div class="auth-title" style="margin-top:8px">ECA Aide Portal</div>
   <div class="auth-sub">ACCOUNT SETUP REQUIRED</div>
   <div class="auth-box">
     <h2>Finish your account</h2>
@@ -390,7 +428,7 @@ else setupEverCarePWA();
 
 <!-- RECOVERY LINK: set password after the email redirect -->
 <div class="screen" id="recoveryScreen">
-  <div class="auth-title" style="margin-top:8px">EverCare Home Agency</div>
+  <div class="auth-title" style="margin-top:8px">ECA Aide Portal</div>
   <div class="auth-sub">RESET PASSWORD</div>
   <div class="auth-box">
     <h2>Set a new password</h2>
@@ -428,7 +466,7 @@ else setupEverCarePWA();
         <ol>
           <li>Open <strong>Settings</strong></li>
           <li>Tap <strong>Privacy &amp; Security</strong> → <strong>Location Services</strong></li>
-          <li>Tap <strong>Safari</strong> or <strong>EverCare</strong></li>
+          <li>Tap <strong>Safari</strong> or <strong>ECA Aide Portal</strong></li>
           <li>Select <strong>Allow</strong></li>
           <li>Return here and tap <strong>Retry</strong></li>
         </ol>
@@ -442,9 +480,10 @@ else setupEverCarePWA();
 <!-- CAREGIVER MAIN -->
 <div class="screen" id="caregiverScreen">
   <div class="hdr">
-    <button class="hdr-back" onclick="headerBack()">←</button>
+    <button class="hdr-back" onclick="headerBack()" aria-label="Back">←</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
     <div class="hdr-text">
-      <h2>EverCare Home Agency</h2>
+      <h2>ECA Aide Portal</h2>
       <p id="hdr_name">Weekly Timesheet</p>
     </div>
   </div>
@@ -464,9 +503,8 @@ else setupEverCarePWA();
         <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a card below to continue a <strong>draft</strong> or a week the office <strong>sent back</strong>. The two most recent <strong>submitted</strong> weeks stay listed. <strong>+ Start Another Timesheet</strong> always starts a <strong>new blank week and client</strong> — it does not reopen a submitted week.</p>
       </div>
       <div id="cgTSList"></div>
-      <div class="action-row" style="padding-top:0;margin-bottom:14px">
-        <button class="btn btn-ghost btn-full" onclick="confirmLogout()">&#8592; Back</button>
-        <button class="btn btn-ghost btn-full" onclick="confirmNewTS()" style="border-color:var(--teal);color:var(--teal)">+ Start Another Timesheet</button>
+      <div class="action-stack" style="padding-top:0;margin-bottom:14px">
+        <button class="btn btn-teal btn-full" onclick="confirmNewTS()">+ Start Another Timesheet</button>
       </div>
       <button class="btn btn-ghost btn-full" onclick="goToInservices()" style="border-color:var(--navy);color:var(--navy);margin-bottom:14px">
         &#128218; My Inservices
@@ -491,14 +529,14 @@ else setupEverCarePWA();
   <div id="cgFormView" style="display:none">
     <div class="wrap">
       <div class="card">
-        <div class="card-title"><span class="ico">📋</span> Caregiver Timesheet</div>
+        <div class="card-title"><img class="portal-mark-clip card-mark" alt="" width="24" height="24"> Timesheet</div>
         <div class="hdr-names">
           <div class="field"><label>Client Name <span style="color:var(--danger)">*</span></label><select id="cg_client" onchange="onClientSelected()"><option value="">-- Select Client --</option></select><div class="client-err" id="cg_client_err" role="alert">Please select a client before continuing.</div></div>
           <div class="field"><label>Caregiver / HHA Name</label><div class="aide-name-display" id="cg_aide_name">—</div></div>
         </div>
         <div class="hdr-sig-row">
-          <div><div class="sig-lbl">Client Signature <span style="color:var(--danger)">*</span></div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_client" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_client">Tap to sign</div><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_client')">Clear</button></div>
-          <div><div class="sig-lbl">Caregiver / HHA Signature <span style="color:var(--danger)">*</span></div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_aide" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_aide">Tap to sign</div><button class="sig-clear" type="button" onclick="clearSig('sp_hdr_aide')">Clear</button></div>
+          <div><div class="sig-lbl">Client Signature <span style="color:var(--danger)">*</span></div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_client" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_client">Tap to sign</div><div class="sig-actions"><button class="sig-act sig-act-confirm" type="button" onclick="askConfirmSig('sp_hdr_client')">Confirm</button><button class="sig-act sig-act-redo" type="button" onclick="askRedoSig('sp_hdr_client')">Redo</button></div></div>
+          <div><div class="sig-lbl">Caregiver / HHA Signature <span style="color:var(--danger)">*</span></div><div class="sig-wrap"><canvas class="sigpad" id="sp_hdr_aide" height="110"></canvas></div><div class="sig-hint" id="hint_sp_hdr_aide">Tap to sign</div><div class="sig-actions"><button class="sig-act sig-act-confirm" type="button" onclick="askConfirmSig('sp_hdr_aide')">Confirm</button><button class="sig-act sig-act-redo" type="button" onclick="askRedoSig('sp_hdr_aide')">Redo</button></div></div>
         </div>
         <div class="fg" style="margin-top:12px">
           <div class="field"><label>Service Type</label>
@@ -565,7 +603,8 @@ else setupEverCarePWA();
 <div class="screen" id="previewScreen">
   <div class="hdr">
     <button class="hdr-back" onclick="showScreen('caregiverScreen')">←</button>
-    <div class="hdr-text"><h2>Review Full Timesheet</h2><p>Confirm before submitting</p></div>
+    <img class="hdr-mark portal-mark-clip" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Review Full Timesheet</h2><p>ECA Aide Portal</p></div>
   </div>
   <div class="wrap">
     <div class="card" style="background:#fff8f0;border-color:var(--warn)">
@@ -584,12 +623,12 @@ else setupEverCarePWA();
 <div class="modal-bg" id="iosInstallModal">
   <div class="modal" style="max-width:380px;text-align:center">
     <div class="mico">📱</div>
-    <h3>Add EverCare to Home Screen</h3>
+    <h3>Add ECA Aide Portal to Home Screen</h3>
     <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;line-height:1.55">On iPhone, you add this from Safari — there is no one-tap Install button. Follow these easy steps:</p>
     <ol style="text-align:left;font-size:0.86rem;color:var(--navy);line-height:1.7;padding-left:22px;margin:0 0 16px">
       <li style="margin-bottom:8px"><strong>Tap Share</strong> — the square with an arrow pointing up (usually at the bottom of Safari).</li>
       <li style="margin-bottom:8px"><strong>Tap “Add to Home Screen”</strong> — scroll the list if you don’t see it right away.</li>
-      <li><strong>Tap “Add”</strong> in the top right. Done — EverCare appears on your home screen.</li>
+      <li><strong>Tap “Add”</strong> in the top right. Done — ECA Aide Portal appears on your home screen.</li>
     </ol>
     <p style="font-size:0.72rem;color:var(--muted);margin-bottom:14px;line-height:1.5">Using Android Chrome? If Install didn’t pop up, open the browser menu (⋮) → <strong>Install app</strong> or <strong>Add to Home Screen</strong>.</p>
     <div class="modal-btns"><button class="mbtn mbtn-confirm" onclick="closeModal('iosInstallModal')">Got it ✓</button></div>
@@ -630,7 +669,7 @@ else setupEverCarePWA();
           <li>Open <strong>Settings</strong></li>
           <li>Tap <strong>Privacy &amp; Security</strong></li>
           <li>Tap <strong>Location Services</strong></li>
-          <li>Tap <strong>Safari</strong> or <strong>EverCare</strong></li>
+          <li>Tap <strong>Safari</strong> or <strong>ECA Aide Portal</strong></li>
           <li>Select <strong>Allow</strong></li>
           <li>Return here and tap <strong>Retry</strong></li>
         </ol>
@@ -704,7 +743,8 @@ else setupEverCarePWA();
 <!-- INSERVICE HOME -->
 <div class="screen" id="inserviceScreen">
   <div class="hdr">
-    <button class="hdr-back" onclick="showScreen('caregiverScreen')">&#8592;</button>
+    <button class="hdr-back" onclick="showCaregiverHome()">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
     <div class="hdr-text"><h2>My Inservices</h2><p id="is_aide_name">Training Modules</p></div>
   </div>
   <div class="wrap">
@@ -719,7 +759,8 @@ else setupEverCarePWA();
 <div class="screen" id="isReadScreen">
   <div class="hdr">
     <button class="hdr-back" onclick="showScreen('inserviceScreen')">&#8592;</button>
-    <div class="hdr-text"><h2 id="isReadTitle">Reading Material</h2><p>Read before taking the quiz</p></div>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2 id="isReadTitle">Reading Material</h2><p>ECA Aide Portal</p></div>
   </div>
   <div class="wrap">
     <div class="card" style="background:#fff8e6;border-color:#f0c96a;margin-bottom:14px">
@@ -738,6 +779,7 @@ else setupEverCarePWA();
 <div class="screen" id="isQuizScreen">
   <div class="hdr">
     <button class="hdr-back" onclick="showScreen('isReadScreen')">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
     <div class="hdr-text"><h2 id="isQuizTitle">Quiz</h2><p id="isQuizProgress">Question 1 of 5</p></div>
   </div>
   <div class="wrap">
@@ -755,7 +797,8 @@ else setupEverCarePWA();
 <div class="screen" id="isSigScreen">
   <div class="hdr">
     <button class="hdr-back" onclick="showScreen('isQuizScreen')">&#8592;</button>
-    <div class="hdr-text"><h2>Sign to Complete</h2><p>Your signature confirms completion</p></div>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Sign to Complete</h2><p>ECA Aide Portal</p></div>
   </div>
   <div class="wrap">
     <div class="card" style="background:#e8f8f0;border-color:var(--success);margin-bottom:14px">
@@ -774,19 +817,78 @@ else setupEverCarePWA();
 <!-- INSERVICE SUCCESS -->
 <div class="screen" id="isSuccessScreen">
   <div class="hdr">
-    <button class="hdr-back" onclick="showScreen('caregiverScreen')">&#8592;</button>
-    <div class="hdr-text"><h2>Inservice Complete</h2><p>EverCare Home Agency</p></div>
+    <button class="hdr-back" onclick="showCaregiverHome()">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Inservice Complete</h2><p>ECA Aide Portal</p></div>
   </div>
   <div class="wrap">
     <div class="success-wrap">
       <div class="sico">&#127881;</div>
       <h2>Inservice Completed!</h2>
       <p id="isSuccessMsg">You have completed this month inservice. Great job!</p>
-      <button class="btn btn-ghost btn-full" onclick="showScreen('caregiverScreen')">Back to Home</button>
+      <button class="btn btn-ghost btn-full" onclick="showCaregiverHome()">Back to Home</button>
     </div>
   </div>
 </div>
-<footer>5510 Pearl Rd Ste 200, Cleveland, OH 44129 &nbsp;|&nbsp; (216) 377-5991 &nbsp;|&nbsp; EverCare Home Agency</footer>
+<!-- MORE -->
+<div class="screen" id="moreScreen">
+  <div class="hdr">
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>ECA Aide Portal</h2><p id="more_aide_name">More</p></div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="card-title"><img class="portal-mark-hands card-mark" alt="" width="24" height="24"> Account</div>
+      <p id="more_aide_line" style="font-size:1rem;font-weight:700;color:var(--navy)">—</p>
+      <p style="font-size:0.84rem;color:var(--muted);margin-top:8px;line-height:1.5">You stay signed in for 8 hours from sign-in. Then the portal signs you out and returns to login.</p>
+    </div>
+    <div class="action-stack">
+      <button class="btn btn-teal btn-full" type="button" onclick="askCloudBackup()">Back up this week's draft</button>
+      <button class="btn btn-ghost btn-full" type="button" onclick="askDeleteCloudBackup()">Remove office backup</button>
+      <button class="btn btn-ghost btn-full ec-install-cta" type="button" onclick="installPWA()"><span class="ec-install-cta-label">Add to Home Screen</span></button>
+      <button class="btn btn-navy btn-full" type="button" onclick="confirmLogout()">Log out</button>
+    </div>
+    <div class="notice">
+      <ul>
+        <li>Office: <strong>(216) 377-5991</strong></li>
+        <li>Clients are listed on <strong>Home</strong>. Open a week from <strong>Timesheet</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav" id="bottomNav" aria-label="ECA Aide Portal" hidden>
+  <button type="button" data-nav="home" onclick="navGo('home')"><img class="portal-mark-hands bn-img" alt=""><span>Home</span></button>
+  <button type="button" data-nav="timesheet" onclick="navGo('timesheet')"><img class="portal-mark-clip bn-img" alt=""><span>Timesheet</span></button>
+  <button type="button" data-nav="inservices" onclick="navGo('inservices')"><span class="bn-ico" aria-hidden="true">&#128218;</span><span>Inservices</span></button>
+  <button type="button" data-nav="more" onclick="navGo('more')"><span class="bn-ico" aria-hidden="true">&#8943;</span><span>More</span></button>
+</nav>
+
+<div class="modal-bg" id="deleteDraftModal">
+  <div class="modal">
+    <div class="mico">&#128465;</div>
+    <h3>Delete this draft?</h3>
+    <p id="deleteDraftBody">This removes the draft from this phone. It does not submit the week.</p>
+    <div class="modal-btns">
+      <button class="mbtn mbtn-cancel" type="button" onclick="closeModal('deleteDraftModal')">Keep draft</button>
+      <button class="mbtn mbtn-danger" type="button" onclick="confirmDeleteDraft()">Delete draft</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="sigDialogModal">
+  <div class="modal">
+    <div class="mico">&#9997;</div>
+    <h3 id="sigDialogTitle">Confirm signature?</h3>
+    <p id="sigDialogBody">This keeps the signature on the timesheet.</p>
+    <div class="modal-btns">
+      <button class="mbtn mbtn-cancel" type="button" onclick="closeModal('sigDialogModal')">Go back</button>
+      <button class="mbtn mbtn-confirm" type="button" id="sigDialogGo" onclick="commitSigDialog()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<footer>5510 Pearl Rd Ste 200, Cleveland, OH 44129 &nbsp;|&nbsp; (216) 377-5991 &nbsp;|&nbsp; ECA Aide Portal</footer>
 
 <script>
 const SHEETS_URL='https://script.google.com/macros/s/AKfycbwSZbOtThwwwiu5pojn7reMvaygQ2tDQgxfidaytVZBykIvl-yT3X0qgnpufAg6Xku4/exec';
@@ -880,9 +982,11 @@ const store={
   del:k=>{try{localStorage.removeItem(k);}catch(e){}try{sessionStorage.removeItem(k);}catch(e){}}
 };
 
-// Session stays across opens for 8 hours from loginAt only (no idle timer).
-// Admin does not document a longer TTL. Missing loginAt is backfilled, not a forced re-login.
+// Stay-logged-in TTL. CG_SESSION_MS is 8 hours from loginAt. Taps do not extend it.
+// Missing loginAt is backfilled, not a forced re-login.
+// CG_SESSION_CHECK_MS is how often an open app checks the window, clears cg_session, and returns to login.
 const CG_SESSION_MS=8*60*60*1000;
+const CG_SESSION_CHECK_MS=60*1000;
 function parseLoginAt(sess){
   if(!sess||sess.loginAt==null||sess.loginAt==='')return null;
   const n=typeof sess.loginAt==='number'?sess.loginAt:Date.parse(sess.loginAt);
@@ -976,6 +1080,11 @@ function enforceCgSessionTimeout(){
   if(!sess||!sess.username)return;
   if(isCgSessionExpired(sess))caregiverLogout();
 }
+function armCgSessionWatch(){
+  if(window._cgSessionWatch)return;
+  window._cgSessionWatch=setInterval(enforceCgSessionTimeout, CG_SESSION_CHECK_MS);
+}
+armCgSessionWatch();
 
 const GAS_HEADERS={'Content-Type':'text/plain;charset=utf-8'};
 const CACHE_TTL_MS=5*60*1000;
@@ -1100,6 +1209,81 @@ function showScreen(id){
   const el=document.getElementById(id);
   if(el)el.classList.add('active');
   window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),50);
+  if(typeof syncPortalChrome==='function')syncPortalChrome(id);
+}
+const PORTAL_NAV_SCREENS={
+  caregiverScreen:'home',
+  previewScreen:'timesheet',
+  inserviceScreen:'inservices',
+  isReadScreen:'inservices',
+  isQuizScreen:'inservices',
+  isSigScreen:'inservices',
+  isSuccessScreen:'inservices',
+  moreScreen:'more'
+};
+function syncPortalChrome(screenId){
+  const nav=document.getElementById('bottomNav');
+  if(!nav)return;
+  const tab=PORTAL_NAV_SCREENS[screenId];
+  if(!tab||!currentUser){
+    nav.hidden=true;
+    document.body.classList.remove('has-bottom-nav');
+    return;
+  }
+  nav.hidden=false;
+  document.body.classList.add('has-bottom-nav');
+  let active=tab;
+  if(screenId==='caregiverScreen'){
+    const form=document.getElementById('cgFormView');
+    active=(form&&form.style.display==='block')?'timesheet':'home';
+  }
+  const back=document.querySelector('#caregiverScreen .hdr-back');
+  if(back)back.style.display=(active==='timesheet')?'':'none';
+  nav.querySelectorAll('button[data-nav]').forEach(function(b){
+    const on=b.getAttribute('data-nav')===active;
+    b.classList.toggle('active',on);
+    if(on)b.setAttribute('aria-current','page');
+    else b.removeAttribute('aria-current');
+  });
+  if(typeof paintPortalMarks==='function')paintPortalMarks();
+}
+function showMoreScreen(){
+  if(!currentUser)return;
+  if(typeof requireAideSetup==='function'&&!requireAideSetup())return;
+  const name=(currentUser.name||currentUser.username||'More');
+  const line=document.getElementById('more_aide_line');
+  const sub=document.getElementById('more_aide_name');
+  if(line)line.textContent=name;
+  if(sub)sub.textContent=name;
+  showScreen('moreScreen');
+}
+function openTimesheetFromNav(){
+  if(typeof requireSandataAck==='function'&&!requireSandataAck())return;
+  const form=document.getElementById('cgFormView');
+  if(form&&form.style.display==='block'&&currentTS){
+    showScreen('caregiverScreen');
+    syncPortalChrome('caregiverScreen');
+    return;
+  }
+  const drafts=typeof getDraftTimesheets==='function'?getDraftTimesheets():[];
+  let id='';
+  if(currentTS&&drafts.some(function(t){return t.id===currentTS;}))id=currentTS;
+  else if(drafts.length)id=drafts[drafts.length-1].id;
+  if(id){openTS(id);return;}
+  confirmNewTS();
+}
+function navGo(tab){
+  if(!currentUser){showScreen('authScreen');return;}
+  if(typeof requireAideSetup==='function'&&!requireAideSetup())return;
+  if(tab==='home'){
+    const form=document.getElementById('cgFormView');
+    if(form&&form.style.display==='block')backToTSHome();
+    else showCaregiverHome();
+    return;
+  }
+  if(tab==='timesheet'){openTimesheetFromNav();return;}
+  if(tab==='inservices'){goToInservices();return;}
+  if(tab==='more'){showMoreScreen();return;}
 }
 let _modalScrollY=0;
 function lockBodyScroll(){
@@ -1455,10 +1639,15 @@ function confirmLogout(){
 function headerBack(){
   const form=document.getElementById('cgFormView');
   if(form&&form.style.display==='block'){backToTSHome();return;}
-  confirmLogout();
+  showCaregiverHome();
 }
 
-function caregiverLogout(){store.del('cg_session');sbClearAuth();clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
+function caregiverLogout(){
+  const openModals=document.querySelectorAll('.modal-bg.show');
+  for(let i=0;i<openModals.length;i++)openModals[i].classList.remove('show');
+  if(typeof unlockBodyScroll==='function')unlockBodyScroll();
+  store.del('cg_session');sbClearAuth();clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');
+}
 
 // SANDATA GATE + LOCATION (once after login, again on save / submit)
 const SANDATA_ACK_KEY='sandata_ack_session';
@@ -1608,6 +1797,7 @@ function showAideSetupGate(opts){
   const el=document.getElementById('aideSetupScreen');
   if(el)el.classList.add('active');
   window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),50);
+  if(typeof syncPortalChrome==='function')syncPortalChrome('aideSetupScreen');
 }
 function requireAideSetup(){
   if(!aideSetupRequired())return true;
@@ -1762,9 +1952,9 @@ function showLocHelpInstructions(device){
   const box=document.getElementById('locHelpInstructions');
   if(!box)return;
   if(device==='iphone'){
-    box.innerHTML='<ol><li>Open <strong>Settings</strong></li><li>Tap <strong>Privacy &amp; Security</strong></li><li>Tap <strong>Location Services</strong></li><li>Tap <strong>Safari</strong> or <strong>EverCare</strong></li><li>Select <strong>Allow</strong></li><li>Return here and tap <strong>Retry</strong></li></ol>';
+    box.innerHTML='<ol><li>Open <strong>Settings</strong></li><li>Tap <strong>Privacy &amp; Security</strong></li><li>Tap <strong>Location Services</strong></li><li>Tap <strong>Safari</strong> or <strong>ECA Aide Portal</strong></li><li>Select <strong>Allow</strong></li><li>Return here and tap <strong>Retry</strong></li></ol>';
   }else{
-    box.innerHTML='<ol><li>Open <strong>Settings</strong></li><li>Tap <strong>Location</strong> or <strong>App permissions</strong></li><li>Allow location for your browser or the EverCare app</li><li>Return here and tap <strong>Retry</strong></li></ol>';
+    box.innerHTML='<ol><li>Open <strong>Settings</strong></li><li>Tap <strong>Location</strong> or <strong>App permissions</strong></li><li>Allow location for your browser or the ECA Aide Portal app</li><li>Return here and tap <strong>Retry</strong></li></ol>';
   }
 }
 
@@ -1776,9 +1966,9 @@ function showInstructions(device){
   const box=document.getElementById('instructionsBox');
   if(!box)return;
   if(device==='iphone'){
-    box.innerHTML='<ol><li>Open <strong>Settings</strong></li><li>Tap <strong>Privacy &amp; Security</strong> → <strong>Location Services</strong></li><li>Tap <strong>Safari</strong> or <strong>EverCare</strong></li><li>Select <strong>Allow</strong></li><li>Return here and tap <strong>Retry</strong></li></ol>';
+    box.innerHTML='<ol><li>Open <strong>Settings</strong></li><li>Tap <strong>Privacy &amp; Security</strong> → <strong>Location Services</strong></li><li>Tap <strong>Safari</strong> or <strong>ECA Aide Portal</strong></li><li>Select <strong>Allow</strong></li><li>Return here and tap <strong>Retry</strong></li></ol>';
   }else{
-    box.innerHTML='<ol><li>Open <strong>Settings</strong></li><li>Tap <strong>Location</strong> or <strong>App permissions</strong></li><li>Allow location for your browser or the EverCare app</li><li>Return here and tap <strong>Retry</strong></li></ol>';
+    box.innerHTML='<ol><li>Open <strong>Settings</strong></li><li>Tap <strong>Location</strong> or <strong>App permissions</strong></li><li>Allow location for your browser or the ECA Aide Portal app</li><li>Return here and tap <strong>Retry</strong></li></ol>';
   }
 }
 
@@ -1839,6 +2029,7 @@ function loadCaregiverScreen(){
   if(typeof cgNetOnline!=='function'||cgNetOnline()){
     try{cgFlushOfflineQueue();}catch(e){}
   }
+  if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
 }
 
 function syncCorrectionsFromAdmin(rows){
@@ -1987,8 +2178,8 @@ function buildDayBlocks(fixDays=[]){
         </div>
         <div class="loc-tag" id="loc_${i}"><span>📍</span><span id="loc_txt_${i}">Location captured when you save</span></div>
         <div class="sig-row">
-          <div><div class="sig-lbl">HHA Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_aide_${i}" height="110"></canvas></div><div class="sig-hint" id="hint_sp_aide_${i}">Tap to sign</div><button class="sig-clear" onclick="clearSig('sp_aide_${i}')">Clear</button></div>
-          <div><div class="sig-lbl">Client Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_client_${i}" height="110"></canvas></div><div class="sig-hint" id="hint_sp_client_${i}">Tap to sign</div><button class="sig-clear" onclick="clearSig('sp_client_${i}')">Clear</button></div>
+          <div><div class="sig-lbl">HHA Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_aide_${i}" height="110"></canvas></div><div class="sig-hint" id="hint_sp_aide_${i}">Tap to sign</div><div class="sig-actions"><button type="button" class="sig-act sig-act-confirm" onclick="askConfirmSig('sp_aide_${i}')">Confirm</button><button type="button" class="sig-act sig-act-redo" onclick="askRedoSig('sp_aide_${i}')">Redo</button></div></div>
+          <div><div class="sig-lbl">Client Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_client_${i}" height="110"></canvas></div><div class="sig-hint" id="hint_sp_client_${i}">Tap to sign</div><div class="sig-actions"><button type="button" class="sig-act sig-act-confirm" onclick="askConfirmSig('sp_client_${i}')">Confirm</button><button type="button" class="sig-act sig-act-redo" onclick="askRedoSig('sp_client_${i}')">Redo</button></div></div>
         </div>
       </div>`;
     container.appendChild(div);
@@ -2749,7 +2940,10 @@ function cgNewWeek(){
 function setSigHint(id,signed){
   const hint=document.getElementById('hint_'+id);
   if(!hint)return;
-  if(signed){hint.textContent='Signed ✓';hint.classList.add('signed');}
+  const pad=document.getElementById(id);
+  const locked=!!(pad&&pad.classList.contains('sig-locked'));
+  if(locked&&signed){hint.textContent='Confirmed ✓';hint.classList.add('signed');}
+  else if(signed){hint.textContent='Signed ✓';hint.classList.add('signed');}
   else{hint.textContent='Tap to sign';hint.classList.remove('signed');}
 }
 function initSig(id){
@@ -2769,7 +2963,7 @@ function initSig(id){
   if(prev){const img=new Image();img.onload=()=>{ctx.drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};img.src=prev;setSigHint(id,true);}
   else setSigHint(id,false);
   const pos=e=>{const r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)};};
-  const start=e=>{const dayHit=/^sp_(?:aide|client)_(\d+)$/.exec(id);if(dayHit)setActiveDay(parseInt(dayHit[1],10));const p=pos(e);sigPads[id].drawing=true;ctx.beginPath();ctx.moveTo(p.x,p.y);c.classList.add('signed');setSigHint(id,true);};
+  const start=e=>{if(c.classList.contains('sig-locked'))return;const dayHit=/^sp_(?:aide|client)_(\d+)$/.exec(id);if(dayHit)setActiveDay(parseInt(dayHit[1],10));const p=pos(e);sigPads[id].drawing=true;ctx.beginPath();ctx.moveTo(p.x,p.y);c.classList.add('signed');setSigHint(id,true);};
   const move=e=>{if(!sigPads[id]||!sigPads[id].drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1a2744';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();};
   const stop=()=>{if(!sigPads[id])return;sigPads[id].drawing=false;persistPadSig(id);};
   c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);c.addEventListener('mouseup',stop);c.addEventListener('mouseleave',stop);
@@ -2862,6 +3056,61 @@ function clearSig(id){
     const patch=id==='sp_hdr_aide'?{headerAideSig:'',headerAideSigInk:false}:{headerClientSig:'',headerClientSigInk:false};
     updateTSMeta(currentTS,patch);
   }
+}
+let _sigDialogId='';
+let _sigDialogMode='';
+function sigWho(id){
+  const s=String(id||'');
+  if(/client/i.test(s))return 'client';
+  if(/aide/i.test(s))return 'aide';
+  return '';
+}
+function askConfirmSig(id){
+  if(typeof padHasInk==='function'&&!padHasInk(id)){showTempMsg('Sign first, then tap Confirm.','var(--warn)');return;}
+  _sigDialogId=id;
+  _sigDialogMode='confirm';
+  const who=sigWho(id);
+  const title=document.getElementById('sigDialogTitle');
+  const body=document.getElementById('sigDialogBody');
+  const go=document.getElementById('sigDialogGo');
+  if(title)title.textContent='Confirm '+(who?who+' ':'')+'signature?';
+  if(body)body.textContent='This keeps the '+(who?who+' ':'')+'signature on the timesheet.';
+  if(go){go.textContent='Confirm';go.className='mbtn mbtn-confirm';}
+  openModal('sigDialogModal');
+}
+function askRedoSig(id){
+  const pad=document.getElementById(id);
+  const locked=!!(pad&&pad.classList.contains('sig-locked'));
+  if((typeof padHasInk!=='function'||!padHasInk(id))&&!locked){showTempMsg('Nothing to redo.','var(--warn)');return;}
+  _sigDialogId=id;
+  _sigDialogMode='redo';
+  const who=sigWho(id);
+  const title=document.getElementById('sigDialogTitle');
+  const body=document.getElementById('sigDialogBody');
+  const go=document.getElementById('sigDialogGo');
+  if(title)title.textContent='Redo '+(who?who+' ':'')+'signature?';
+  if(body)body.textContent='This clears the '+(who?who+' ':'')+'signature so it can be signed again.';
+  if(go){go.textContent='Redo';go.className='mbtn mbtn-danger';}
+  openModal('sigDialogModal');
+}
+function commitSigDialog(){
+  const id=_sigDialogId;
+  const mode=_sigDialogMode;
+  closeModal('sigDialogModal');
+  _sigDialogId='';
+  _sigDialogMode='';
+  if(!id)return;
+  if(mode==='confirm'){
+    if(typeof persistPadSig==='function')persistPadSig(id);
+    const pad=document.getElementById(id);
+    if(!pad||(typeof isCanvasInk==='function'&&!isCanvasInk(pad))){showTempMsg('Sign first, then tap Confirm.','var(--warn)');return;}
+    pad.classList.add('sig-locked','signed');
+    setSigHint(id,true);
+    return;
+  }
+  const pad=document.getElementById(id);
+  if(pad)pad.classList.remove('sig-locked');
+  clearSig(id);
 }
 function captureHdrSigs(){
   const out={};
@@ -3884,6 +4133,7 @@ async function restoreCloudBackups(){
   data.data.forEach(bak=>{
     const cloudId=bak.id;
     if(cloudId==null)return;
+    if(typeof isDraftBackupTombstoned==='function'&&isDraftBackupTombstoned(cloudId))return;
     const days=_normalizeBackupDays(bak.days||{});
     const clientName=bak.clientName||'';
     const weekStart=bak.weekStart||'';
@@ -3996,13 +4246,66 @@ function renderTSHome(){
         ? formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; Submitted'
         : formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; '+daysSaved+' day'+(daysSaved!==1?'s':'')+' saved';
     const open=submitted?'':' onclick="openTS(&quot;'+ts.id+'&quot;)"';
+    const del=isUnfinishedDraft(ts)
+      ? '<button type="button" class="draft-del" data-draft-id="'+String(ts.id).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();askDeleteDraft(this)">Delete</button>'
+      : '';
     return '<div class="card" style="margin-bottom:10px;cursor:'+(submitted?'default':'pointer')+';border:1.5px solid '+border+'"'+open+'>'+
-      '<div style="display:flex;align-items:center;justify-content:space-between">'+
-      '<div><p style="font-weight:600;color:var(--navy);font-size:0.9rem">'+homeClientLabel(ts)+(sentBack?' <span style="color:var(--warn);font-size:0.72rem">Needs correction</span>':'')+(submitted?' <span style="color:var(--muted);font-size:0.72rem">Submitted</span>':'')+'</p>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+      '<div style="min-width:0"><p style="font-weight:600;color:var(--navy);font-size:0.9rem">'+homeClientLabel(ts)+(sentBack?' <span style="color:var(--warn);font-size:0.72rem">Needs correction</span>':'')+(submitted?' <span style="color:var(--muted);font-size:0.72rem">Submitted</span>':'')+'</p>'+
       '<p style="font-size:0.72rem;color:var(--muted);margin-top:2px">'+sub+'</p></div>'+
-      '<div style="color:'+border+';font-size:18px">'+(submitted?'':'&#8250;')+'</div>'+
+      '<div style="display:flex;align-items:center;gap:8px">'+del+
+      '<div style="color:'+border+';font-size:18px">'+(submitted?'':'&#8250;')+'</div></div>'+
       '</div></div>';
   }).join('');
+}
+function draftBackupTombKey(){
+  const who=currentUser&&currentUser.username?currentUser.username:'';
+  return 'cg_draft_tomb_'+who;
+}
+function tombstoneDraftBackup(cloudId){
+  const id=String(cloudId||'').trim();
+  if(!id||!currentUser)return;
+  const list=store.get(draftBackupTombKey())||[];
+  if(list.indexOf(id)<0){list.push(id);store.set(draftBackupTombKey(),list);}
+}
+function isDraftBackupTombstoned(cloudId){
+  const id=String(cloudId||'').trim();
+  if(!id)return false;
+  const list=store.get(draftBackupTombKey())||[];
+  return list.indexOf(id)>=0;
+}
+function askDeleteDraft(btn){
+  const id=btn&&btn.getAttribute?btn.getAttribute('data-draft-id'):'';
+  const ts=getAllTimesheets().find(function(t){return String(t.id)===String(id);});
+  if(!ts||!isUnfinishedDraft(ts))return;
+  window._pendingDeleteDraftId=ts.id;
+  const body=document.getElementById('deleteDraftBody');
+  if(body)body.textContent='Delete the draft for '+homeClientLabel(ts)+'? This removes it from this phone. It does not submit the week.';
+  openModal('deleteDraftModal');
+}
+function confirmDeleteDraft(){
+  const id=window._pendingDeleteDraftId;
+  window._pendingDeleteDraftId='';
+  closeModal('deleteDraftModal');
+  if(id)removeDraftTimesheet(id);
+}
+function removeDraftTimesheet(id){
+  const list=getAllTimesheets();
+  const ts=list.find(function(t){return String(t.id)===String(id);});
+  if(!ts||!isUnfinishedDraft(ts))return false;
+  const cloud=ts.cloudBackupId?String(ts.cloudBackupId).trim():'';
+  saveAllTimesheets(list.filter(function(t){return String(t.id)!==String(id);}));
+  if(currentUser)store.del('wd_'+currentUser.username+'_'+id);
+  if(String(currentTS)===String(id))currentTS=null;
+  if(cloud)tombstoneDraftBackup(cloud);
+  showCaregiverHome();
+  showTempMsg('Draft deleted.','var(--teal)');
+  if(cloud){
+    Promise.resolve().then(function(){return deleteTimesheetBackup(cloud);}).catch(function(){
+      showTempMsg('Draft removed on this phone. The office backup is still there.','var(--warn)');
+    });
+  }
+  return true;
 }
 
 function confirmNewTS(){
@@ -5805,6 +6108,7 @@ function openTS(id){
   loadSavedWeek();
   updateTotal();
   if(ts&&(ts.headerAideSig||ts.headerClientSig))restoreHdrSigs(ts);
+  if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
 }
 
 function showCaregiverHome(){
@@ -5817,6 +6121,7 @@ function showCaregiverHome(){
   if(home)home.style.display='block';
   if(typeof renderTSHome==='function')renderTSHome();
   try{window.scrollTo(0,0);}catch(e){}
+  if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
 }
 
 function backToTSHome(){
