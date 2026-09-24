@@ -3969,7 +3969,7 @@ function sbSyncSavedDay(i,dayObj){
 // If the overlay cannot produce a real letter PDF, temporarily pull Sheets /exec PDF bytes and upload those. Sunday archive stays catch-up only.
 const SB_PDF_BUCKET='evercare-pdfs';
 const SB_PDF_MAX_BYTES=25*1024*1024;
-const SB_PDF_TARGET_BYTES=3*1024*1024;
+const SB_PDF_TARGET_BYTES=2*1024*1024;
 const TS_PDF_BLANK='assets/blank-letter.png?v=a713ovl';
 const TS_FORM_PT={
   sheetW:612,sheetH:792,
@@ -4227,16 +4227,17 @@ async function renderTimesheetPdfBlob(r){
     if(!ready)throw new Error('blank form');
     const imgs=container.querySelectorAll('img');
     await Promise.all(Array.prototype.map.call(imgs,function(img){return sbWaitImg(img,4000);}));
-    // scale 1 downscales the blank letter (scale 2 PNG embed was ~13.8 MB). One JPEG page, no PNG XObject.
+    // scale 1 JPEG page. Stay under 2 MiB (Ace smoke ~261 KiB). No PNG embed.
     const canvas=await html2canvas(container,{scale:1,useCORS:true,backgroundColor:'#ffffff'});
     let blob=await sbJpegLetterPdf(canvas,0.72);
-    if(sbPdfSize(blob)>SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.58);
-    if(sbPdfSize(blob)>SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.46);
-    if(sbPdfSize(blob)>5*1024*1024){
-      const smaller=sbShrinkCanvas(canvas,0.72);
-      blob=await sbJpegLetterPdf(smaller,0.58);
-      if(sbPdfSize(blob)>SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(smaller,0.46);
+    if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.55);
+    if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.4);
+    if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES){
+      const smaller=sbShrinkCanvas(canvas,0.7);
+      blob=await sbJpegLetterPdf(smaller,0.5);
+      if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(sbShrinkCanvas(canvas,0.55),0.4);
     }
+    if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)throw new Error('PDF is too large.');
     return blob;
   }finally{
     if(container.parentNode)container.parentNode.removeChild(container);
