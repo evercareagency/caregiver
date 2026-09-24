@@ -75,6 +75,9 @@ const src = [
   extractFn(html, 'function sbWeekSunday(value)'),
   extractFn(html, 'function sbDayIndex(key)'),
   extractFn(html, 'function sbNormalizeDays(days)'),
+  extractFn(html, 'function sbIsUuid(value)'),
+  extractFn(html, 'function sbLegacyMs(value)'),
+  extractFn(html, 'function sbPatchTimesheet(id,body)'),
   extractFn(html, 'async function sbFindWeekRow(aideId,clientId,weekStart,status)'),
   extractFn(html, 'function sbMergeDays(base,incoming)'),
   extractFn(html, 'function sbMergeDaysReplace(base,incoming)'),
@@ -168,7 +171,7 @@ function run(opts){
     activeDayIdx: 0,
     scrollTo: function(){},
     DAYS: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
-    myClients: [{id:'c-1', name:'Ada Client'}],
+    myClients: [{id:'af44b579-5881-46ea-8cb8-83a33c0af200', name:'Ada Client'}],
     msgs: [],
     pdfUploads: [],
     failPdf: !!opts.failPdf,
@@ -183,8 +186,8 @@ function run(opts){
     saveUserWeekData: function(data){box._savedWeek = data;},
     refreshSaveDayState: function(){},
     showTempMsg: function(msg){box.msgs.push(msg);},
-    getAllTimesheets: function(){return [{id:'local-1', clientId:'c-1', clientName:'Ada Client', weekStart:'2026-09-20'}];},
-    getSelectedClient: function(){return {id:'c-1', name:'Ada Client'};},
+    getAllTimesheets: function(){return [{id:'local-1', clientId:'af44b579-5881-46ea-8cb8-83a33c0af200', clientName:'Ada Client', weekStart:'2026-09-20'}];},
+    getSelectedClient: function(){return {id:'af44b579-5881-46ea-8cb8-83a33c0af200', name:'Ada Client'};},
     totalHoursFromWeekData: function(){return '4:00';},
     sbSyncSavedDay: function(){box._synced = true;},
     sbEnsurePdfLibs: async function(){return true;},
@@ -221,12 +224,12 @@ function run(opts){
         return pack(200, JSON.stringify(box.weekRow ? [box.weekRow] : []));
       }
       if(u.indexOf('/rest/v1/timesheets') >= 0 && method === 'POST'){
-        box.weekRow = {id:'ts-9', status:'backup', days:{}};
-        return pack(201, JSON.stringify([{id:'ts-9', status:'backup'}]));
+        box.weekRow = {id:'c0ffee00-0000-4000-8000-000000000009', status:'backup', days:{}};
+        return pack(201, JSON.stringify([{id:'c0ffee00-0000-4000-8000-000000000009', status:'backup'}]));
       }
       if(u.indexOf('/rest/v1/timesheets') >= 0 && method === 'PATCH'){
         const sent = JSON.parse(init.body);
-        box.weekRow = Object.assign({id:'ts-9', days: box.weekRow && box.weekRow.days}, sent);
+        box.weekRow = Object.assign({id:'c0ffee00-0000-4000-8000-000000000009', days: box.weekRow && box.weekRow.days}, sent);
         return pack(200, JSON.stringify([box.weekRow]));
       }
       return pack(200, '[]');
@@ -262,7 +265,7 @@ function queueOf(box){
   assert.strictEqual(queued[0].day_patch.tin, '08:00');
   assert.strictEqual(queued[0].timesheet_id, '');
   assert.strictEqual(queued[0].record, undefined, 'the JSON mirror has no record blob');
-  assert.strictEqual(queued[0].client_id, 'c-1');
+  assert.strictEqual(queued[0].client_id, 'af44b579-5881-46ea-8cb8-83a33c0af200');
   assert.strictEqual(queued[0].week_start, '2026-09-20');
   assert.strictEqual(queued[0].days['0'].tin, '08:00');
   const sealed = ['local_id','client_op_id','kind','created_at','attempt_count','last_error','status','org_id','aide_id','client_id','week_start','day_index','day_patch','days','header','timesheet_id','next_attempt_at'];
@@ -284,9 +287,9 @@ function queueOf(box){
   assert.strictEqual(queueOf(live).length, 0);
 
   const merged = run({onLine:false});
-  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",tout:"12:00",svcs:["Bathing"]}},created_at:"2026-09-24T01:00:00.000Z"})', merged);
+  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"08:00",tout:"12:00",svcs:["Bathing"]}},created_at:"2026-09-24T01:00:00.000Z"})', merged);
   const firstId = queueOf(merged)[0].client_op_id;
-  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"09:00",svcs:["Dressing"]},"1":{tin:"10:00"}},created_at:"2026-09-24T01:05:00.000Z"})', merged);
+  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"09:00",svcs:["Dressing"]},"1":{tin:"10:00"}},created_at:"2026-09-24T01:05:00.000Z"})', merged);
   const one = queueOf(merged).filter(function(op){return op.kind === 'save_day';});
   assert.strictEqual(one.length, 1, 'later save day for the week updates the same op');
   assert.strictEqual(one[0].client_op_id, firstId, 'a later save keeps the same device op');
@@ -308,9 +311,9 @@ function queueOf(box){
 
   const flush = run({onLine:true});
   vm.runInContext([
-    'cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"},created_at:"2026-09-24T01:00:00.000Z"})',
-    'cgQueueWeekOp("pdf_upload",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00"}},header:{client_name:"Ada Client",total_hours:"4:00"},created_at:"2026-09-24T01:00:01.000Z"})',
-    'cgQueueWeekOp("submit",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]},"1":{tin:"09:00",svcs:["Laundry"]}},header:{total_hours:"8:00",client_name:"Ada Client"},created_at:"2026-09-24T02:00:00.000Z"})'
+    'cgQueueWeekOp("save_day",{client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"},created_at:"2026-09-24T01:00:00.000Z"})',
+    'cgQueueWeekOp("pdf_upload",{client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"08:00"}},header:{client_name:"Ada Client",total_hours:"4:00"},created_at:"2026-09-24T01:00:01.000Z"})',
+    'cgQueueWeekOp("submit",{client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]},"1":{tin:"09:00",svcs:["Laundry"]}},header:{total_hours:"8:00",client_name:"Ada Client"},created_at:"2026-09-24T02:00:00.000Z"})'
   ].join('\n'), flush);
   await vm.runInContext('cgFlushOfflineQueue()', flush);
   assert.ok(!flush.calls.some(function(c){return c.url === sheetsUrl || c.url.indexOf('script.google.com') >= 0;}), 'flush does not call Sheets');
@@ -331,7 +334,7 @@ function queueOf(box){
   assert.strictEqual(submitBody.days['1'].tin, '09:00');
   assert.strictEqual(flush.pdfUploads.length, 1, 'pdf runs after the week writes');
   assert.ok(flush.pdfAt > flush.calls.indexOf(patch), 'pdf upload follows submit');
-  assert.strictEqual(flush.pdfUploads[0].timesheetId, 'ts-9');
+  assert.strictEqual(flush.pdfUploads[0].timesheetId, 'c0ffee00-0000-4000-8000-000000000009');
   assert.strictEqual(flush.pdfUploads[0].orgId, '33333333-3333-3333-3333-333333333333');
   assert.ok(flush.localStorage.dump().evercare_offline_ops == null || flush.localStorage.dump().evercare_offline_ops.indexOf('%PDF-') < 0);
   assert.strictEqual(queueOf(flush).length, 0);
@@ -342,12 +345,12 @@ function queueOf(box){
   assert.strictEqual(flush.pdfUploads.length, 1);
 
   const pdfFail = run({onLine:true, failPdf:true});
-  vm.runInContext('cgEnqueueSubmit({client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"},record:{clientName:"Ada Client",empName:"Aide One",days:{"0":{tin:"08:00",svcs:["Bathing"]}}}})', pdfFail);
+  vm.runInContext('cgEnqueueSubmit({client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"},record:{clientName:"Ada Client",empName:"Aide One",days:{"0":{tin:"08:00",svcs:["Bathing"]}}}})', pdfFail);
   await vm.runInContext('cgFlushOfflineQueue()', pdfFail);
   const left = queueOf(pdfFail);
   assert.strictEqual(left.length, 1, 'pdf failure keeps only the pdf op');
   assert.strictEqual(left[0].kind, 'pdf_upload');
-  assert.strictEqual(left[0].timesheet_id, 'ts-9');
+  assert.strictEqual(left[0].timesheet_id, 'c0ffee00-0000-4000-8000-000000000009');
   assert.ok(pdfFail.calls.some(function(c){return c.init.method === 'POST' && c.url.indexOf('/rest/v1/timesheets') >= 0;}), 'timesheet insert is kept');
   assert.strictEqual(pdfFail.calls.filter(function(c){return c.init.method === 'PATCH';}).length, 0, 'failed pdf does not patch the timesheet');
   const mirror = pdfFail.localStorage.dump().evercare_offline_ops;
@@ -366,7 +369,7 @@ function queueOf(box){
   auth.currentUser.sbAccessToken = '';
   auth.currentUser.sbRefreshToken = '';
   auth.currentUser.sbExpiresAt = Date.now() - 1000;
-  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00"}},header:{total_hours:"1:00"}})', auth);
+  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"08:00"}},header:{total_hours:"1:00"}})', auth);
   await vm.runInContext('cgFlushOfflineQueue()', auth);
   assert.strictEqual(auth.calls.length, 0, 'auth failure does not call the data API');
   assert.strictEqual(queueOf(auth).length, 1, 'auth failure keeps the op');
@@ -374,14 +377,14 @@ function queueOf(box){
   assert.strictEqual(queueOf(auth)[0].attempt_count, 1);
 
   const held = run({onLine:false});
-  vm.runInContext('cgQueueWeekOp("submit",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00"}},header:{total_hours:"4:00"}})', held);
+  vm.runInContext('cgQueueWeekOp("submit",{client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"08:00"}},header:{total_hours:"4:00"}})', held);
   await vm.runInContext('cgFlushOfflineQueue()', held);
   assert.strictEqual(held.calls.length, 0, 'flush while offline does not call Supabase');
   assert.strictEqual(queueOf(held).length, 1);
 
   const refresh = run({onLine:true});
   refresh.currentUser.sbExpiresAt = Date.now() - 5000;
-  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"}})', refresh);
+  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"}})', refresh);
   await vm.runInContext('cgFlushOfflineQueue()', refresh);
   const refreshCall = refresh.calls.find(function(c){return c.url.indexOf('grant_type=refresh_token') >= 0;});
   assert.ok(refreshCall, 'expired jwt is refreshed before flush');
@@ -391,7 +394,7 @@ function queueOf(box){
   assert.ok(refresh.calls.indexOf(refreshCall) < refresh.calls.indexOf(wrote));
 
   const backed = run({onLine:true, failTimesheet:true});
-  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"c-1",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"}})', backed);
+  vm.runInContext('cgQueueWeekOp("save_day",{client_id:"af44b579-5881-46ea-8cb8-83a33c0af200",week_start:"2026-09-20",days:{"0":{tin:"08:00",svcs:["Bathing"]}},header:{total_hours:"4:00",client_name:"Ada Client"}})', backed);
   await vm.runInContext('cgFlushOfflineQueue()', backed);
   const heldOp = queueOf(backed).filter(function(op){return op.kind === 'save_day';})[0];
   assert.ok(heldOp, 'a failed write stays queued');

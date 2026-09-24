@@ -120,6 +120,8 @@ assert.ok(fin.indexOf('sbRefreshTimesheetPdf') < fin.indexOf("action:'submit'"),
 
 const urlConst = (html.match(/const SUPABASE_URL='([^']+)'/) || [])[1];
 const keyConst = (html.match(/const SUPABASE_ANON_KEY='([^']+)'/) || [])[1];
+const SB_CLIENT = 'af44b579-5881-46ea-8cb8-83a33c0af200';
+const SB_TS = 'c0ffee00-0000-4000-8000-000000000009';
 const sheetsUrl = (html.match(/const SHEETS_URL='([^']+)'/) || [])[1];
 const pdfStart = html.indexOf('const SB_PDF_BUCKET=');
 const pdfEnd = html.indexOf('// GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1 §5.4');
@@ -145,6 +147,9 @@ const src = [
   extractFn(html, 'function sbWeekSunday(value)'),
   extractFn(html, 'function sbDayIndex(key)'),
   extractFn(html, 'function sbNormalizeDays(days)'),
+  extractFn(html, 'function sbIsUuid(value)'),
+  extractFn(html, 'function sbLegacyMs(value)'),
+  extractFn(html, 'function sbPatchTimesheet(id,body)'),
   extractFn(html, 'async function sbFindWeekRow(aideId,clientId,weekStart,status)'),
   extractFn(html, 'function sbMergeDays(base,incoming)'),
   extractFn(html, 'function sbMergeDaysReplace(base,incoming)'),
@@ -202,8 +207,8 @@ function run(opts){
     showTempMsg: function(msg){box._msgs.push(msg);},
     _msgs: [],
     updateTSMeta: function(id, patch){box._meta = {id: id, patch: patch};},
-    getAllTimesheets: function(){return [{id: 'local-ts', clientName: 'Ada Client', clientId: 'c-1', weekStart: '2026-09-20', notes: ''}];},
-    getSelectedClient: function(){return {id: 'c-1', name: 'Ada Client'};},
+    getAllTimesheets: function(){return [{id: 'local-ts', clientName: 'Ada Client', clientId: SB_CLIENT, weekStart: '2026-09-20', notes: ''}];},
+    getSelectedClient: function(){return {id: SB_CLIENT, name: 'Ada Client'};},
     getUserWeekData: function(){
       return {
         1: {
@@ -235,10 +240,10 @@ function run(opts){
         return Promise.resolve({ok: true, status: 201, text: function(){return Promise.resolve('');}});
       }
       if(u.indexOf('/rest/v1/timesheets') >= 0 && method === 'PATCH'){
-        return Promise.resolve({ok: true, status: 200, text: function(){return Promise.resolve(JSON.stringify([{id: 'ts-9', status: 'backup'}]));}});
+        return Promise.resolve({ok: true, status: 200, text: function(){return Promise.resolve(JSON.stringify([{id: SB_TS, status: 'backup'}]));}});
       }
       if(u.indexOf('/rest/v1/timesheets') >= 0){
-        return Promise.resolve({ok: true, status: 200, text: function(){return Promise.resolve(JSON.stringify([{id: 'ts-9', status: 'backup', days: {}}]));}});
+        return Promise.resolve({ok: true, status: 200, text: function(){return Promise.resolve(JSON.stringify([{id: SB_TS, status: 'backup', days: {}}]));}});
       }
       if(u.indexOf('/rest/v1/profiles') >= 0){
         return Promise.resolve({ok: true, status: 200, text: function(){return Promise.resolve('[]');}});
@@ -321,7 +326,7 @@ function settle(){
   vm.runInContext('sbSyncSavedDay(1,{date:"2026-09-21",tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Assist W/Bath-Bed/Tub/Shower"],aideSig:"data:image/png;base64,aaa",clientSig:"sig"})', saved);
   await settle();
   assert.strictEqual(saved._msgs.length, 0, 'a PDF upload must not fail Save Day');
-  assert.strictEqual(saved._meta.patch.cloudBackupId, 'ts-9');
+  assert.strictEqual(saved._meta.patch.cloudBackupId, SB_TS);
   const storage = saved.calls.filter(function(c){return c.url.indexOf('/storage/v1/object/evercare-pdfs/') >= 0;});
   assert.strictEqual(storage.length, 1, 'one storage upload');
   assert.strictEqual(storage[0].init.method, 'POST');
@@ -329,7 +334,7 @@ function settle(){
   assert.strictEqual(storage[0].init.headers.apikey, keyConst);
   assert.strictEqual(storage[0].init.headers['Content-Type'], 'application/pdf');
   assert.strictEqual(storage[0].init.headers['x-upsert'], 'true');
-  assert.ok(storage[0].url.indexOf('/evercare-pdfs/' + org + '/timesheet/ts-9.pdf') >= 0, storage[0].url);
+  assert.ok(storage[0].url.indexOf('/evercare-pdfs/' + org + '/timesheet/' + SB_TS + '.pdf') >= 0, storage[0].url);
   const pdfText = bytesToString(storage[0].init.body);
   assert.ok(pdfText.indexOf('overlay ') > 0, 'uploaded bytes are the client overlay');
   assert.ok(pdfText.indexOf('%PDF-') === 0, 'uploaded bytes are a real PDF');
@@ -341,7 +346,7 @@ function settle(){
   assert.ok(patches.length >= 2, 'save patch plus pdf path patch');
   const pathPatch = patches[patches.length - 1];
   const pathBody = JSON.parse(pathPatch.init.body);
-  assert.deepStrictEqual(pathBody, {pdf_storage_path: org + '/timesheet/ts-9.pdf'});
+  assert.deepStrictEqual(pathBody, {pdf_storage_path: org + '/timesheet/' + SB_TS + '.pdf'});
   assert.strictEqual(pathPatch.init.headers.Prefer, 'return=minimal');
   assert.strictEqual(pathPatch.init.headers.Authorization, 'Bearer jwt-test-token');
   const savePatch = JSON.parse(patches[0].init.body);
@@ -356,9 +361,9 @@ function settle(){
   const docBody = JSON.parse(docs[0].init.body);
   assert.strictEqual(docBody.org_id, org);
   assert.strictEqual(docBody.doc_kind, 'timesheet');
-  assert.strictEqual(docBody.entity_id, 'ts-9');
+  assert.strictEqual(docBody.entity_id, SB_TS);
   assert.strictEqual(docBody.bucket, 'evercare-pdfs');
-  assert.strictEqual(docBody.object_path, org + '/timesheet/ts-9.pdf');
+  assert.strictEqual(docBody.object_path, org + '/timesheet/' + SB_TS + '.pdf');
   assert.strictEqual(docBody.content_type, 'application/pdf');
   assert.strictEqual(docBody.is_active, true);
   assert.strictEqual(docBody.byte_size, storage[0].init.body.byteLength);
@@ -378,7 +383,7 @@ function settle(){
   vm.runInContext('sbSyncSavedDay(1,{tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Bathing"],aideSig:"a",clientSig:"c"})', failed);
   await settle();
   assert.strictEqual(failed._msgs.length, 0, 'storage failure still leaves the day saved');
-  assert.strictEqual(failed._meta.patch.cloudBackupId, 'ts-9');
+  assert.strictEqual(failed._meta.patch.cloudBackupId, SB_TS);
   assert.ok(failed.warnings.some(function(w){return w.indexOf('timesheet pdf') >= 0;}), 'upload errors are logged quietly');
   assert.strictEqual(failed.calls.filter(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;}).length, 1);
   assert.ok(!failed.calls.some(function(c){return c.url === sheetsUrl;}), 'storage failure does not fall through to Sheets');
@@ -409,7 +414,7 @@ function settle(){
   vm.runInContext('sbSyncSavedDay(1,{tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Bathing"],aideSig:"a",clientSig:"c"})', noBytes);
   await settle();
   assert.strictEqual(noBytes._msgs.length, 0, 'missing PDF bytes still leaves the day saved');
-  assert.strictEqual(noBytes._meta.patch.cloudBackupId, 'ts-9');
+  assert.strictEqual(noBytes._meta.patch.cloudBackupId, SB_TS);
   assert.ok(!noBytes.calls.some(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;}), 'no stub is uploaded');
   assert.ok(!noBytes.calls.some(function(c){return c.url === sheetsUrl;}), 'default overlay miss does not pull Sheets');
 

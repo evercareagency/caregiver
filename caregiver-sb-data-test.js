@@ -47,6 +47,9 @@ const src = [
   extractFn(html, 'function sbTimesheetToBackup(row)'),
   extractFn(html, 'async function sbListTimesheetsForHome()'),
   extractFn(html, 'function sbDayWire(day)'),
+  extractFn(html, 'function sbIsUuid(value)'),
+  extractFn(html, 'function sbLegacyMs(value)'),
+  extractFn(html, 'function sbPatchTimesheet(id,body)'),
   extractFn(html, 'async function sbFindWeekRow(aideId,clientId,weekStart,status)'),
   extractFn(html, 'function sbMergeDays(base,incoming)'),
   extractFn(html, 'function sbMergeDaysReplace(base,incoming)'),
@@ -173,14 +176,14 @@ function run(opts){
   const merge = run({
     routes:[{
       test:/limit=1/,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-1', status:'backup', days:{'0':{tin:'08:00', svcs:['Bathing']}}}])}
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'11111111-1111-4111-8111-111111111111', status:'backup', days:{'0':{tin:'08:00', svcs:['Bathing']}}}])}
     },{
-      test:/\/timesheets\?id=eq\.ts-1/,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-1', status:'backup'}])}
+      test:/\/timesheets\?id=eq\.11111111-1111-4111-8111-111111111111/,
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'11111111-1111-4111-8111-111111111111', status:'backup'}])}
     }]
   });
-  const merged = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-23",status:"backup",days:{"Mon":{in:"09:00",out:"12:00",svcs:["Dressing"]}},header:{total_hours:"4:00",emp_name:"Aide One",client_name:"Ada Client",username:"aide.one",svc_type:"Personal Care/Home Making"}})', merge);
-  assert.strictEqual(merged.id, 'ts-1');
+  const merged = await vm.runInContext('sbUpsertTimesheet({clientId:"af44b579-5881-46ea-8cb8-83a33c0af200",weekStart:"2026-09-23",status:"backup",days:{"Mon":{in:"09:00",out:"12:00",svcs:["Dressing"]}},header:{total_hours:"4:00",emp_name:"Aide One",client_name:"Ada Client",username:"aide.one",svc_type:"Personal Care/Home Making"}})', merge);
+  assert.strictEqual(merged.id, '11111111-1111-4111-8111-111111111111');
   const patch = merge.calls.find(function(c){return c.init.method === 'PATCH';});
   assert.ok(patch, 'existing backup is patched');
   assert.ok(!merge.calls.some(function(c){return c.init.method === 'POST';}));
@@ -204,11 +207,11 @@ function run(opts){
       res:{ok:true, status:200, raw:'[]'}
     },{
       test:/\/rest\/v1\/timesheets$/,
-      res:{ok:true, status:201, raw:JSON.stringify([{id:'ts-new', status:'backup'}])}
+      res:{ok:true, status:201, raw:JSON.stringify([{id:'22222222-2222-4222-8222-222222222222', status:'backup'}])}
     }]
   });
-  const inserted = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"backup",days:{"0":{tin:"08:00",hrs:"3:00",svcs:["Bathing"],aideSig:"a",clientSig:"c"}},header:{total_hours:"3:00",client_name:"Ada Client"}})', created);
-  assert.strictEqual(inserted.id, 'ts-new');
+  const inserted = await vm.runInContext('sbUpsertTimesheet({clientId:"af44b579-5881-46ea-8cb8-83a33c0af200",weekStart:"2026-09-20",status:"backup",days:{"0":{tin:"08:00",hrs:"3:00",svcs:["Bathing"],aideSig:"a",clientSig:"c"}},header:{total_hours:"3:00",client_name:"Ada Client"}})', created);
+  assert.strictEqual(inserted.id, '22222222-2222-4222-8222-222222222222');
   const post = created.calls.find(function(c){return c.init.method === 'POST';});
   const postBody = JSON.parse(post.init.body);
   assert.strictEqual(postBody.status, 'backup');
@@ -216,7 +219,10 @@ function run(opts){
   assert.strictEqual(postBody.is_active, true);
   assert.strictEqual(postBody.org_id, '33333333-3333-3333-3333-333333333333');
   assert.strictEqual(postBody.aide_id, '22222222-2222-2222-2222-222222222222');
-  assert.strictEqual(postBody.client_id, 'c-1');
+  assert.strictEqual(postBody.client_id, 'af44b579-5881-46ea-8cb8-83a33c0af200');
+  assert.strictEqual(postBody.id, undefined, 'insert omits timesheets.id');
+  assert.strictEqual(postBody.local_id, undefined);
+  assert.strictEqual(postBody.client_op_id, undefined);
   assert.strictEqual(postBody.week_start, '2026-09-20');
   assert.strictEqual(postBody.days['0'].tin, '08:00');
   assert.strictEqual(postBody.emp_name, 'Aide One');
@@ -224,13 +230,13 @@ function run(opts){
   const submit = run({
     routes:[{
       test:/aide_id=eq\./,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-1', status:'backup', days:{'0':{tin:'08:00'}}}])}
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'11111111-1111-4111-8111-111111111111', status:'backup', days:{'0':{tin:'08:00'}}}])}
     },{
-      test:/\/timesheets\?id=eq\.ts-1/,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-1', status:'submitted'}])}
+      test:/\/timesheets\?id=eq\.11111111-1111-4111-8111-111111111111/,
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'11111111-1111-4111-8111-111111111111', status:'submitted'}])}
     }]
   });
-  const submitted = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"submitted",days:{"0":{tin:"08:00",svcs:["Bathing"]},"1":{tin:"10:00",svcs:["Laundry"]}},header:{total_hours:"8:00"}})', submit);
+  const submitted = await vm.runInContext('sbUpsertTimesheet({clientId:"af44b579-5881-46ea-8cb8-83a33c0af200",weekStart:"2026-09-20",status:"submitted",days:{"0":{tin:"08:00",svcs:["Bathing"]},"1":{tin:"10:00",svcs:["Laundry"]}},header:{total_hours:"8:00"}})', submit);
   assert.strictEqual(submitted.status, 'submitted');
   const submitPatch = submit.calls.find(function(c){return c.init.method === 'PATCH';});
   const submitBody = JSON.parse(submitPatch.init.body);
@@ -244,14 +250,14 @@ function run(opts){
   const clash = run({
     routes:[{
       test:/limit=1/,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'submitted', days:{'0':{tin:'08:00', tout:'12:00', svcs:['Bathing'], aideSig:'a'}, '2':{tin:'07:00'}}}])}
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'33333333-3333-4333-8333-333333333333', status:'submitted', days:{'0':{tin:'08:00', tout:'12:00', svcs:['Bathing'], aideSig:'a'}, '2':{tin:'07:00'}}}])}
     },{
-      test:/\/timesheets\?id=eq\.ts-sub/,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'submitted'}])}
+      test:/\/timesheets\?id=eq\.33333333-3333-4333-8333-333333333333/,
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'33333333-3333-4333-8333-333333333333', status:'submitted'}])}
     }]
   });
-  const remarked = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"backup",days:{"0":{tin:"09:00"},"1":{tin:"10:00"},"2":{tin:"11:00",tout:"15:00",svcs:["Laundry"]}},header:{}})', clash);
-  assert.strictEqual(remarked.id, 'ts-sub');
+  const remarked = await vm.runInContext('sbUpsertTimesheet({clientId:"af44b579-5881-46ea-8cb8-83a33c0af200",weekStart:"2026-09-20",status:"backup",days:{"0":{tin:"09:00"},"1":{tin:"10:00"},"2":{tin:"11:00",tout:"15:00",svcs:["Laundry"]}},header:{}})', clash);
+  assert.strictEqual(remarked.id, '33333333-3333-4333-8333-333333333333');
   const remarkBody = JSON.parse(clash.calls.find(function(c){return c.init.method==='PATCH';}).init.body);
   assert.strictEqual(remarkBody.status, undefined, 'save day must not downgrade a submitted week');
   assert.strictEqual(remarkBody.submitted_at, undefined, 'submitted_at stays on the server');
@@ -264,18 +270,18 @@ function run(opts){
   // GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1: soft-delete is PATCH is_active=false, not DELETE.
   const removed = run({
     routes:[{
-      test:/\/timesheets\?id=eq\.bak-1$/,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'bak-1', is_active:false, status:'backup'}])}
+      test:/\/timesheets\?id=eq\.44444444-4444-4444-8444-444444444444$/,
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'44444444-4444-4444-8444-444444444444', is_active:false, status:'backup'}])}
     }]
   });
-  const gone = await vm.runInContext('sbSoftDeleteBackup("bak-1")', removed);
+  const gone = await vm.runInContext('sbSoftDeleteBackup("44444444-4444-4444-8444-444444444444")', removed);
   assert.strictEqual(gone.is_active, false);
   assert.strictEqual(removed.calls.length, 1);
   assert.strictEqual(removed.calls[0].init.method, 'PATCH');
   assert.deepStrictEqual(JSON.parse(removed.calls[0].init.body), {is_active:false});
   assert.strictEqual(removed.calls[0].init.headers.Prefer, 'return=representation');
   assert.strictEqual(removed.calls[0].init.headers.Authorization, 'Bearer jwt-test-token');
-  assert.ok(removed.calls[0].url.indexOf('/rest/v1/timesheets?id=eq.bak-1')>=0);
+  assert.ok(removed.calls[0].url.indexOf('/rest/v1/timesheets?id=eq.44444444-4444-4444-8444-444444444444')>=0);
 
   const ins = run({
     routes:[{
