@@ -4,8 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-23-sb-dual-caregiver">
-<!-- caregiver-build: 2026-09-23-sb-dual-caregiver — soft sb dual-verify after sheets login; flag off unless ?sb=1 or evercare_sb=1 -->
+<meta name="caregiver-build" content="2026-09-24-sb-auth-login">
+<!-- caregiver-build: 2026-09-24-sb-auth-login — ?sb=1 or evercare_sb=1 signs in with Supabase Auth; flag off stays on Sheets /exec -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
@@ -853,6 +853,22 @@ function startCgSession(user){
     needsEmail:aideTruth(user&&user.needsEmail)
   };
   if(user&&user.email)sess.email=String(user.email).trim();
+  if(user&&user.sbAccessToken){
+    sess.sbAccessToken=user.sbAccessToken;
+    sess.sbRefreshToken=user.sbRefreshToken||'';
+    sess.sbExpiresAt=user.sbExpiresAt||0;
+    sess.sbUserId=user.sbUserId||'';
+    sess.sbAideId=user.sbAideId||'';
+    sess.sbOrgId=user.sbOrgId||'';
+    sess.sbEmail=user.sbEmail||'';
+    sbPersistAuth({
+      access_token:sess.sbAccessToken,
+      refresh_token:sess.sbRefreshToken,
+      expires_at:sess.sbExpiresAt,
+      user_id:sess.sbUserId,
+      email:sess.sbEmail||sess.email||''
+    });
+  }
   return persistCgSession(sess);
 }
 function backfillCgSessionLoginAt(sess){
@@ -878,6 +894,15 @@ function restoreCgSession(){
     return false;
   }
   persistCgSession(sess);
+  if(sess.sbAccessToken){
+    sbPersistAuth({
+      access_token:sess.sbAccessToken,
+      refresh_token:sess.sbRefreshToken||'',
+      expires_at:sess.sbExpiresAt||0,
+      user_id:sess.sbUserId||'',
+      email:sess.sbEmail||sess.email||''
+    });
+  }
   return true;
 }
 function enforceCgSessionTimeout(){
@@ -1126,6 +1151,218 @@ function softSbDualVerify(username,password){
   }
 }
 
+function sbAnonHeaders(){
+  return {
+    apikey:SUPABASE_ANON_KEY,
+    Authorization:'Bearer '+SUPABASE_ANON_KEY,
+    'Content-Type':'application/json'
+  };
+}
+function sbUserHeaders(token){
+  return {
+    apikey:SUPABASE_ANON_KEY,
+    Authorization:'Bearer '+token,
+    'Content-Type':'application/json'
+  };
+}
+function sbPersistAuth(session){
+  if(!session||!session.access_token)return;
+  window.__sbSession={
+    access_token:session.access_token,
+    refresh_token:session.refresh_token||'',
+    expires_at:session.expires_at||0,
+    user_id:session.user_id||'',
+    email:session.email||''
+  };
+  try{sessionStorage.setItem('evercare_sb_session',JSON.stringify(window.__sbSession));}catch(e){}
+  try{localStorage.setItem('evercare_sb_session',JSON.stringify(window.__sbSession));}catch(e){}
+}
+function sbClearAuth(){
+  window.__sbSession=null;
+  try{sessionStorage.removeItem('evercare_sb_session');}catch(e){}
+  try{localStorage.removeItem('evercare_sb_session');}catch(e){}
+}
+async function sbRead(res){
+  let raw='';
+  try{raw=await res.text();}catch(e){}
+  let data=null;
+  let parsed=false;
+  if(raw==null||raw==='')parsed=true;
+  else{try{data=JSON.parse(raw);parsed=true;}catch(e){parsed=false;}}
+  return {ok:!!(res&&res.ok),status:res&&res.status,raw:raw,data:data,parsed:parsed};
+}
+function sbErrMsg(pack,fallback){
+  const data=pack&&pack.data;
+  let msg=(data&&(data.error_description||data.msg||data.message||data.error||data.hint))||(pack&&!pack.ok?('HTTP '+(pack.status||'')):'')||fallback||'Request failed.';
+  if(msg&&typeof msg==='object')msg=msg.message||JSON.stringify(msg);
+  return String(msg);
+}
+function sbJwtSub(token){
+  try{
+    const part=String(token||'').split('.')[1]||'';
+    if(!part)return '';
+    let b64=part.replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length%4)b64+='=';
+    const json=JSON.parse(atob(b64));
+    return json&&json.sub?String(json.sub):'';
+  }catch(e){return '';}
+}
+function sbExpiresMs(auth){
+  if(!auth)return 0;
+  const at=Number(auth.expires_at);
+  if(Number.isFinite(at)&&at>0)return at<1e12?at*1000:at;
+  const inn=Number(auth.expires_in);
+  if(Number.isFinite(inn)&&inn>0)return Date.now()+inn*1000;
+  return 0;
+}
+function aideEmailNeedsSetup(email){
+  return !String(email==null?'':email).trim();
+}
+function sbWorkingEmail(submitted,authEmail,aideEmail){
+  const sub=String(submitted||'').trim();
+  const auth=String(authEmail||'').trim();
+  const cur=String(aideEmail||'').trim();
+  if(auth&&sub.toLowerCase()===auth.toLowerCase())return sub;
+  if(cur)return cur;
+  return auth;
+}
+// Flag on: this is the real sign-in. RPC → password grant → own aides row.
+// Blank aides.email still sets needsEmail. Failures throw so Sign In stays on the same error.
+async function loginAideWithSupabase(username,password){
+  const user=String(username||'').trim().toLowerCase();
+  if(!user){
+    const miss=new Error('login_failed');
+    throw miss;
+  }
+  const headers=sbAnonHeaders();
+  const rpcRes=await fetch(SUPABASE_URL+'/rest/v1/rpc/resolve_username_email',{
+    method:'POST',
+    headers:headers,
+    body:JSON.stringify({p_username:user,p_org_slug:'evercare'})
+  });
+  const rpc=await sbRead(rpcRes);
+  if(!rpc.ok||!rpc.parsed||(rpc.data!=null&&typeof rpc.data!=='string')){
+    const rpcErr=new Error('login_failed');
+    throw rpcErr;
+  }
+  const email=rpc.data==null?'':String(rpc.data).trim();
+  if(!email){
+    const noEmail=new Error('login_failed');
+    throw noEmail;
+  }
+  const authRes=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+    method:'POST',
+    headers:headers,
+    body:JSON.stringify({email:email,password:password})
+  });
+  const auth=await sbRead(authRes);
+  const token=auth.data&&auth.data.access_token;
+  if(!auth.ok||!token){
+    const authErr=new Error('login_failed');
+    throw authErr;
+  }
+  const uid=(auth.data.user&&auth.data.user.id)||sbJwtSub(token);
+  if(!uid){
+    const uidErr=new Error('login_failed');
+    throw uidErr;
+  }
+  const select='id,username,full_name,email,must_change_password,is_active,org_id,profile_id';
+  const aideUrl=SUPABASE_URL+'/rest/v1/aides?select='+encodeURIComponent(select)+'&profile_id=eq.'+encodeURIComponent(uid)+'&is_active=eq.true&limit=1';
+  const aideRes=await fetch(aideUrl,{method:'GET',headers:sbUserHeaders(token)});
+  const aidePack=await sbRead(aideRes);
+  const rows=aidePack.ok&&Array.isArray(aidePack.data)?aidePack.data:[];
+  const aide=rows[0]||null;
+  if(!aide||aide.is_active===false||!aide.profile_id){
+    const rowErr=new Error('login_failed');
+    throw rowErr;
+  }
+  const refresh=auth.data.refresh_token||'';
+  const expiresAt=sbExpiresMs(auth.data);
+  const aideEmail=aide.email==null?'':String(aide.email).trim();
+  sbPersistAuth({
+    access_token:token,
+    refresh_token:refresh,
+    expires_at:expiresAt,
+    user_id:uid,
+    email:email
+  });
+  return {
+    username:String(aide.username||user).trim().toLowerCase(),
+    name:String(aide.full_name||aide.username||user).trim(),
+    email:aideEmail,
+    mustChangePassword:aide.must_change_password,
+    needsEmail:aideEmailNeedsSetup(aideEmail),
+    sbAccessToken:token,
+    sbRefreshToken:refresh,
+    sbExpiresAt:expiresAt,
+    sbUserId:uid,
+    sbAideId:aide.id||'',
+    sbOrgId:aide.org_id||'',
+    sbEmail:email
+  };
+}
+// Password update goes to Auth. aides.email stays the address GoTrue will accept
+// (mailer does not autoconfirm), and must_change_password is cleared on that row.
+async function completeAideSetupSupabase(currentPassword,newPassword,email){
+  const sess=currentUser;
+  const authEmail=String((sess&&(sess.sbEmail||sess.email))||'').trim();
+  const tokenHave=sess&&sess.sbAccessToken;
+  if(!authEmail||!tokenHave)throw new Error('Sign in again to finish setup.');
+  const sameEmail=String(email||'').trim().toLowerCase()===authEmail.toLowerCase();
+  const check=await sbRead(await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+    method:'POST',
+    headers:sbAnonHeaders(),
+    body:JSON.stringify({email:authEmail,password:currentPassword})
+  }));
+  const token=check.data&&check.data.access_token;
+  if(!check.ok||!token)throw new Error('Current password is incorrect.');
+  const refresh=(check.data&&check.data.refresh_token)||sess.sbRefreshToken||'';
+  const userBody=sameEmail?{password:newPassword,email:String(email||'').trim()}:{password:newPassword};
+  const upd=await sbRead(await fetch(SUPABASE_URL+'/auth/v1/user',{
+    method:'PUT',
+    headers:sbUserHeaders(token),
+    body:JSON.stringify(userBody)
+  }));
+  if(!upd.ok)throw new Error(sbErrMsg(upd,'Could not update the password.'));
+  const authNow=String((upd.data&&(upd.data.email||(upd.data.user&&upd.data.user.email)))||authEmail).trim();
+  const loginEmail=sbWorkingEmail(email,authNow||authEmail,sess.email);
+  const uid=sess.sbUserId||(check.data.user&&check.data.user.id)||sbJwtSub(token);
+  const filter=sess.sbAideId?('id=eq.'+encodeURIComponent(sess.sbAideId)):('profile_id=eq.'+encodeURIComponent(uid));
+  const patchBody={must_change_password:false};
+  if(loginEmail)patchBody.email=loginEmail;
+  const patch=await sbRead(await fetch(SUPABASE_URL+'/rest/v1/aides?'+filter,{
+    method:'PATCH',
+    headers:Object.assign(sbUserHeaders(token),{Prefer:'return=representation'}),
+    body:JSON.stringify(patchBody)
+  }));
+  if(!patch.ok||!Array.isArray(patch.data)||!patch.data[0])throw new Error(sbErrMsg(patch,'Could not update the aide profile.'));
+  if(aideTruth(patch.data[0].must_change_password))throw new Error('Password setup did not clear.');
+  if(uid&&loginEmail){
+    try{
+      await fetch(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+encodeURIComponent(uid),{
+        method:'PATCH',
+        headers:Object.assign(sbUserHeaders(token),{Prefer:'return=minimal'}),
+        body:JSON.stringify({email:loginEmail})
+      });
+    }catch(e){}
+  }
+  sess.sbAccessToken=token;
+  sess.sbRefreshToken=refresh;
+  sess.sbUserId=uid||sess.sbUserId||'';
+  sess.sbEmail=authNow||authEmail;
+  if(loginEmail)sess.email=loginEmail;
+  sess.mustChangePassword=false;
+  sess.needsEmail=false;
+  sbPersistAuth({
+    access_token:token,
+    refresh_token:refresh,
+    expires_at:sbExpiresMs(check.data),
+    user_id:sess.sbUserId,
+    email:sess.sbEmail
+  });
+  clearAideSetupGate();
+}
+
 function togglePasswordVisibility(id,btn){
   const el=document.getElementById(id);
   if(!el)return;
@@ -1142,17 +1379,26 @@ async function doLogin(){
   const btn=document.getElementById('loginBtn');
   if(btn){btn.textContent='Signing in...';btn.disabled=true;}
   try{
+    if(evercareSbEnabled()){
+      sbClearAuth();
+      const signed=await loginAideWithSupabase(user,pass);
+      window._aceLoginOk=true;window._aceHealthBad=false;startCgSession(signed);window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
+    }
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
     if(data.success){
       try{softSbDualVerify(user,pass);}catch(sbErr){}
+      try{sbClearAuth();}catch(sbClr){}
       window._aceLoginOk=true;window._aceHealthBad=false;startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
     }
     else{document.getElementById('loginErr').style.display='block';}
   }catch(e){
-    const users=store.get('cg_users')||{};
-    if(users[user]&&users[user].password===pass){startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
-    else{document.getElementById('loginErr').style.display='block';}
+    if(evercareSbEnabled()){document.getElementById('loginErr').style.display='block';}
+    else{
+      const users=store.get('cg_users')||{};
+      if(users[user]&&users[user].password===pass){startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
+      else{document.getElementById('loginErr').style.display='block';}
+    }
   }finally{
     window._cgLoginInFlight=false;
     if(btn){btn.textContent='Sign In →';btn.disabled=false;}
@@ -1193,7 +1439,7 @@ function headerBack(){
   confirmLogout();
 }
 
-function caregiverLogout(){store.del('cg_session');clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
+function caregiverLogout(){store.del('cg_session');sbClearAuth();clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');}
 
 // SANDATA GATE + LOCATION (once after login, again on save / submit)
 const SANDATA_ACK_KEY='sandata_ack_session';
@@ -1365,6 +1611,18 @@ async function submitAideSetup(){
   if(newPassword===currentPassword){showErr('New password must be different from the current password.');return;}
   if(btn){btn.disabled=true;btn.textContent='Saving...';}
   try{
+    if(evercareSbEnabled()&&currentUser&&currentUser.sbAccessToken){
+      await completeAideSetupSupabase(currentPassword,newPassword,email);
+      window._aceLoginOk=true;
+      window._aceHealthBad=false;
+      window._aideSetupCurrentPassword='';
+      if(err)err.style.display='none';
+      showTempMsg('Account setup complete.','var(--success)');
+      const fresh=!!window._cgFreshLogin;
+      window._cgFreshLogin=false;
+      afterLogin({freshLogin:fresh});
+      return;
+    }
     const res=await postAideAction('complete_aide_setup','set_password',{
       username:currentUser.username,
       currentPassword:currentPassword,
@@ -1509,6 +1767,10 @@ function scheduleHomeBackgroundLoads(){
   const restoreBackups=window._cgPendingBackupRestore!==false;
   window._cgPendingBackupRestore=false;
   const run=function(){
+    if(evercareSbEnabled()){
+      if(currentUser&&currentUser.sbAccessToken)sbLoadHomeLists(restoreBackups);
+      return;
+    }
     if(aceExecSoft())return;
     if(restoreBackups){
       restoreCloudBackups().then(function(rr){
@@ -2028,6 +2290,7 @@ function saveDayData(i,dayObj){
   if(activeDayIdx===i)activeDayIdx=null;
   refreshSaveDayState();
   showTempMsg(`✅ ${DAYS[i]} saved!`,'var(--success)');window.scrollTo(0,0);
+  if(sbDataEnabled())sbSyncSavedDay(i,wd[i]||dayObj);
 }
 
 function getUserWeekData(){
@@ -2344,13 +2607,32 @@ async function doFinalSubmit(){
   const submitted=new Date().toLocaleString();
   let data=null;
   try{
-    if(correctionMode&&correctionData){
+    if(sbDataEnabled()){
+      const client=getSelectedClient();
+      const row=await sbUpsertTimesheet({
+        clientId:(client&&client.id)||'',
+        weekStart:weekStart,
+        days:weekData,
+        status:'submitted',
+        header:{
+          total_hours:totalHrs,
+          notes:notes,
+          emp_name:currentUser.name,
+          client_name:(client&&client.name)||clientName,
+          username:currentUser.username,
+          svc_type:svcType,
+          header_aide_sig:hdr.headerAideSig||'',
+          header_client_sig:hdr.headerClientSig||''
+        }
+      });
+      data={success:true,id:row&&row.id};
+    }else if(correctionMode&&correctionData){
       data=await apiPost({action:'resubmit',id:correctionData.id,days:weekData,total_hours:totalHrs,client_name:clientName,notes,...hdr});
     }else{
       data=await apiPost({action:'submit',submitted,username:currentUser.username,emp_name:currentUser.name,client_name:clientName,svc_type:svcType,week_start:weekStart,total_hours:totalHrs,notes,days:weekData,...hdr});
     }
   }catch(e){
-    showTempMsg('Submit failed — check connection.','var(--danger)');
+    showTempMsg((sbDataEnabled()&&e&&e.message)||'Submit failed — check connection.','var(--danger)');
     window._cgSubmitInFlight=false;
     return;
   }
@@ -3149,6 +3431,25 @@ async function doCloudBackup(){
   if(ts.cloudBackupId)payload.id=ts.cloudBackupId;
   try{
     showTempMsg('Backing up to office...','var(--teal)');
+    if(sbDataEnabled()){
+      const row=await sbUpsertTimesheet({
+        clientId:clientId,
+        weekStart:weekStart,
+        days:weekData,
+        status:'backup',
+        header:{
+          total_hours:totalHrs,
+          notes:notes,
+          emp_name:currentUser.name,
+          client_name:clientName,
+          username:currentUser.username,
+          svc_type:svcType
+        }
+      });
+      if(row&&row.id)updateTSMeta(ts.id,{cloudBackupId:row.id,clientId:clientId||ts.clientId||''});
+      showTempMsg('✅ Backed up to office!','var(--success)');
+      return;
+    }
     const data=await apiPost(payload);
     if(data&&data.success){
       if(data.id!=null)updateTSMeta(ts.id,{cloudBackupId:data.id});
@@ -3216,9 +3517,11 @@ function _localHasUnfinishedFor(list,clientName,weekStart){
 /** Returns {restored, kept} per Friday rule: restore only if no local unfinished for client/week; else keep local. */
 async function restoreCloudBackups(){
   if(!currentUser)return {restored:0,kept:0};
+  if(evercareSbEnabled()&&!sbDataEnabled())return {restored:0,kept:0};
   let data;
   try{
-    data=await apiPost({action:'get_my_backups',username:currentUser.username});
+    if(sbDataEnabled())data=await sbListTimesheetsForHome();
+    else data=await apiPost({action:'get_my_backups',username:currentUser.username});
   }catch(e){return {restored:0,kept:0};}
   if(!data||!data.success||!Array.isArray(data.data)||!data.data.length)return {restored:0,kept:0};
   const list=getAllTimesheets();
@@ -3244,6 +3547,7 @@ async function restoreCloudBackups(){
     if(byCloud){
       Object.assign(byCloud,{
         clientName:clientName||byCloud.clientName||'',
+        clientId:bak.clientId||byCloud.clientId||'',
         weekStart:weekStart||byCloud.weekStart||'',
         notes:bak.notes||'',
         svcType:bak.svcType||byCloud.svcType||'',
@@ -3261,6 +3565,7 @@ async function restoreCloudBackups(){
       if(!_wdIsEmpty(wd)||(existingId.clientName||'').trim()){kept++;return;}
       Object.assign(existingId,{
         clientName:clientName,
+        clientId:bak.clientId||existingId.clientId||'',
         weekStart:weekStart,
         notes:bak.notes||'',
         svcType:bak.svcType||'',
@@ -3274,6 +3579,7 @@ async function restoreCloudBackups(){
     list.push({
       id:id,
       clientName:clientName,
+      clientId:bak.clientId||'',
       weekStart:weekStart,
       notes:bak.notes||'',
       svcType:bak.svcType||'',
@@ -3344,9 +3650,277 @@ function confirmNewTS(){
   }
 }
 
+function sbToken(){
+  if(currentUser&&currentUser.sbAccessToken)return currentUser.sbAccessToken;
+  if(window.__sbSession&&window.__sbSession.access_token)return window.__sbSession.access_token;
+  return '';
+}
+function sbDataEnabled(){
+  return typeof evercareSbEnabled==='function'&&evercareSbEnabled()&&!!sbToken();
+}
+async function sbRest(path,opts){
+  opts=opts||{};
+  const token=sbToken();
+  if(!token)throw new Error('Sign in again.');
+  const headers=Object.assign(sbUserHeaders(token),opts.headers||{});
+  const init={method:opts.method||'GET',headers:headers};
+  if(opts.body!=null)init.body=JSON.stringify(opts.body);
+  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,init);
+  const pack=await sbRead(res);
+  if(!pack.ok){
+    const err=new Error(sbErrMsg(pack,'Request failed.'));
+    err.pack=pack;
+    throw err;
+  }
+  return pack.data;
+}
+function sbIsConflict(err){
+  const pack=err&&err.pack;
+  if(pack&&(pack.status===409||pack.status===23505))return true;
+  return /duplicate|23505|already exists/i.test(String(err&&err.message||''));
+}
+async function sbEnsureOrgId(){
+  if(currentUser&&currentUser.sbOrgId)return currentUser.sbOrgId;
+  const uid=currentUser&&currentUser.sbUserId;
+  if(!uid)return '';
+  const rows=await sbRest('profiles?select=org_id&id=eq.'+encodeURIComponent(uid)+'&limit=1');
+  const org=rows&&rows[0]&&rows[0].org_id;
+  if(org&&currentUser){
+    currentUser.sbOrgId=org;
+    if(typeof persistCgSession==='function')persistCgSession(currentUser);
+  }
+  return org||'';
+}
+function sbPaintClients(){
+  const sel=document.getElementById('cg_client');
+  if(!sel)return;
+  const currentVal=sel.value;
+  sel.innerHTML='<option value="">-- Select Client --</option>'+
+    myClients.map(function(c){
+      const name=String(c.name||'').replace(/</g,'');
+      return '<option value="'+c.id+'">'+name+'</option>';
+    }).join('');
+  if(currentVal)sel.value=currentVal;
+}
+async function sbLoadAssignedClients(){
+  const select='id,legacy_id,name,address,lat,lng,is_active,assignments(id,is_active,aide_id,client_id)';
+  const rows=await sbRest('clients?select='+encodeURIComponent(select)+'&is_active=eq.true&order=name.asc');
+  const list=Array.isArray(rows)?rows:[];
+  const me=currentUser&&currentUser.username?String(currentUser.username):'';
+  myClients=list.filter(function(c){return c&&c.is_active!==false;}).map(function(c){
+    const asg=Array.isArray(c.assignments)?c.assignments.filter(function(a){return a&&a.is_active!==false;}):[];
+    return {
+      id:c.id,
+      name:c.name||'',
+      address:c.address||'',
+      lat:c.lat,
+      lng:c.lng,
+      legacyId:c.legacy_id||'',
+      assignments:asg,
+      assignedAides:me?[me]:[]
+    };
+  });
+  sbPaintClients();
+  return myClients;
+}
+function sbTimesheetToBackup(row){
+  return {
+    id:row.id,
+    days:row.days||{},
+    clientName:row.client_name||'',
+    clientId:row.client_id||'',
+    weekStart:row.week_start||'',
+    notes:row.notes||'',
+    svcType:row.svc_type||'',
+    backedUpAt:row.updated_at||''
+  };
+}
+async function sbListTimesheetsForHome(){
+  const select='id,aide_id,client_id,username,emp_name,client_name,svc_type,week_start,total_hours,notes,days,status,is_active,updated_at';
+  const backups=await sbRest('timesheets?select='+encodeURIComponent(select)+'&is_active=eq.true&status=eq.backup&order=updated_at.desc');
+  let weekRows=[];
+  const week=typeof currentWeekSunday==='function'?currentWeekSunday():'';
+  if(week){
+    try{
+      weekRows=await sbRest('timesheets?select='+encodeURIComponent(select)+'&is_active=eq.true&week_start=eq.'+encodeURIComponent(week)+'&order=updated_at.desc');
+    }catch(e){weekRows=[];}
+  }
+  const seen={};
+  const merged=[];
+  (Array.isArray(backups)?backups:[]).concat(Array.isArray(weekRows)?weekRows:[]).forEach(function(row){
+    if(!row||!row.id||seen[row.id])return;
+    const st=String(row.status||'').toLowerCase();
+    if(st!=='backup'&&st!=='draft')return;
+    seen[row.id]=1;
+    merged.push(sbTimesheetToBackup(row));
+  });
+  return {success:true,data:merged};
+}
+function sbDayWire(day){
+  if(!day||typeof day!=='object')return {};
+  const svcs=Array.isArray(day.svcs)?day.svcs.slice():[];
+  const out={
+    date:day.date||'',
+    tin:day.tin||day.in||'',
+    tout:day.tout||day.out||'',
+    hrs:day.hrs||'',
+    aideSig:day.aideSig||'',
+    clientSig:day.clientSig||'',
+    svcs:svcs
+  };
+  if(day.otherSpecify)out.otherSpecify=day.otherSpecify;
+  if(day.location)out.location=day.location;
+  if(day.lat!=null)out.lat=day.lat;
+  if(day.lng!=null)out.lng=day.lng;
+  if(day.verified!=null)out.verified=day.verified;
+  if(day.distanceFt!=null)out.distanceFt=day.distanceFt;
+  if(day.distanceMi!=null)out.distanceMi=day.distanceMi;
+  return out;
+}
+async function sbFindWeekRow(aideId,clientId,weekStart,status){
+  let q='timesheets?select='+encodeURIComponent('id,days,status')
+    +'&aide_id=eq.'+encodeURIComponent(aideId)
+    +'&client_id=eq.'+encodeURIComponent(clientId)
+    +'&week_start=eq.'+encodeURIComponent(weekStart)
+    +'&is_active=eq.true&limit=1';
+  if(status)q+='&status=eq.'+encodeURIComponent(status);
+  const rows=await sbRest(q);
+  return (Array.isArray(rows)&&rows[0])||null;
+}
+function sbMergeDays(base,incoming){
+  const days=Object.assign({},base||{});
+  Object.keys(incoming||{}).forEach(function(k){
+    days[String(k)]=Object.assign({},days[String(k)]||{},incoming[k]||{});
+  });
+  return days;
+}
+async function sbUpsertTimesheet(opts){
+  opts=opts||{};
+  const aideId=currentUser&&currentUser.sbAideId;
+  const clientId=opts.clientId;
+  const weekStart=opts.weekStart;
+  const status=opts.status==='submitted'?'submitted':'backup';
+  if(!aideId||!clientId||!weekStart)throw new Error('Choose a client and week before saving.');
+  const orgId=await sbEnsureOrgId();
+  const header=opts.header||{};
+  const incoming=opts.days||{};
+  const existing=await sbFindWeekRow(aideId,clientId,weekStart,status==='backup'?'backup':'');
+  const days=status==='submitted'?incoming:sbMergeDays(existing&&existing.days,incoming);
+  const body={
+    days:days,
+    total_hours:header.total_hours||'',
+    notes:header.notes||'',
+    emp_name:header.emp_name||(currentUser&&currentUser.name)||'',
+    client_name:header.client_name||'',
+    username:header.username||(currentUser&&currentUser.username)||'',
+    svc_type:header.svc_type||''
+  };
+  if(header.header_aide_sig)body.header_aide_sig=header.header_aide_sig;
+  if(header.header_client_sig)body.header_client_sig=header.header_client_sig;
+  if(existing&&existing.id){
+    if(status==='submitted'){
+      body.status='submitted';
+      body.submitted_at=new Date().toISOString();
+    }
+    const updated=await sbRest('timesheets?id=eq.'+encodeURIComponent(existing.id),{
+      method:'PATCH',
+      headers:{Prefer:'return=representation'},
+      body:body
+    });
+    return Array.isArray(updated)?updated[0]:updated;
+  }
+  if(!orgId)throw new Error('Missing office id for this account.');
+  body.org_id=orgId;
+  body.aide_id=aideId;
+  body.client_id=clientId;
+  body.week_start=weekStart;
+  body.status=status;
+  body.is_active=true;
+  body.submitted_at=status==='submitted'?new Date().toISOString():null;
+  try{
+    const inserted=await sbRest('timesheets',{
+      method:'POST',
+      headers:{Prefer:'return=representation'},
+      body:body
+    });
+    return Array.isArray(inserted)?inserted[0]:inserted;
+  }catch(err){
+    if(!sbIsConflict(err))throw err;
+    const again=await sbFindWeekRow(aideId,clientId,weekStart,'');
+    if(!again||!again.id)throw err;
+    if(status!=='submitted'&&again.status&&String(again.status).toLowerCase()!=='backup'&&String(again.status).toLowerCase()!=='draft'){
+      throw new Error('That week is already submitted.');
+    }
+    const retry=Object.assign({},body);
+    delete retry.org_id;delete retry.aide_id;delete retry.client_id;delete retry.week_start;delete retry.is_active;
+    if(status==='submitted'){
+      retry.status='submitted';
+      retry.submitted_at=new Date().toISOString();
+    }else{
+      retry.days=sbMergeDays(again.days,incoming);
+      delete retry.status;
+      delete retry.submitted_at;
+    }
+    const updated=await sbRest('timesheets?id=eq.'+encodeURIComponent(again.id),{
+      method:'PATCH',
+      headers:{Prefer:'return=representation'},
+      body:retry
+    });
+    return Array.isArray(updated)?updated[0]:updated;
+  }
+}
+function sbSyncSavedDay(i,dayObj){
+  const ts=(typeof getAllTimesheets==='function'?getAllTimesheets():[]).find(function(t){return t.id===currentTS;})||{};
+  const client=typeof getSelectedClient==='function'?getSelectedClient():null;
+  const clientId=(client&&client.id)||ts.clientId||'';
+  const weekEl=document.getElementById('cg_weekstart');
+  const weekStart=(weekEl&&weekEl.value)||ts.weekStart||'';
+  const days={};
+  days[String(i)]=sbDayWire(dayObj);
+  const svcEl=document.getElementById('cg_svctype');
+  sbUpsertTimesheet({
+    clientId:clientId,
+    weekStart:weekStart,
+    days:days,
+    status:'backup',
+    header:{
+      total_hours:typeof totalHoursFromWeekData==='function'?totalHoursFromWeekData(getUserWeekData()):(dayObj&&dayObj.hrs)||'',
+      notes:ts.notes||((document.getElementById('cg_notes')||{}).value)||'',
+      emp_name:currentUser.name,
+      client_name:(client&&client.name)||ts.clientName||'',
+      username:currentUser.username,
+      svc_type:ts.svcType||(svcEl&&svcEl.value)||''
+    }
+  }).then(function(row){
+    if(row&&row.id&&currentTS&&typeof updateTSMeta==='function')updateTSMeta(currentTS,{cloudBackupId:row.id,clientId:clientId});
+  }).catch(function(){
+    showTempMsg('Saved on this phone. Office backup did not sync.','var(--warn)');
+  });
+}
+function sbLoadHomeLists(restoreBackups){
+  if(restoreBackups&&typeof restoreCloudBackups==='function'){
+    restoreCloudBackups().then(function(rr){
+      if(rr&&rr.restored>0)showTempMsg('Restored '+rr.restored+' backup(s) from the office','var(--teal)');
+      else if(rr&&rr.kept>0)showTempMsg('Local timesheet kept — Backup available','var(--teal)');
+      if(typeof renderTSHome==='function')renderTSHome();
+    }).catch(function(){});
+  }
+  if(typeof loadMyClients==='function')loadMyClients().catch(function(){});
+}
+
 let myClients=[];
 
 async function loadMyClients(){
+  if(sbDataEnabled()){
+    try{await sbLoadAssignedClients();}
+    catch(e){myClients=[];sbPaintClients();}
+    return;
+  }
+  if(evercareSbEnabled()){
+    myClients=[];
+    sbPaintClients();
+    return;
+  }
   try{
     const data=await apiGetCached('get_clients');
     if(data.success&&data.data){
@@ -3886,7 +4460,10 @@ window.addEventListener('load',()=>{
     return;
   }
   syncStorage();
-  if(restoreCgSession())afterLogin();
+  if(restoreCgSession()){
+    if(evercareSbEnabled()&&!(currentUser&&currentUser.sbAccessToken))caregiverLogout();
+    else afterLogin();
+  }
 });
 window.addEventListener('pageshow',()=>{enforceCgSessionTimeout();});
 document.addEventListener('visibilitychange',()=>{

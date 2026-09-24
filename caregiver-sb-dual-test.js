@@ -24,7 +24,7 @@ function extractFn(src, sig){
   return '';
 }
 
-assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-23-sb-dual-caregiver">'), 'caregiver-build meta');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-auth-login">'), 'caregiver-build meta');
 assert.ok(html.includes("const SUPABASE_URL='https://zealkptwgifnkbkuavvp.supabase.co';"), 'supabase url');
 assert.ok(!html.includes('lvaglmztnlnsrhlluayz'), 'abandoned project ref must not appear');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
@@ -63,17 +63,19 @@ assert.ok(/window\.__sbDual=\{ok:true,email:email,rpcEmail:email\}/.test(soft), 
 assert.ok(/window\.__sbDual=\{ok:false,error:/.test(soft), 'probe error');
 assert.ok(/rpcEmail:null/.test(soft), 'null rpc email is recorded');
 assert.ok(!/access_token/.test(soft.replace('authData.access_token', '')), 'probe must not store the access token');
-assert.strictEqual((html.match(/\/auth\/v1\/token\?grant_type=password/g) || []).length, 1, 'only one token call site');
-assert.strictEqual((html.match(/resolve_username_email/g) || []).length, 2, 'rpc name stays in the comment and the one call');
+assert.strictEqual((html.match(/\/auth\/v1\/token\?grant_type=password/g) || []).length, 3, 'soft probe, real login, and setup recheck');
+assert.strictEqual((html.match(/resolve_username_email/g) || []).length, 3, 'rpc name stays on the probe comment plus probe and real login');
 assert.ok(soft.indexOf('/rest/v1/rpc/resolve_username_email') < soft.indexOf('/auth/v1/token?grant_type=password'), 'rpc runs before auth');
 
 const login = extractFn(html, 'async function doLogin()');
 assert.ok(login.includes("action:'login'"), 'sheets login stays');
-const successAt = login.indexOf('if(data.success)');
-const softAt = login.indexOf('softSbDualVerify(user,pass)');
-const sessionAt = login.indexOf('startCgSession(');
-const homeAt = login.indexOf('afterLogin({freshLogin:true})');
-assert.ok(successAt >= 0 && softAt > successAt && sessionAt > softAt && homeAt > sessionAt, 'soft verify runs after sheets success and does not replace home');
+assert.ok(login.indexOf('await loginAideWithSupabase(user,pass)') < login.indexOf("action:'login'"), 'flag-on auth runs instead of sheets login');
+const sheetsBranch = login.slice(login.indexOf("action:'login'"));
+const softAt = sheetsBranch.indexOf('softSbDualVerify(user,pass)');
+const sessionAt = sheetsBranch.indexOf('startCgSession(');
+const homeAt = sheetsBranch.indexOf('afterLogin({freshLogin:true})');
+assert.ok(softAt >= 0 && sessionAt > softAt && homeAt > sessionAt, 'flag off still soft-verifies after sheets success and then opens home');
+assert.ok(sheetsBranch.includes('data.mustChangePassword') && sheetsBranch.includes('data.needsEmail'), 'sheets login still captures setup flags');
 assert.ok(!/await\s+softSbDualVerify/.test(login), 'soft verify must not be awaited');
 assert.strictEqual((login.match(/softSbDualVerify/g) || []).length, 1, 'only the sheets success path dual-verifies');
 assert.ok(!login.includes('data.email,pass') && !login.includes('softSbDualVerify(data'), 'do not map sheets email or admin roles');
@@ -262,6 +264,8 @@ async function runBrowser(){
   await page.setViewport({width:390,height:844,deviceScaleFactor:2});
   let sheetsLogin={success:true,name:'Test Aide',mustChangePassword:false,needsEmail:false,email:'sheets@example.com'};
   let rpcMode='null';
+  let authMode='bad';
+  let aideMode='ok';
   let holdSb=null;
   const sbCalls=[];
   const sheetsActions=[];
@@ -286,7 +290,7 @@ async function runBrowser(){
     if(/zealkptwgifnkbkuavvp\.supabase\.co/.test(u)){
       const cors={
         'Access-Control-Allow-Origin':'*',
-        'Access-Control-Allow-Headers':'apikey,authorization,content-type',
+        'Access-Control-Allow-Headers':'apikey,authorization,content-type,prefer',
         'Access-Control-Allow-Methods':'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS'
       };
       if(req.method()==='OPTIONS'){
@@ -307,12 +311,113 @@ async function runBrowser(){
           return;
         }
         if(/grant_type=password/.test(u)){
+          if(authMode==='ok'){
+            req.respond({
+              status:200,
+              contentType:'application/json',
+              headers:cors,
+              body:JSON.stringify({
+                access_token:'jwt-test-token',
+                refresh_token:'refresh-test',
+                expires_in:3600,
+                token_type:'bearer',
+                user:{id:'11111111-1111-1111-1111-111111111111',email:'aide.one@example.com'}
+              })
+            });
+          }else{
+            req.respond({
+              status:400,
+              contentType:'application/json',
+              headers:cors,
+              body:JSON.stringify({error:'invalid_grant',error_description:'Invalid login credentials'})
+            });
+          }
+          return;
+        }
+        if(/\/auth\/v1\/user/.test(u)){
+          let posted={};
+          try{posted=JSON.parse(req.postData()||'{}');}catch(e){}
           req.respond({
-            status:400,
+            status:200,
             contentType:'application/json',
             headers:cors,
-            body:JSON.stringify({error:'invalid_grant',error_description:'Invalid login credentials'})
+            body:JSON.stringify({id:'11111111-1111-1111-1111-111111111111',email:posted.email||'aide.one@example.com'})
           });
+          return;
+        }
+        if(/\/rest\/v1\/aides/.test(u)){
+          if(req.method()==='PATCH'){
+            let posted={};
+            try{posted=JSON.parse(req.postData()||'{}');}catch(e){}
+            req.respond({
+              status:200,
+              contentType:'application/json',
+              headers:cors,
+              body:JSON.stringify([Object.assign({
+                id:'22222222-2222-2222-2222-222222222222',
+                username:'aide.one',
+                full_name:'Test Aide',
+                email:'aide.one@example.com',
+                must_change_password:false,
+                is_active:true,
+                profile_id:'11111111-1111-1111-1111-111111111111'
+              },posted)])
+            });
+            return;
+          }
+          let row=null;
+          if(aideMode==='ok'){
+            row={
+              id:'22222222-2222-2222-2222-222222222222',
+              username:'aide.one',
+              full_name:'Test Aide',
+              email:'aide.one@example.com',
+              must_change_password:false,
+              is_active:true,
+              org_id:'33333333-3333-3333-3333-333333333333',
+              profile_id:'11111111-1111-1111-1111-111111111111'
+            };
+          }else if(aideMode==='must'){
+            row={
+              id:'22222222-2222-2222-2222-222222222222',
+              username:'aide.one',
+              full_name:'New Aide',
+              email:'',
+              must_change_password:true,
+              is_active:true,
+              org_id:'33333333-3333-3333-3333-333333333333',
+              profile_id:'11111111-1111-1111-1111-111111111111'
+            };
+          }else if(aideMode==='noemail'){
+            row={
+              id:'22222222-2222-2222-2222-222222222222',
+              username:'aide.one',
+              full_name:'No Email',
+              email:null,
+              must_change_password:false,
+              is_active:true,
+              org_id:'33333333-3333-3333-3333-333333333333',
+              profile_id:'11111111-1111-1111-1111-111111111111'
+            };
+          }
+          req.respond({
+            status:200,
+            contentType:'application/json',
+            headers:cors,
+            body:row?JSON.stringify([row]):'[]'
+          });
+          return;
+        }
+        if(/\/rest\/v1\/clients/.test(u)){
+          req.respond({status:200,contentType:'application/json',headers:cors,body:'[]'});
+          return;
+        }
+        if(/\/rest\/v1\/timesheets/.test(u)&&req.method()==='GET'){
+          req.respond({status:200,contentType:'application/json',headers:cors,body:'[]'});
+          return;
+        }
+        if(/\/rest\/v1\/profiles/.test(u)){
+          req.respond({status:200,contentType:'application/json',headers:cors,body:'[]'});
           return;
         }
         req.abort();
@@ -330,6 +435,13 @@ async function runBrowser(){
   async function openFresh(href){
     sbCalls.length=0;
     sheetsActions.length=0;
+    try{
+      await page.evaluate(function(){
+        localStorage.removeItem('cg_session');
+        sessionStorage.removeItem('cg_session');
+        localStorage.removeItem('evercare_sb');
+      });
+    }catch(e){}
     await page.goto(href,{waitUntil:'domcontentloaded',timeout:20000});
     await page.evaluate(function(){
       localStorage.removeItem('cg_session');
@@ -361,71 +473,127 @@ async function runBrowser(){
   assert.ok(sheetsActions.indexOf('login')>=0,'sheets login still runs');
 
   rpcMode='email';
+  authMode='ok';
+  aideMode='ok';
   let releaseSb=null;
   holdSb=new Promise(function(resolve){releaseSb=resolve;});
   await openFresh(base+'?sb=1');
   assert.strictEqual(sbCalls.length,0,'?sb=1 does not call supabase before sign-in');
-  const t0=Date.now();
+  assert.ok(sheetsActions.indexOf('ping')>=0,'warm /exec ping still runs with the flag on');
   await signIn();
-  await page.waitForFunction(function(){return document.getElementById('caregiverScreen').classList.contains('active');},{timeout:800});
-  const homeMs=Date.now()-t0;
-  assert.ok(homeMs<800,'home must show while supabase is still pending, took '+homeMs+'ms');
+  await new Promise(function(r){setTimeout(r,250);});
+  const held=await page.evaluate(function(){
+    return {
+      auth:document.getElementById('authScreen').classList.contains('active'),
+      home:document.getElementById('caregiverScreen').classList.contains('active')
+    };
+  });
+  assert.strictEqual(held.auth,true,'home waits for supabase auth');
+  assert.strictEqual(held.home,false,'flag on does not enter on the sheets login');
   assert.ok(sbCalls.some(function(c){return c.url.indexOf('resolve_username_email')>=0;}),'rpc starts immediately');
   assert.ok(!sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}),'auth has not run while the rpc is held');
-  const pending=await page.evaluate(function(){return window.__sbDual;});
-  assert.deepStrictEqual(pending,{ok:false});
+  assert.ok(sheetsActions.indexOf('login')<0,'flag on skips /exec login');
   releaseSb();
   holdSb=null;
-  try{
-    await page.waitForFunction(function(){
-      return window.__sbDual&&window.__sbDual.rpcEmail==='aide.one@example.com'&&window.__sbDual.error==='Invalid login credentials';
-    },{timeout:4000});
-  }catch(err){
-    const snap=await page.evaluate(function(){return {dual:window.__sbDual, href:location.href};});
-    console.error('dual snap', JSON.stringify(snap));
-    console.error('sb calls', JSON.stringify(sbCalls.map(function(c){return {url:c.url, method:c.method, body:c.body, apikey:c.apikey?c.apikey.slice(0,12):'', authorization:(c.authorization||'').slice(0,16)};})));
-    throw err;
-  }
-  const dual=await page.evaluate(function(){return window.__sbDual;});
-  assert.strictEqual(dual.ok,false);
-  assert.strictEqual(dual.email,'aide.one@example.com');
-  assert.strictEqual(dual.rpcEmail,'aide.one@example.com');
-  assert.ok(!JSON.stringify(dual).includes('secret'),'probe must not keep the password');
-  assert.ok(await page.evaluate(function(){return document.getElementById('caregiverScreen').classList.contains('active');}));
+  await page.waitForFunction(function(){return document.getElementById('caregiverScreen').classList.contains('active');},{timeout:5000});
   const rpc=sbCalls.filter(function(c){return c.url.indexOf('resolve_username_email')>=0;})[0];
   const auth=sbCalls.filter(function(c){return c.url.indexOf('grant_type=password')>=0;})[0];
-  assert.ok(rpc&&auth,'email from rpc continues to the password grant');
+  const aideCall=sbCalls.filter(function(c){return c.url.indexOf('/rest/v1/aides')>=0;})[0];
+  assert.ok(rpc&&auth&&aideCall,'email from rpc continues to the password grant and the aides row');
   assert.strictEqual(rpc.method,'POST');
   assert.strictEqual(rpc.apikey,anonFile);
   assert.strictEqual(rpc.authorization,'Bearer '+anonFile);
   assert.deepStrictEqual(JSON.parse(rpc.body),{p_username:'aide.one',p_org_slug:'evercare'});
   assert.deepStrictEqual(JSON.parse(auth.body),{email:'aide.one@example.com',password:'secret'});
   assert.strictEqual(auth.apikey,anonFile);
+  assert.strictEqual(aideCall.method,'GET');
+  assert.ok(aideCall.url.indexOf('profile_id=eq.11111111-1111-1111-1111-111111111111')>=0,'aides select is the signed-in user');
+  assert.ok(aideCall.url.indexOf('is_active=eq.true')>=0,'inactive aides are excluded');
+  assert.ok(aideCall.url.indexOf('must_change_password')>=0,'setup flag is loaded with the row');
+  assert.strictEqual(aideCall.authorization,'Bearer jwt-test-token');
+  assert.ok(!/secret/.test(aideCall.url+aideCall.body),'aides request does not carry the password');
+  const sess=await page.evaluate(function(){return JSON.parse(localStorage.getItem('cg_session')||'null');});
+  assert.strictEqual(sess.sbAccessToken,'jwt-test-token');
+  assert.strictEqual(sess.username,'aide.one');
+  assert.strictEqual(sess.name,'Test Aide');
+  assert.strictEqual(sess.mustChangePassword,false);
+  assert.strictEqual(sess.needsEmail,false);
+  assert.ok(!JSON.stringify(sess).includes('secret'),'session does not keep the password');
+  const live=await page.evaluate(function(){return window.__sbSession&&window.__sbSession.access_token;});
+  assert.strictEqual(live,'jwt-test-token');
+  const listDeadline=Date.now()+3000;
+  while(Date.now()<listDeadline&&!(sbCalls.some(function(c){return c.method==='GET'&&c.url.indexOf('/rest/v1/clients')>=0;})&&sbCalls.some(function(c){return c.method==='GET'&&c.url.indexOf('/rest/v1/timesheets')>=0&&c.url.indexOf('status=eq.backup')>=0;}))){
+    await new Promise(function(r){setTimeout(r,30);});
+  }
+  const clientsCall=sbCalls.filter(function(c){return c.method==='GET'&&c.url.indexOf('/rest/v1/clients')>=0;})[0];
+  const backupCall=sbCalls.filter(function(c){return c.method==='GET'&&c.url.indexOf('/rest/v1/timesheets')>=0&&c.url.indexOf('status=eq.backup')>=0;})[0];
+  assert.ok(clientsCall,'flag on loads assigned clients');
+  const clientUrl=decodeURIComponent(clientsCall.url);
+  assert.ok(clientUrl.indexOf('is_active=eq.true')>=0,'clients stay active');
+  assert.ok(clientUrl.indexOf('assignments(id,is_active,aide_id,client_id)')>=0,'assignments ride on the client list');
+  assert.strictEqual(clientsCall.authorization,'Bearer jwt-test-token');
+  assert.ok(backupCall,'flag on lists backup timesheets');
+  assert.strictEqual(backupCall.authorization,'Bearer jwt-test-token');
+  assert.ok(sheetsActions.indexOf('get_clients')<0,'flag on does not list clients through sheets');
+  assert.ok(sheetsActions.indexOf('get_my_backups')<0,'flag on does not list backups through sheets');
 
   rpcMode='null';
+  authMode='ok';
+  aideMode='ok';
   holdSb=null;
   await openFresh(base+'?v=1&sb=1');
   await signIn();
-  await page.waitForFunction(function(){
-    return document.getElementById('caregiverScreen').classList.contains('active')&&window.__sbDual&&window.__sbDual.rpcEmail===null;
-  },{timeout:5000});
+  await page.waitForFunction(function(){return document.getElementById('loginErr').style.display==='block';},{timeout:5000});
+  const noEmail=await page.evaluate(function(){
+    return {
+      auth:document.getElementById('authScreen').classList.contains('active'),
+      home:document.getElementById('caregiverScreen').classList.contains('active')
+    };
+  });
+  assert.strictEqual(noEmail.auth,true);
+  assert.strictEqual(noEmail.home,false);
   assert.ok(!sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}),'null rpc email skips auth');
+  assert.ok(sheetsActions.indexOf('login')<0,'null email does not fall through to sheets');
 
   rpcMode='boom';
   await openFresh(base+'?sb=1');
   await signIn();
-  await page.waitForFunction(function(){
-    return document.getElementById('caregiverScreen').classList.contains('active')&&window.__sbDual&&window.__sbDual.error==='HTTP 500';
-  },{timeout:5000});
-  assert.ok(!sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}),'rpc failure skips auth and still reaches home');
+  await page.waitForFunction(function(){return document.getElementById('loginErr').style.display==='block';},{timeout:5000});
+  const rpcDown=await page.evaluate(function(){
+    return document.getElementById('caregiverScreen').classList.contains('active');
+  });
+  assert.strictEqual(rpcDown,false);
+  assert.ok(!sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}),'rpc failure skips auth');
+
+  rpcMode='email';
+  authMode='bad';
+  await openFresh(base+'?sb=1');
+  await signIn();
+  await page.waitForFunction(function(){return document.getElementById('loginErr').style.display==='block';},{timeout:5000});
+  const badPw=await page.evaluate(function(){
+    return {
+      auth:document.getElementById('authScreen').classList.contains('active'),
+      home:document.getElementById('caregiverScreen').classList.contains('active'),
+      token:localStorage.getItem('cg_session')
+    };
+  });
+  assert.strictEqual(badPw.auth,true);
+  assert.strictEqual(badPw.home,false);
+  assert.strictEqual(badPw.token,null);
+  assert.ok(sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}));
+  assert.ok(!sbCalls.some(function(c){return c.url.indexOf('/rest/v1/aides')>=0;}),'bad password does not load aides');
 
   await page.goto(base,{waitUntil:'domcontentloaded',timeout:20000});
   await page.evaluate(function(){
     localStorage.setItem('evercare_sb','1');
     localStorage.removeItem('cg_session');
     sessionStorage.removeItem('cg_session');
+    localStorage.removeItem('evercare_sb_session');
+    sessionStorage.removeItem('evercare_sb_session');
   });
-  rpcMode='null';
+  rpcMode='email';
+  authMode='ok';
+  aideMode='ok';
   sbCalls.length=0;
   sheetsActions.length=0;
   await page.reload({waitUntil:'domcontentloaded',timeout:20000});
@@ -434,37 +602,67 @@ async function runBrowser(){
   await page.$eval('#l_user',function(el){el.value='keep';});
   await page.$eval('#l_pass',function(el){el.value='pw';});
   await page.click('#loginBtn');
-  await page.waitForFunction(function(){
-    return document.getElementById('caregiverScreen').classList.contains('active')&&window.__sbDual&&window.__sbDual.rpcEmail===null;
-  },{timeout:5000});
+  await page.waitForFunction(function(){return document.getElementById('caregiverScreen').classList.contains('active');},{timeout:5000});
   assert.deepStrictEqual(JSON.parse(sbCalls[0].body),{p_username:'keep',p_org_slug:'evercare'});
+  assert.ok(sheetsActions.indexOf('login')<0,'stored flag skips /exec login');
 
-  sheetsLogin={success:false};
   rpcMode='email';
+  authMode='ok';
+  aideMode='empty';
   await openFresh(base+'?sb=1');
-  sbCalls.length=0;
   await signIn();
   await page.waitForFunction(function(){return document.getElementById('loginErr').style.display==='block';},{timeout:5000});
-  await new Promise(function(r){setTimeout(r,250);});
-  const failed=await page.evaluate(function(){
-    return {
-      auth:document.getElementById('authScreen').classList.contains('active'),
-      home:document.getElementById('caregiverScreen').classList.contains('active')
-    };
-  });
-  assert.strictEqual(failed.auth,true);
-  assert.strictEqual(failed.home,false);
-  assert.strictEqual(sbCalls.length,0,'a failed sheets login does not call supabase');
+  const noRow=await page.evaluate(function(){return document.getElementById('caregiverScreen').classList.contains('active');});
+  assert.strictEqual(noRow,false,'a missing aides row does not enter the app');
 
-  sheetsLogin={success:true,name:'New Aide',mustChangePassword:true,needsEmail:true,email:''};
   rpcMode='email';
+  authMode='ok';
+  aideMode='must';
   holdSb=null;
   await openFresh(base+'?sb=1');
   await signIn();
   await page.waitForFunction(function(){
     return document.getElementById('aideSetupScreen').classList.contains('active')&&!document.getElementById('caregiverScreen').classList.contains('active');
   },{timeout:5000});
-  await page.waitForFunction(function(){return window.__sbDual&&window.__sbDual.rpcEmail==='aide.one@example.com';},{timeout:3000});
+  const gated=await page.evaluate(function(){
+    const s=JSON.parse(localStorage.getItem('cg_session')||'null');
+    return {must:s.mustChangePassword,needs:s.needsEmail,token:s.sbAccessToken};
+  });
+  assert.strictEqual(gated.must,true);
+  assert.strictEqual(gated.needs,true);
+  assert.strictEqual(gated.token,'jwt-test-token');
+  await page.$eval('#setup_newpass',function(el){el.value='secret-new';});
+  await page.$eval('#setup_confirm',function(el){el.value='secret-new';});
+  await page.$eval('#setup_email',function(el){el.value='real.aide@example.com';});
+  sbCalls.length=0;
+  await page.click('#aideSetupBtn');
+  await page.waitForFunction(function(){
+    return document.getElementById('caregiverScreen').classList.contains('active')&&!document.getElementById('aideSetupScreen').classList.contains('active');
+  },{timeout:5000});
+  const setupCalls=sbCalls.map(function(c){return c.method+' '+c.url;});
+  assert.ok(setupCalls.some(function(u){return u.indexOf('grant_type=password')>=0;}),'setup rechecks the current password');
+  const userPut=sbCalls.filter(function(c){return c.method==='PUT'&&c.url.indexOf('/auth/v1/user')>=0;})[0];
+  const aidePatch=sbCalls.filter(function(c){return c.method==='PATCH'&&c.url.indexOf('/rest/v1/aides')>=0;})[0];
+  assert.ok(userPut,'setup updates the auth user');
+  assert.deepStrictEqual(JSON.parse(userPut.body),{password:'secret-new'});
+  assert.ok(aidePatch,'setup clears the aide flag');
+  assert.strictEqual(JSON.parse(aidePatch.body).must_change_password,false);
+  assert.ok(sheetsActions.indexOf('complete_aide_setup')<0,'flag on setup does not post to sheets');
+
+  rpcMode='email';
+  authMode='ok';
+  aideMode='noemail';
+  await openFresh(base+'?sb=1');
+  await signIn();
+  await page.waitForFunction(function(){
+    return document.getElementById('aideSetupScreen').classList.contains('active')&&!document.getElementById('caregiverScreen').classList.contains('active');
+  },{timeout:5000});
+  const emptyEmail=await page.evaluate(function(){
+    const s=JSON.parse(localStorage.getItem('cg_session')||'null');
+    return {must:s.mustChangePassword,needs:s.needsEmail};
+  });
+  assert.strictEqual(emptyEmail.must,false);
+  assert.strictEqual(emptyEmail.needs,true);
 
   await browser.close();
   console.log('caregiver-sb-dual browser checks ok');
