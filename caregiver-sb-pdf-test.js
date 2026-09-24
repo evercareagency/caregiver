@@ -30,7 +30,7 @@ function extractConst(name){
   return html.slice(start, end + 2);
 }
 
-assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-sb-pdf-write — ?sb=1 Save Day and Submit render/refresh the timesheet PDF into Storage; flag off stays on Sheets /exec -->'), 'pdf write build marker');
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-sb-pdf-write — ?sb=1 Save Day renders a client blank-letter PDF and uploads it; Sheets /exec bytes only if that overlay fails; no Edge; flag off stays on Sheets -->'), 'pdf write build marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-auth-login">'), 'auth build meta stays');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
 assert.ok(html.includes("const SB_PDF_BUCKET='evercare-pdfs'"), 'bucket is evercare-pdfs');
@@ -39,6 +39,17 @@ assert.ok(fs.existsSync(path.join(__dirname, 'assets/blank-letter.png')), 'blank
 assert.ok(html.includes('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'), 'html2canvas overlay');
 assert.ok(html.includes('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'), 'jsPDF overlay');
 assert.ok(!html.includes('pdf_link'), 'do not read or clear Sheet PdfLink');
+assert.ok(!html.includes('sbFallbackTimesheetPdf'), 'text-stub PDF fallback is gone');
+assert.ok(!html.includes('/functions/v1'), 'no Edge function for PDF bytes');
+const writeFn = extractFn(html, 'async function sbWriteTimesheetPdf(timesheetId,record)');
+const pullFn = extractFn(html, 'async function sbPullSheetsTimesheetPdf(record)');
+assert.ok(writeFn.indexOf('renderTimesheetPdfBlob') < writeFn.indexOf('sbPullSheetsTimesheetPdf'), 'overlay runs before the sheets pull');
+assert.ok(writeFn.includes('sbPdfSize(bytes)<1024'), 'upload requires at least 1KiB');
+assert.ok(!/rpc\//.test(writeFn) && !/functions\/v1/.test(writeFn), 'write path has no render RPC');
+assert.ok(pullFn.includes('SHEETS_URL'), 'fallback reads Sheets /exec');
+assert.ok(pullFn.includes("action:'render_timesheet_pdf'"), 'sheets action is the archive render');
+assert.ok(!/rpc\//.test(pullFn) && !/functions\/v1/.test(pullFn), 'sheets pull is not an Edge call');
+assert.ok(html.includes('nameX:110') && html.includes('dayY0:172.5') && html.includes('commentsY:610'), 'Ace FORM overlay coordinates');
 
 const uploadFn = extractFn(html, 'async function uploadTimesheetPdf(opts)') + '\n' + extractFn(html, 'async function sbStorageUploadPdf(objectPath,pdfBytes)');
 assert.ok(uploadFn.includes('/storage/v1/object/'), 'storage upload');
@@ -64,6 +75,7 @@ assert.ok(fin.indexOf('sbRefreshTimesheetPdf') < fin.indexOf("action:'submit'"),
 
 const urlConst = (html.match(/const SUPABASE_URL='([^']+)'/) || [])[1];
 const keyConst = (html.match(/const SUPABASE_ANON_KEY='([^']+)'/) || [])[1];
+const sheetsUrl = (html.match(/const SHEETS_URL='([^']+)'/) || [])[1];
 const pdfStart = html.indexOf('const SB_PDF_BUCKET=');
 const pdfEnd = html.indexOf('// GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1 §5.4');
 assert.ok(pdfStart > 0 && pdfEnd > pdfStart, 'pdf block bounds');
@@ -103,6 +115,12 @@ function bytesToString(body){
   for(let i = 0; i < u8.length; i++)s += String.fromCharCode(u8[i]);
   return s;
 }
+function sheetsPdfBytes(){
+  let body = '%PDF-1.4\n% EverCare overlay fallback Ada Client 08:00\n';
+  while(body.length < 1100) body += '% pad\n';
+  body += '%%EOF\n';
+  return body;
+}
 
 function run(opts){
   const calls = [];
@@ -117,6 +135,9 @@ function run(opts){
   const box = {
     SUPABASE_URL: urlConst,
     SUPABASE_ANON_KEY: keyConst,
+    SHEETS_URL: sheetsUrl,
+    atob: typeof atob === 'function' ? atob : function(s){return Buffer.from(s, 'base64').toString('binary');},
+    TextDecoder: TextDecoder,
     window: {},
     location: {search: opts.search == null ? '?sb=1' : opts.search},
     localStorage: {getItem: function(){return null;}},
@@ -174,6 +195,18 @@ function run(opts){
       }
       if(u.indexOf('/rest/v1/profiles') >= 0){
         return Promise.resolve({ok: true, status: 200, text: function(){return Promise.resolve('[]');}});
+      }
+      if(u === sheetsUrl || u.indexOf('script.google.com') >= 0){
+        const raw = opts.sheetsRaw == null ? sheetsPdfBytes() : opts.sheetsRaw;
+        const ok = opts.sheetsFail ? false : true;
+        const u8 = new Uint8Array(String(raw).length);
+        for(let i = 0; i < u8.length; i++)u8[i] = String(raw).charCodeAt(i) & 255;
+        return Promise.resolve({
+          ok: ok,
+          status: ok ? 200 : 500,
+          text: function(){return Promise.resolve(String(raw));},
+          arrayBuffer: function(){return Promise.resolve(u8.buffer);}
+        });
       }
       return Promise.resolve({ok: true, status: 200, text: function(){return Promise.resolve('[]');}});
     }
@@ -239,16 +272,18 @@ function settle(){
   assert.strictEqual(storage[0].init.headers['x-upsert'], 'true');
   assert.ok(storage[0].url.indexOf('/evercare-pdfs/' + org + '/timesheet/ts-9.pdf') >= 0, storage[0].url);
   const pdfText = bytesToString(storage[0].init.body);
-  assert.ok(pdfText.indexOf('%PDF') === 0, 'uploaded bytes are a real PDF');
-  assert.ok(pdfText.indexOf('%%EOF') > 0, 'PDF trailer is present');
-  assert.ok(pdfText.indexOf('/MediaBox [0 0 612 792]') > 0, 'letter page');
-  assert.ok(pdfText.indexOf('Ada Client') > 0, 'PDF contains the client');
-  assert.ok(pdfText.indexOf('08:00') > 0, 'PDF contains the saved time');
-  assert.ok(pdfText.indexOf('aide signature on file') > 0, 'PDF records the aide signature');
-  assert.ok(pdfText.indexOf('Assist W/Bath-Bed/Tub/Shower') > 0, 'PDF contains the service');
-  const xrefAt = pdfText.indexOf('xref\n');
-  const startxref = Number((pdfText.match(/startxref\n(\d+)/) || [])[1]);
-  assert.strictEqual(startxref, xrefAt, 'xref offset matches');
+  assert.strictEqual(pdfText, sheetsPdfBytes(), 'uploaded bytes are the Sheets PDF when the overlay cannot run');
+  assert.ok(pdfText.indexOf('%PDF-') === 0, 'uploaded bytes are a real PDF');
+  assert.ok(pdfText.length >= 1024, 'uploaded PDF is at least 1KiB');
+  const sheetsCall = saved.calls.filter(function(c){return c.url === sheetsUrl;});
+  assert.strictEqual(sheetsCall.length, 1, 'overlay miss pulls Sheets /exec once');
+  assert.strictEqual(sheetsCall[0].init.method, 'POST');
+  const sheetsBody = JSON.parse(sheetsCall[0].init.body);
+  assert.strictEqual(sheetsBody.action, 'render_timesheet_pdf');
+  assert.strictEqual(sheetsBody.client_name, 'Ada Client');
+  assert.ok(sheetsBody.days['1'].tin === '08:00' || sheetsBody.days[1].tin === '08:00');
+  assert.ok(saved.calls.indexOf(sheetsCall[0]) < saved.calls.indexOf(storage[0]), 'sheets pull happens before upload');
+  assert.ok(!saved.calls.some(function(c){return c.url.indexOf('/functions/v1') >= 0 || c.url.indexOf('/rpc/') >= 0;}), 'no Edge or RPC on the PDF path');
 
   const patches = saved.calls.filter(function(c){return c.init.method === 'PATCH' && c.url.indexOf('/rest/v1/timesheets') >= 0;});
   assert.ok(patches.length >= 2, 'save patch plus pdf path patch');
@@ -295,6 +330,27 @@ function settle(){
   const noOrgResult = await vm.runInContext('sbRefreshTimesheetPdf("ts-9",{1:{tin:"08:00",aideSig:"a",clientSig:"c",svcs:["Bathing"]}})', noOrg);
   assert.strictEqual(noOrgResult, false);
   assert.ok(!noOrg.calls.some(function(c){return c.url.indexOf('/storage/v1/') >= 0;}), 'missing org does not upload');
+
+  const overlay = run({});
+  overlay.sbEnsurePdfLibs = async function(){return true;};
+  overlay.renderTimesheetPdfBlob = async function(){
+    const raw = '%PDF-1.4\n' + 'overlay '.repeat(200) + '\n%%EOF\n';
+    const u8 = new Uint8Array(raw.length);
+    for(let i = 0; i < raw.length; i++)u8[i] = raw.charCodeAt(i);
+    return u8;
+  };
+  const overlayOk = await vm.runInContext('sbRefreshTimesheetPdf("ts-9",{"1":{tin:"08:00",svcs:["Bathing"],aideSig:"a",clientSig:"c"}})', overlay);
+  assert.strictEqual(overlayOk, true);
+  assert.ok(!overlay.calls.some(function(c){return c.url === sheetsUrl;}), 'a real overlay PDF does not call Sheets');
+  const overlayStorage = overlay.calls.filter(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;})[0];
+  assert.ok(bytesToString(overlayStorage.init.body).indexOf('overlay ') > 0, 'upload uses the overlay bytes');
+
+  const noBytes = run({sheetsRaw: '{"success":false}'});
+  vm.runInContext('sbSyncSavedDay(1,{tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Bathing"],aideSig:"a",clientSig:"c"})', noBytes);
+  await settle();
+  assert.strictEqual(noBytes._msgs.length, 0, 'missing PDF bytes still leaves the day saved');
+  assert.strictEqual(noBytes._meta.patch.cloudBackupId, 'ts-9');
+  assert.ok(!noBytes.calls.some(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;}), 'no stub is uploaded');
 
   console.log('caregiver-sb-pdf checks ok');
 })().catch(function(err){

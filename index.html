@@ -5,7 +5,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="caregiver-build" content="2026-09-24-sb-auth-login">
-<!-- caregiver-build: 2026-09-24-sb-pdf-write — ?sb=1 Save Day and Submit render/refresh the timesheet PDF into Storage; flag off stays on Sheets /exec -->
+<!-- caregiver-build: 2026-09-24-sb-pdf-write — ?sb=1 Save Day renders a client blank-letter PDF and uploads it; Sheets /exec bytes only if that overlay fails; no Edge; flag off stays on Sheets -->
 <!-- caregiver-build: 2026-09-24-sb-dual-write — ?sb=1 Save Day, submit, backup soft-delete, and inservice insert use Supabase; flag off stays on Sheets /exec -->
 <!-- caregiver-build: 2026-09-24-sb-auth-login — ?sb=1 or evercare_sb=1 signs in with Supabase Auth; flag off stays on Sheets /exec -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
@@ -3964,7 +3964,9 @@ function sbSyncSavedDay(i,dayObj){
     showTempMsg('Saved on this phone. Office backup did not sync.','var(--warn)');
   });
 }
-// GHOST-TIMESHEET-PDF-WRITE-CONTRACT-v1 — after soft Save Day (backup) or Submit, render a letter PDF and uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
+// GHOST-TIMESHEET-PDF-WRITE-CONTRACT-v1 — client blank-letter overlay only. No Edge function and no render RPC.
+// After soft Save Day (backup row id) or Submit, uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
+// If the overlay cannot produce a real letter PDF, temporarily pull Sheets /exec PDF bytes and upload those. Sunday archive stays catch-up only.
 const SB_PDF_BUCKET='evercare-pdfs';
 const TS_PDF_BLANK='assets/blank-letter.png?v=a713ovl';
 const TS_FORM_PT={
@@ -4223,59 +4225,71 @@ async function renderTimesheetPdfBlob(r){
     if(container.parentNode)container.parentNode.removeChild(container);
   }
 }
-function sbPdfEscapeText(s){
-  return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
-}
-function sbFallbackTimesheetPdf(record){
-  record=record||{};
-  const names=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const lines=['EverCare Home Agency Timesheet'];
-  lines.push('Client: '+(record.clientName||''));
-  lines.push('Caregiver: '+(record.empName||record.username||''));
-  lines.push('Week of: '+(record.weekStart||''));
-  lines.push('Total hours: '+(record.totalHrs||''));
-  const days=record.days||{};
-  for(let i=0;i<=6;i++){
-    const d=days[i]||days[String(i)]||{};
-    const svcs=Array.isArray(d.svcs)?d.svcs.join(', '):'';
-    const aide=d.aideSig?'aide signature on file':'';
-    const clientSig=d.clientSig?'client signature on file':'';
-    lines.push(names[i]+' | '+(d.date||'')+' | '+(d.tin||d.in||'')+' - '+(d.tout||d.out||'')+' | '+(d.hrs||'')+' | '+svcs+' | '+aide+' | '+clientSig);
-  }
-  if(record.notes)lines.push('Notes: '+record.notes);
-  if(record.otherSpecify)lines.push('Other: '+record.otherSpecify);
-  const cmds=['BT','/F1 10 Tf','48 750 Td','16 TL'];
-  lines.forEach(function(line){
-    const text=String(line).replace(/\s+/g,' ').trim().slice(0,160);
-    cmds.push('('+sbPdfEscapeText(text)+') Tj');
-    cmds.push('T*');
-  });
-  cmds.push('ET');
-  const stream=cmds.join('\n')+'\n';
-  const objects=[];
-  objects.push('<< /Type /Catalog /Pages 2 0 R >>');
-  objects.push('<< /Type /Pages /Count 1 /Kids [3 0 R] >>');
-  objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>');
-  objects.push('<< /Length '+stream.length+' >>\nstream\n'+stream+'endstream');
-  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
-  let body='%PDF-1.4\n';
-  const offsets=[0];
-  objects.forEach(function(obj,idx){
-    offsets.push(body.length);
-    body+=(idx+1)+' 0 obj\n'+obj+'\nendobj\n';
-  });
-  const xrefAt=body.length;
-  let xref='xref\n0 '+(objects.length+1)+'\n';
-  xref+='0000000000 65535 f \n';
-  for(let i=1;i<offsets.length;i++){
-    xref+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
-  }
-  body+=xref;
-  body+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\n';
-  body+='startxref\n'+xrefAt+'\n%%EOF\n';
-  const out=new Uint8Array(body.length);
-  for(let i=0;i<body.length;i++)out[i]=body.charCodeAt(i)&255;
+function sbBytesFromText(raw){
+  const s=String(raw==null?'':raw);
+  const out=new Uint8Array(s.length);
+  for(let i=0;i<s.length;i++)out[i]=s.charCodeAt(i)&255;
   return out;
+}
+function sbPdfStarts(u8){
+  if(!u8||u8.length<5)return false;
+  return u8[0]===0x25&&u8[1]===0x50&&u8[2]===0x44&&u8[3]===0x46&&u8[4]===0x2D;
+}
+function sbB64ToBytes(b64){
+  const clean=String(b64||'').replace(/^data:application\/pdf;base64,/i,'').replace(/\s/g,'');
+  if(!clean||typeof atob!=='function')return null;
+  try{
+    const bin=atob(clean);
+    return sbBytesFromText(bin);
+  }catch(e){return null;}
+}
+function sbPdfFromExecBody(data){
+  if(!data)return null;
+  if(typeof data==='string'){
+    if(data.indexOf('%PDF-')===0)return sbBytesFromText(data);
+    return sbB64ToBytes(data);
+  }
+  if(typeof data!=='object')return null;
+  const b64=data.pdf||data.pdfBase64||data.pdf_base64||data.bytes||data.file||data.content||'';
+  if(b64){
+    const decoded=sbB64ToBytes(b64);
+    if(decoded)return decoded;
+    if(String(b64).indexOf('%PDF-')===0)return sbBytesFromText(b64);
+  }
+  if(data.data)return sbPdfFromExecBody(data.data);
+  return null;
+}
+// Temporary only: Sheets /exec already renders the archive PDF. Not an Edge function.
+async function sbPullSheetsTimesheetPdf(record){
+  if(typeof SHEETS_URL!=='string'||!SHEETS_URL)return null;
+  record=record||{};
+  const res=await fetch(SHEETS_URL,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({
+      action:'render_timesheet_pdf',
+      username:(currentUser&&currentUser.username)||record.username||'',
+      emp_name:record.empName||'',
+      client_name:record.clientName||'',
+      svc_type:record.svcType||'',
+      week_start:record.weekStart||'',
+      total_hours:record.totalHrs||'',
+      notes:record.notes||'',
+      days:record.days||{}
+    })
+  });
+  if(!res||!res.ok)return null;
+  let u8=null;
+  if(typeof res.arrayBuffer==='function')u8=new Uint8Array(await res.arrayBuffer());
+  else if(typeof res.text==='function')u8=sbBytesFromText(await res.text());
+  if(sbPdfStarts(u8)&&u8.length>=1024)return u8;
+  let raw='';
+  try{raw=new TextDecoder().decode(u8||new Uint8Array());}catch(e){raw='';}
+  let data=null;
+  try{data=raw?JSON.parse(raw):null;}catch(e){data=null;}
+  const parsed=sbPdfFromExecBody(data);
+  if(parsed&&sbPdfStarts(parsed)&&parsed.length>=1024)return parsed;
+  return null;
 }
 function sbPdfSize(pdfBytes){
   if(!pdfBytes)return 0;
@@ -4332,6 +4346,7 @@ async function uploadTimesheetPdf(opts){
   if(!orgId||!timesheetId||!pdfBytes)throw new Error('PDF upload missing fields.');
   if(!(await sbPdfMagicOk(pdfBytes)))throw new Error('PDF bytes are not a PDF.');
   const size=sbPdfSize(pdfBytes);
+  if(size<1024)throw new Error('PDF is too small.');
   if(size>10*1024*1024)throw new Error('PDF is too large.');
   const objectPath=sbTimesheetObjectPath(orgId,timesheetId);
   await sbStorageUploadPdf(objectPath,pdfBytes);
@@ -4363,9 +4378,13 @@ async function sbWriteTimesheetPdf(timesheetId,record){
   try{
     if(await sbEnsurePdfLibs())bytes=await renderTimesheetPdfBlob(record);
   }catch(e){bytes=null;}
-  const overlayOk=await sbPdfMagicOk(bytes);
-  if(!overlayOk||sbPdfSize(bytes)<1024)bytes=sbFallbackTimesheetPdf(record);
-  if(!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<256)return false;
+  if(!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024){
+    try{bytes=await sbPullSheetsTimesheetPdf(record);}catch(e){bytes=null;}
+  }
+  if(!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024){
+    try{console.warn('timesheet pdf','overlay and sheets bytes unavailable');}catch(e){}
+    return false;
+  }
   await uploadTimesheetPdf({orgId:orgId,timesheetId:timesheetId,pdfBytes:bytes});
   return true;
 }
