@@ -106,7 +106,8 @@ async function runBrowser(){
     });
   });
   page.on('dialog',d=>d.accept());
-  const url=process.env.CG_URL||'http://127.0.0.1:8765/index.html';
+  const rawUrl=process.env.CG_URL||'http://127.0.0.1:8765/index.html';
+  const url=rawUrl+(rawUrl.indexOf('?')>=0?'&':'?')+'sheets=1';
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:20000});
   await page.waitForFunction(()=>window._sheetsWarmUpStarted===true,{timeout:5000});
   const pingDeadline=Date.now()+5000;

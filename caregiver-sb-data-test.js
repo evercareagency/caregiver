@@ -111,8 +111,12 @@ function run(opts){
 }
 
 (async function(){
-  const off = run({search:''});
-  assert.strictEqual(vm.runInContext('sbDataEnabled()', off), false, 'flag off does not use the jwt data path');
+  const bare = run({search:''});
+  assert.strictEqual(vm.runInContext('sbDataEnabled()', bare), true, 'default uses the jwt data path with no ?sb=1');
+  const sheets = run({search:'?sheets=1'});
+  assert.strictEqual(vm.runInContext('sbDataEnabled()', sheets), false, 'sheets emergency does not use the jwt data path');
+  const oldOpt = run({search:'?sb=0'});
+  assert.strictEqual(vm.runInContext('sbDataEnabled()', oldOpt), true, 'missing or sb=0 does not fall through to Sheets');
 
   const clients = run({
     routes:[{

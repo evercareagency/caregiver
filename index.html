@@ -4,10 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="caregiver-build" content="2026-09-24-sb-auth-login">
-<!-- caregiver-build: 2026-09-24-sb-pdf-write — ?sb=1 Save Day renders a client blank-letter PDF and uploads it; Sheets /exec bytes only if that overlay fails; no Edge; flag off stays on Sheets -->
-<!-- caregiver-build: 2026-09-24-sb-dual-write — ?sb=1 Save Day, submit, backup soft-delete, and inservice insert use Supabase; flag off stays on Sheets /exec -->
-<!-- caregiver-build: 2026-09-24-sb-auth-login — ?sb=1 or evercare_sb=1 signs in with Supabase Auth; flag off stays on Sheets /exec -->
+<meta name="caregiver-build" content="2026-09-24-sb-cut">
+<!-- caregiver-build: 2026-09-24-sb-cut v=sbcut1 — Friday GO 2026-09-24. Migrated surfaces use Supabase by default (no ?sb=1): Auth/login, list/load, Save Day, submit, backup soft-delete, inservice insert, PDF. Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 forces Sheets /exec for surfaces that still have a Sheets path. Default Supabase does not dual-write those surfaces to Sheets. PDF: client blank-letter JPEG overlay, soft-fail upload (Save Day still succeeds), SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. KEEP Sheets: signup, save_location_status, verify_reset/reset_password, get_assigned_topic, get_is_reminder, get_correction, broadcast, warm /exec ping. -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
@@ -1084,86 +1082,18 @@ function switchTab(tab){
 
 // AUTH
 
+// Friday GO 2026-09-24 cut (v=sbcut1). Default true.
+// Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
+// Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
+// surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
+// Missing ?sb=1 must not fall through to Sheets, and the default path does not dual-write Sheets.
 function evercareSbEnabled(){
   try{
     var search=(typeof location!=='undefined'&&location&&location.search)||'';
-    if(/(?:^|[?&])sb=1(?:&|$)/.test(search))return true;
-    if(typeof localStorage!=='undefined'&&localStorage.getItem('evercare_sb')==='1')return true;
+    if(/(?:^|[?&])sheets=1(?:&|$)/.test(search))return false;
+    if(typeof localStorage!=='undefined'&&localStorage.getItem('evercare_sheets')==='1')return false;
   }catch(e){}
-  return false;
-}
-// Soft dual-verify after a successful Sheets aide login. Sheets stays source of truth.
-// Flag off (default) returns before any Supabase request. Failures never block Sign In.
-// Resolve the aide email with resolve_username_email, then optional password grant.
-// Aide username goes through the RPC, not an admin role-email map. No Supabase writes. No live cutover.
-function softSbDualVerify(username,password){
-  try{
-    if(!evercareSbEnabled())return;
-    var user=String(username||'').trim().toLowerCase();
-    if(!user){
-      window.__sbDual={ok:false,error:'missing username'};
-      return;
-    }
-    window.__sbDual={ok:false};
-    var headers={
-      apikey:SUPABASE_ANON_KEY,
-      Authorization:'Bearer '+SUPABASE_ANON_KEY,
-      'Content-Type':'application/json'
-    };
-    fetch(SUPABASE_URL+'/rest/v1/rpc/resolve_username_email',{
-      method:'POST',
-      headers:headers,
-      body:JSON.stringify({p_username:user,p_org_slug:'evercare'})
-    }).then(function(res){
-      return res.text().then(function(raw){
-        var data=null;
-        var parsed=false;
-        if(raw==null||raw===''){data=null;parsed=true;}
-        else{try{data=JSON.parse(raw);parsed=true;}catch(e){parsed=false;}}
-        if(!res.ok){
-          var msg=(data&&(data.error_description||data.msg||data.message||data.error||data.hint))||('HTTP '+res.status);
-          if(msg&&typeof msg==='object')msg=msg.message||JSON.stringify(msg);
-          window.__sbDual={ok:false,error:String(msg)};
-          return;
-        }
-        if(!parsed||(data!=null&&typeof data!=='string')){
-          window.__sbDual={ok:false,error:'unexpected rpc body'};
-          return;
-        }
-        var email=data==null?'':String(data).trim();
-        if(!email){
-          window.__sbDual={ok:false,error:'no email',rpcEmail:null};
-          return;
-        }
-        window.__sbDual={ok:false,email:email,rpcEmail:email};
-        return fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
-          method:'POST',
-          headers:headers,
-          body:JSON.stringify({email:email,password:password})
-        }).then(function(authRes){
-          return authRes.text().then(function(authRaw){
-            var authData=null;
-            try{authData=authRaw?JSON.parse(authRaw):null;}catch(e){}
-            if(authRes.ok&&authData&&authData.access_token){
-              window.__sbDual={ok:true,email:email,rpcEmail:email};
-            }else{
-              var amsg=(authData&&(authData.error_description||authData.msg||authData.message||authData.error))||('HTTP '+authRes.status);
-              if(amsg&&typeof amsg==='object')amsg=amsg.message||JSON.stringify(amsg);
-              window.__sbDual={ok:false,error:String(amsg),email:email,rpcEmail:email};
-            }
-          });
-        });
-      });
-    }).catch(function(err){
-      var prev=window.__sbDual||{};
-      var next={ok:false,error:String(err&&err.message||err||'supabase')};
-      if(prev.email)next.email=prev.email;
-      if(prev.rpcEmail)next.rpcEmail=prev.rpcEmail;
-      window.__sbDual=next;
-    });
-  }catch(err){
-    try{window.__sbDual={ok:false,error:String(err&&err.message||err||'supabase')};}catch(e2){}
-  }
+  return true;
 }
 
 function sbAnonHeaders(){
@@ -1241,7 +1171,7 @@ function sbWorkingEmail(submitted,authEmail,aideEmail){
   if(cur)return cur;
   return auth;
 }
-// Flag on: this is the real sign-in. RPC → password grant → own aides row.
+// Default cut: this is the real sign-in. RPC → password grant → own aides row.
 // Blank aides.email still sets needsEmail. Failures throw so Sign In stays on the same error.
 async function loginAideWithSupabase(username,password){
   const user=String(username||'').trim().toLowerCase();
@@ -1394,6 +1324,7 @@ async function doLogin(){
   const btn=document.getElementById('loginBtn');
   if(btn){btn.textContent='Signing in...';btn.disabled=true;}
   try{
+    // Default: Supabase Auth. Emergency ?sheets=1 / evercare_sheets=1 keeps Sheets login only.
     if(evercareSbEnabled()){
       sbClearAuth();
       const signed=await loginAideWithSupabase(user,pass);
@@ -1402,7 +1333,6 @@ async function doLogin(){
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
     if(data.success){
-      try{softSbDualVerify(user,pass);}catch(sbErr){}
       try{sbClearAuth();}catch(sbClr){}
       window._aceLoginOk=true;window._aceHealthBad=false;startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
     }
@@ -3964,9 +3894,10 @@ function sbSyncSavedDay(i,dayObj){
     showTempMsg('Saved on this phone. Office backup did not sync.','var(--warn)');
   });
 }
-// GHOST-TIMESHEET-PDF-WRITE-CONTRACT-v1 — client blank-letter overlay only. No Edge function and no render RPC.
-// After soft Save Day (backup row id) or Submit, uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
-// If the overlay cannot produce a real letter PDF, temporarily pull Sheets /exec PDF bytes and upload those. Sunday archive stays catch-up only.
+// GHOST-TIMESHEET-PDF-WRITE-CONTRACT-v1 — client blank-letter JPEG overlay. No Edge function and no render RPC.
+// After Save Day (backup row id) or Submit, uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
+// Default Supabase: overlay only. A failed overlay or upload soft-fails (Save Day still succeeds). No Sheets dual-write.
+// Emergency sheets force (?sheets=1 / evercare_sheets=1) may still pull /exec PDF bytes via sbPullSheetsTimesheetPdf.
 const SB_PDF_BUCKET='evercare-pdfs';
 const SB_PDF_MAX_BYTES=25*1024*1024;
 const SB_PDF_TARGET_BYTES=2*1024*1024;
@@ -4396,11 +4327,11 @@ async function sbWriteTimesheetPdf(timesheetId,record){
   try{
     if(await sbEnsurePdfLibs())bytes=await renderTimesheetPdfBlob(record);
   }catch(e){bytes=null;}
-  if(!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024){
+  if((!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024)&&!evercareSbEnabled()){
     try{bytes=await sbPullSheetsTimesheetPdf(record);}catch(e){bytes=null;}
   }
   if(!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024){
-    try{console.warn('timesheet pdf','overlay and sheets bytes unavailable');}catch(e){}
+    try{console.warn('timesheet pdf','overlay bytes unavailable');}catch(e){}
     return false;
   }
   if(sbPdfSize(bytes)>SB_PDF_MAX_BYTES){
