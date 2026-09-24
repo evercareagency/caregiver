@@ -4,8 +4,12 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-save-home">
+<meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-save-home v=home1 — Friday GO 2026-09-24. Save Day stays on the timesheet. Successful full-week submit returns to Caregiver Home. Aide list is a client-filter (Ace: no query this slice): drafts and sent-back always, fully submitted limited to the 2 most recent week_start values. Offline queue flush, Auth seal v=sbseal1, and inservice nocert v=nocert1 unchanged. -->
+<!-- caregiver-build: 2026-09-24-inservice-nocert v=nocert1 — Friday GO 2026-09-24. Caregiver My Inservices completed cards show a Completed badge and completion date only. Aides have no Print or View Certificate. Auth seal v=sbseal1 and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-sb-seal v=sbseal1 — Friday GO 2026-09-24. No new Ace RPC. Cut forgot-password: resolve_username_email, then GoTrue recover to this page, then PUT /auth/v1/user on the recovery session. Logged-in setup stays PUT /auth/v1/user. Signup on the cut does not write Sheets and does not call Auth signup. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 keeps Sheets signup, verify_reset, and reset_password. -->
 <!-- caregiver-build: 2026-09-24-offline-save v=offline1 — Offline Save Day queue. Default Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Save Day and Submit queue on the phone when offline and flush through the existing Supabase upsert then PDF upload when a caregiver JWT is valid. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec for those surfaces. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds; PDF re-queues only), bucket evercare-pdfs, SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
@@ -433,7 +437,7 @@ else setupEverCarePWA();
       </div>
       <div class="correction-banner" id="correctionBanner" onclick="loadCorrectionMode()"></div>
       <div class="card" style="background:var(--teal-light);border-color:var(--teal)">
-        <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a card below to continue a <strong>draft</strong> or a week the office <strong>sent back</strong>. <strong>+ Start Another Timesheet</strong> always starts a <strong>new blank week and client</strong> — it does not reopen a submitted week.</p>
+        <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a card below to continue a <strong>draft</strong> or a week the office <strong>sent back</strong>. The two most recent <strong>submitted</strong> weeks stay listed. <strong>+ Start Another Timesheet</strong> always starts a <strong>new blank week and client</strong> — it does not reopen a submitted week.</p>
       </div>
       <div id="cgTSList"></div>
       <div class="action-row" style="padding-top:0;margin-bottom:14px">
@@ -750,8 +754,7 @@ else setupEverCarePWA();
       <div class="sico">&#127881;</div>
       <h2>Inservice Completed!</h2>
       <p id="isSuccessMsg">You have completed this month inservice. Great job!</p>
-      <button class="btn btn-teal btn-full" onclick="printCurrentISCert()">Print Certificate</button>
-      <button class="btn btn-ghost btn-full" onclick="showScreen('caregiverScreen')" style="margin-top:8px">Back to Home</button>
+      <button class="btn btn-ghost btn-full" onclick="showScreen('caregiverScreen')">Back to Home</button>
     </div>
   </div>
 </div>
@@ -2690,13 +2693,9 @@ async function doFinalSubmit(){
   }
   currentTS=null;
   window._cgSubmitInFlight=false;
-  showScreen('caregiverScreen');
-  document.getElementById('cgFormView').style.display='none';
-  document.getElementById('cgSuccessView').style.display='block';
-  if(data&&data.queued){
-    const successP=document.querySelector('#cgSuccessView p');
-    if(successP)successP.textContent='Saved on this phone — will upload when you\'re back online';
-  }
+  showCaregiverHome();
+  if(data&&data.queued)showTempMsg('Saved on this phone — will upload when you\'re back online','var(--teal)');
+  else showTempMsg('Timesheet submitted.','var(--success)');
   window.scrollTo(0,0);
   setTimeout(()=>window.scrollTo(0,0),50);
 }
@@ -3481,23 +3480,54 @@ function saveAllTimesheets(list){
 }
 
 
-// Home (#cgTSList) shows unfinished local drafts and Admin send-backs only.
-// Submitted / locked weeks stay off Home (they remain in Admin / Sheets).
+// Home (#cgTSList) client-filter (Ace: no query this slice). RLS is unchanged.
+// Always show drafts and office sent-back / correction weeks.
+// Fully submitted / locked: only the 2 most recent week_start values. Older rows stay stored.
 // Backup under My Inservices is draft-only (status active / missing).
 function isUnfinishedDraft(t){
   if(!t)return false;
   if(t.status==='correction_requested'||t.status==='submitted'||t.status==='locked')return false;
   return !t.status||t.status==='active';
 }
+function isSentBackWeek(t){
+  return !!(t&&t.status==='correction_requested');
+}
+function isFullySubmittedWeek(t){
+  return !!(t&&(t.status==='submitted'||t.status==='locked'));
+}
+function aideSubmittedWeekKey(t){
+  const week=String(t&&t.weekStart||'').trim().slice(0,10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(week)?week:'';
+}
+function recentSubmittedWeekStarts(list,limit){
+  const seen=[];
+  (list||[]).forEach(function(t){
+    if(!isFullySubmittedWeek(t))return;
+    const week=aideSubmittedWeekKey(t);
+    if(week&&seen.indexOf(week)<0)seen.push(week);
+  });
+  seen.sort();
+  seen.reverse();
+  return seen.slice(0,limit==null?2:limit);
+}
 function isHomeListItem(t){
-  return isUnfinishedDraft(t)||t.status==='correction_requested';
+  return isUnfinishedDraft(t)||isSentBackWeek(t);
+}
+function isAideListCard(t,keepWeeks){
+  if(!t)return false;
+  if(isHomeListItem(t))return true;
+  if(!isFullySubmittedWeek(t))return false;
+  const week=aideSubmittedWeekKey(t);
+  return !!(week&&keepWeeks.indexOf(week)>=0);
 }
 function getDraftTimesheets(){
   return getAllTimesheets().filter(isUnfinishedDraft);
 }
 function getHomeTimesheets(){
   sweepSubmittedLeftovers();
-  return getAllTimesheets().filter(isHomeListItem);
+  const list=getAllTimesheets();
+  const keep=recentSubmittedWeekStarts(list,2);
+  return list.filter(function(t){return isAideListCard(t,keep);});
 }
 function sweepSubmittedLeftovers(){
   if(!currentUser)return;
@@ -3852,16 +3882,20 @@ function renderTSHome(){
   el.innerHTML=list.map(ts=>{
     const wd=store.get('wd_'+currentUser.username+'_'+ts.id)||{};
     const daysSaved=Object.keys(wd).filter(k=>wd[k]&&typeof wd[k]==='object').length;
-    const sentBack=ts.status==='correction_requested';
-    const border=sentBack?'var(--warn)':'var(--teal)';
+    const sentBack=isSentBackWeek(ts);
+    const submitted=isFullySubmittedWeek(ts);
+    const border=sentBack?'var(--warn)':(submitted?'var(--border)':'var(--teal)');
     const sub=sentBack
       ? formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; Office sent back — tap to fix'
-      : formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; '+daysSaved+' day'+(daysSaved!==1?'s':'')+' saved';
-    return '<div class="card" style="margin-bottom:10px;cursor:pointer;border:1.5px solid '+border+'" onclick="openTS(&quot;'+ts.id+'&quot;)">'+
+      : submitted
+        ? formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; Submitted'
+        : formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; '+daysSaved+' day'+(daysSaved!==1?'s':'')+' saved';
+    const open=submitted?'':' onclick="openTS(&quot;'+ts.id+'&quot;)"';
+    return '<div class="card" style="margin-bottom:10px;cursor:'+(submitted?'default':'pointer')+';border:1.5px solid '+border+'"'+open+'>'+
       '<div style="display:flex;align-items:center;justify-content:space-between">'+
-      '<div><p style="font-weight:600;color:var(--navy);font-size:0.9rem">'+(ts.clientName||'No client name yet')+(sentBack?' <span style="color:var(--warn);font-size:0.72rem">Needs correction</span>':'')+'</p>'+
+      '<div><p style="font-weight:600;color:var(--navy);font-size:0.9rem">'+(ts.clientName||'No client name yet')+(sentBack?' <span style="color:var(--warn);font-size:0.72rem">Needs correction</span>':'')+(submitted?' <span style="color:var(--muted);font-size:0.72rem">Submitted</span>':'')+'</p>'+
       '<p style="font-size:0.72rem;color:var(--muted);margin-top:2px">'+sub+'</p></div>'+
-      '<div style="color:'+border+';font-size:18px">&#8250;</div>'+
+      '<div style="color:'+border+';font-size:18px">'+(submitted?'':'&#8250;')+'</div>'+
       '</div></div>';
   }).join('');
 }
@@ -5477,6 +5511,18 @@ function openTS(id){
   if(ts&&(ts.headerAideSig||ts.headerClientSig))restoreHdrSigs(ts);
 }
 
+function showCaregiverHome(){
+  if(typeof showScreen==='function')showScreen('caregiverScreen');
+  const home=document.getElementById('cgHomeView');
+  const form=document.getElementById('cgFormView');
+  const done=document.getElementById('cgSuccessView');
+  if(form)form.style.display='none';
+  if(done)done.style.display='none';
+  if(home)home.style.display='block';
+  if(typeof renderTSHome==='function')renderTSHome();
+  try{window.scrollTo(0,0);}catch(e){}
+}
+
 function backToTSHome(){
   // Save current client name and week to ts meta
   const clientSel=document.getElementById('cg_client');
@@ -5486,9 +5532,7 @@ function backToTSHome(){
   const weekStart=document.getElementById('cg_weekstart').value;
   const notes=document.getElementById('cg_notes').value;
   updateTSMeta(currentTS,{clientName,clientId,weekStart,notes,...captureHdrSigs()});
-  document.getElementById('cgFormView').style.display='none';
-  document.getElementById('cgHomeView').style.display='block';
-  renderTSHome();
+  showCaregiverHome();
 }
 
 function goToInservices(){
@@ -5557,13 +5601,12 @@ async function renderISList(){
       '<div><p style="font-weight:600;color:var(--navy);font-size:0.88rem">'+is.shortTitle+'</p>'+
       '<p style="font-size:0.7rem;color:var(--muted);margin-top:2px">'+is.title+'</p></div>'+
       '<div style="flex-shrink:0">'+
-      (completed?'<span style="background:#e8f8f0;color:var(--success);padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700">Done</span>':
+      (completed?'<span style="background:#e8f8f0;color:var(--success);padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700">Completed</span>':
        isAssigned?'<button class="btn btn-teal" style="padding:7px 14px;font-size:0.78rem" onclick="startIS('+is.id+')">Start</button>':
        '<span style="background:var(--off);color:var(--muted);padding:4px 10px;border-radius:20px;font-size:0.72rem">Locked</span>')+
       '</div></div>'+
       (isAssigned&&!completed?'<div style="margin-top:8px;background:var(--teal);color:white;padding:4px 10px;border-radius:4px;font-size:0.68rem;font-weight:700;display:inline-block">DUE THIS MONTH</div>':'')+
-      (completed?'<p style="font-size:0.7rem;color:var(--muted);margin-top:6px">Completed: '+escapeHtml(formatCertDate(isData['completedAt_'+is.id]||isData['completed_'+is.id]))+'</p>'+
-        '<button type="button" class="btn btn-teal btn-full" style="margin-top:10px;padding:9px" onclick="printCompletedISCert('+is.id+')">Print Certificate</button>':'')+
+      (completed?'<p style="font-size:0.7rem;color:var(--muted);margin-top:6px">Completed: '+escapeHtml(formatCertDate(isData['completedAt_'+is.id]||isData['completed_'+is.id]))+'</p>':'')+
       '</div>';
   }).join('');
 }
