@@ -5,6 +5,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="caregiver-build" content="2026-09-24-sb-auth-login">
+<!-- caregiver-build: 2026-09-24-sb-pdf-write — ?sb=1 Save Day renders a client blank-letter PDF and uploads it; Sheets /exec bytes only if that overlay fails; no Edge; flag off stays on Sheets -->
 <!-- caregiver-build: 2026-09-24-sb-dual-write — ?sb=1 Save Day, submit, backup soft-delete, and inservice insert use Supabase; flag off stays on Sheets /exec -->
 <!-- caregiver-build: 2026-09-24-sb-auth-login — ?sb=1 or evercare_sb=1 signs in with Supabase Auth; flag off stays on Sheets /exec -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
@@ -192,6 +193,18 @@ canvas.sigpad.signed{border-color:var(--success);}
 .success-wrap h2{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--navy);margin-bottom:7px;}
 .success-wrap p{font-size:0.81rem;color:var(--muted);max-width:320px;margin:0 auto 22px;line-height:1.7;}
 footer{text-align:center;padding:11px;font-size:0.7rem;color:var(--muted);border-top:1px solid var(--border);background:white;}
+/* Offscreen paper overlay for the soft-flag Storage PDF. Not a print screen. */
+.ts-pdf-sheet{position:relative;width:8.5in;height:11in;background:#fff;overflow:hidden;color:#111;font-family:Times,'Times New Roman',serif;box-sizing:border-box;}
+.ts-pdf-sheet .ts-blank{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:0;border:0;}
+.ts-pdf-sheet .ts-fill{position:absolute;z-index:1;color:#111;font-family:Times,'Times New Roman',serif;font-weight:700;line-height:1;white-space:nowrap;pointer-events:none;transform:translate(0,-50%);}
+.ts-pdf-sheet .ts-fill-c{transform:translate(-50%,-50%);text-align:center;}
+.ts-pdf-sheet .ts-fill-name{font-size:10pt;max-width:30%;overflow:hidden;}
+.ts-pdf-sheet .ts-fill-day{font-size:7.5pt;}
+.ts-pdf-sheet .ts-fill-total{font-size:8.5pt;}
+.ts-pdf-sheet .ts-fill-mark{font-size:8pt;}
+.ts-pdf-sheet .ts-fill-other{font-size:7pt;max-width:12%;overflow:hidden;}
+.ts-pdf-sheet .ts-fill-notes{font-size:8pt;font-weight:400;white-space:normal;max-width:46%;line-height:1.3;transform:none;}
+.ts-pdf-sheet .ts-sig{position:absolute;z-index:2;width:11%;height:1.6%;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none;}
 </style>
 
 <!-- PWA -->
@@ -2631,6 +2644,7 @@ async function doFinalSubmit(){
         }
       });
       data={success:true,id:row&&row.id};
+      try{if(row&&row.id)sbRefreshTimesheetPdf(row.id,weekData);}catch(e){}
     }else if(correctionMode&&correctionData){
       data=await apiPost({action:'resubmit',id:correctionData.id,days:weekData,total_hours:totalHrs,client_name:clientName,notes,...hdr});
     }else{
@@ -3945,8 +3959,466 @@ function sbSyncSavedDay(i,dayObj){
     }
   }).then(function(row){
     if(row&&row.id&&currentTS&&typeof updateTSMeta==='function')updateTSMeta(currentTS,{cloudBackupId:row.id,clientId:clientId});
+    if(row&&row.id)sbRefreshTimesheetPdf(row.id);
   }).catch(function(){
     showTempMsg('Saved on this phone. Office backup did not sync.','var(--warn)');
+  });
+}
+// GHOST-TIMESHEET-PDF-WRITE-CONTRACT-v1 — client blank-letter overlay only. No Edge function and no render RPC.
+// After soft Save Day (backup row id) or Submit, uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
+// If the overlay cannot produce a real letter PDF, temporarily pull Sheets /exec PDF bytes and upload those. Sunday archive stays catch-up only.
+const SB_PDF_BUCKET='evercare-pdfs';
+const SB_PDF_MAX_BYTES=25*1024*1024;
+const SB_PDF_TARGET_BYTES=2*1024*1024;
+const TS_PDF_BLANK='assets/blank-letter.png?v=a713ovl';
+const TS_FORM_PT={
+  sheetW:612,sheetH:792,
+  nameX:110,clientNameY:101.8,caregiverNameY:126.3,
+  dateX:115.5,tinX:173.6,toutX:231.9,hrsX:281.1,
+  dayY0:172.5,dayStep:13.4,
+  dayAideSigX:356,dayClientSigX:498,
+  totalY:267.0,
+  commentsX:48,commentsY:610,
+  otherSpecifyX:120,otherSpecifyY:580.88,
+  dayXL:[187.62,205.58,223.46,241.40,259.31,277.22,295.12],
+  dayXR:[473.12,491.08,508.96,526.90,544.81,562.72,580.62],
+  yPersonal:[341.19,354.59,367.99,381.38,394.78,408.19,421.59],
+  yElim:[339.99,349.13,361.34,374.74,388.13],
+  yHousehold:[446.88,460.28,473.69,487.09,500.49,513.88,527.29,540.68,554.09,567.48,580.88],
+  yMobility:[446.88,460.28,473.69,487.09,500.49,513.88,527.29],
+  yTreat:[606.18,619.59],
+  yNutrition:[673.38,686.79,700.18,713.59]
+};
+const TS_SVC_OVERLAY=[
+  {items:PERSONAL_CARE,ys:'yPersonal',xs:'dayXL'},
+  {items:ELIMINATION,ys:'yElim',xs:'dayXR'},
+  {items:HOUSEHOLD,ys:'yHousehold',xs:'dayXL'},
+  {items:MOBILITY,ys:'yMobility',xs:'dayXR'},
+  {items:TREATMENTS,ys:'yTreat',xs:'dayXR'},
+  {items:NUTRITION,ys:'yNutrition',xs:'dayXR'}
+];
+const _sbPdfLibPromises={};
+function sbLoadScript(src){
+  if(_sbPdfLibPromises[src])return _sbPdfLibPromises[src];
+  _sbPdfLibPromises[src]=new Promise(function(resolve,reject){
+    if(typeof document==='undefined'||!document.createElement||!document.head){
+      reject(new Error('pdf lib'));
+      return;
+    }
+    const s=document.createElement('script');
+    s.src=src;
+    s.async=true;
+    s.onload=function(){resolve();};
+    s.onerror=function(){delete _sbPdfLibPromises[src];reject(new Error('pdf lib'));};
+    document.head.appendChild(s);
+  });
+  return _sbPdfLibPromises[src];
+}
+function sbPdfLibsReady(){
+  return typeof html2canvas==='function'&&typeof window!=='undefined'&&window.jspdf&&typeof window.jspdf.jsPDF==='function';
+}
+async function sbEnsurePdfLibs(){
+  if(sbPdfLibsReady())return true;
+  if(typeof document==='undefined'||!document.createElement)return false;
+  try{
+    await sbLoadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    await sbLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  }catch(e){return false;}
+  return sbPdfLibsReady();
+}
+function tsPdfPctX(x){return (Number(x)/TS_FORM_PT.sheetW*100).toFixed(4)+'%';}
+function tsPdfPctY(y){return (Number(y)/TS_FORM_PT.sheetH*100).toFixed(4)+'%';}
+function tsPdfEscape(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+}
+function tsPdfFill(text,x,y,cls){
+  const s=String(text==null?'':text);
+  if(!s)return '';
+  return '<span class="ts-fill'+(cls?' '+cls:'')+'" style="left:'+tsPdfPctX(x)+';top:'+tsPdfPctY(y)+'">'+tsPdfEscape(s)+'</span>';
+}
+function tsPdfDay(days,i){
+  if(!days)return {};
+  return days[i]||days[String(i)]||{};
+}
+function tsPdfTo12(t){
+  if(!t)return '';
+  const parts=String(t).split(':');
+  const h=Number(parts[0]);
+  const m=Number(parts[1]);
+  if(isNaN(h))return String(t);
+  const period=h>=12?'PM':'AM';
+  let h12=h%12;if(h12===0)h12=12;
+  return h12+':'+String(isNaN(m)?0:m).padStart(2,'0')+' '+period;
+}
+function tsPdfToMDY(d){
+  if(!d)return '';
+  const parts=String(d).split('-');
+  if(parts.length!==3)return String(d);
+  return parts[1]+'/'+parts[2]+'/'+String(parts[0]).slice(-2);
+}
+function tsPdfHrsDec(hrs){
+  if(!hrs||hrs==='—')return 0;
+  const parts=String(hrs).split(':');
+  const h=Number(parts[0]);
+  const m=Number(parts[1]);
+  if(isNaN(h))return 0;
+  return h+((isNaN(m)?0:m)/60);
+}
+function tsPdfHrsDisplay(hrs){
+  if(hrs==null||hrs===''||hrs==='—')return '';
+  if(/^\d+:\d{2}$/.test(String(hrs)))return String(hrs);
+  const n=typeof hrs==='number'?hrs:tsPdfHrsDec(hrs);
+  if(!n)return '';
+  const h=Math.floor(n),m=Math.round((n-h)*60);
+  return h+':'+String(m).padStart(2,'0');
+}
+function tsPdfSvcKey(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
+function tsPdfDayHasService(d,label){
+  const svcs=(d&&d.svcs)||[];
+  const t=tsPdfSvcKey(label);
+  if(!t||!svcs.length)return false;
+  return svcs.some(function(s){
+    const x=tsPdfSvcKey(s);
+    if(!x)return false;
+    if(x===t)return true;
+    if(x.length>6&&t.indexOf(x)!==-1)return true;
+    if(t.length>6&&x.indexOf(t)!==-1)return true;
+    return false;
+  });
+}
+function tsPdfDayWorked(d){
+  return !!(d&&(d.tin||d.tout||d.in||d.out||(d.hrs&&d.hrs!=='—')||(d.hours&&d.hours!=='—')));
+}
+function tsPdfSigned(d,role){
+  if(!d)return false;
+  const src=role==='aide'?(d.aideSig||''):(d.clientSig||'');
+  const flag=role==='aide'?d.aideSigInk:d.clientSigInk;
+  if(typeof storedHasRealInk==='function'){
+    try{if(storedHasRealInk(src,flag))return true;}catch(e){}
+  }
+  if(String(src).indexOf('data:image')===0&&String(src).length>80)return true;
+  return !!(flag===true&&src);
+}
+function tsPdfSigHtml(d,role,x,y){
+  if(!tsPdfSigned(d,role))return '';
+  const src=role==='aide'?(d.aideSig||''):(d.clientSig||'');
+  if(String(src).indexOf('data:image')===0){
+    return '<img class="ts-sig" alt="" src="'+tsPdfEscape(src)+'" style="left:'+tsPdfPctX(x)+';top:'+tsPdfPctY(y)+'">';
+  }
+  return tsPdfFill('✓',x,y,'ts-fill-c ts-fill-mark');
+}
+function buildTimesheetPrintHtml(r){
+  const F=TS_FORM_PT;
+  const days=(r&&r.days)||{};
+  const fills=[];
+  const clientName=String((r&&(r.clientName||r.client_name))||'').trim();
+  const empName=String((r&&(r.empName||r.emp_name||r.username))||'').trim();
+  if(clientName)fills.push(tsPdfFill(clientName,F.nameX,F.clientNameY,'ts-fill-name'));
+  if(empName)fills.push(tsPdfFill(empName,F.nameX,F.caregiverNameY,'ts-fill-name'));
+  let regular=0;
+  let otherSpecify=String((r&&r.otherSpecify)||'').trim();
+  for(let i=0;i<=6;i++){
+    const d=tsPdfDay(days,i);
+    const y=F.dayY0+i*F.dayStep;
+    if(d.otherSpecify)otherSpecify=String(d.otherSpecify).trim();
+    const hrsVal=d.hrs||d.hours||'';
+    const worked=tsPdfDayWorked(d);
+    if(worked)regular+=tsPdfHrsDec(hrsVal);
+    const date=tsPdfToMDY(d.date)||'';
+    const tin=tsPdfTo12(d.tin||d.in)||'';
+    const tout=tsPdfTo12(d.tout||d.out)||'';
+    const hrs=worked?tsPdfHrsDisplay(hrsVal):'';
+    if(date)fills.push(tsPdfFill(date,F.dateX,y,'ts-fill-c ts-fill-day'));
+    if(tin)fills.push(tsPdfFill(tin,F.tinX,y,'ts-fill-c ts-fill-day'));
+    if(tout)fills.push(tsPdfFill(tout,F.toutX,y,'ts-fill-c ts-fill-day'));
+    if(hrs)fills.push(tsPdfFill(hrs,F.hrsX,y,'ts-fill-c ts-fill-day'));
+    fills.push(tsPdfSigHtml(d,'aide',F.dayAideSigX,y));
+    fills.push(tsPdfSigHtml(d,'client',F.dayClientSigX,y));
+  }
+  const rawTotal=(r&&r.totalHrs&&r.totalHrs!=='0:00'&&r.totalHrs!=='—')?r.totalHrs:((r&&r.total_hours)||tsPdfHrsDisplay(regular));
+  const totalWeekly=tsPdfHrsDisplay(rawTotal)||String(rawTotal||'').trim();
+  if(totalWeekly)fills.push(tsPdfFill(totalWeekly,F.hrsX,F.totalY,'ts-fill-c ts-fill-total'));
+  TS_SVC_OVERLAY.forEach(function(sec){
+    const ys=F[sec.ys]||[];
+    const xs=F[sec.xs]||[];
+    (sec.items||[]).forEach(function(label,ri){
+      const y=ys[ri];
+      if(y==null)return;
+      for(let di=0;di<=6;di++){
+        if(tsPdfDayHasService(tsPdfDay(days,di),label))fills.push(tsPdfFill('✓',xs[di],y,'ts-fill-c ts-fill-mark'));
+      }
+    });
+  });
+  if(otherSpecify)fills.push(tsPdfFill(otherSpecify,F.otherSpecifyX,F.otherSpecifyY,'ts-fill-other'));
+  const notes=String((r&&(r.notes||r.comments))||'').trim();
+  if(notes)fills.push(tsPdfFill(notes,F.commentsX,F.commentsY,'ts-fill-notes'));
+  return '<img class="ts-blank" src="'+TS_PDF_BLANK+'" alt="" width="1275" height="1650">'+fills.join('');
+}
+function sbTimesheetPdfRecord(daysSource){
+  const list=typeof getAllTimesheets==='function'?getAllTimesheets():[];
+  const ts=(list||[]).find(function(t){return t&&t.id===currentTS;})||{};
+  const client=typeof getSelectedClient==='function'?getSelectedClient():null;
+  const weekEl=typeof document!=='undefined'?document.getElementById('cg_weekstart'):null;
+  const notesEl=typeof document!=='undefined'?document.getElementById('cg_notes'):null;
+  const svcEl=typeof document!=='undefined'?document.getElementById('cg_svctype'):null;
+  const totalEl=typeof document!=='undefined'?document.getElementById('cg_total'):null;
+  const otherEl=typeof document!=='undefined'?document.getElementById('cg_other_specify'):null;
+  const source=daysSource||(typeof getUserWeekData==='function'?getUserWeekData():{});
+  const days=typeof sbNormalizeDays==='function'?sbNormalizeDays(source):source;
+  const other=(otherEl&&otherEl.value||'').trim();
+  if(other){
+    Object.keys(days||{}).forEach(function(k){
+      const d=days[k];
+      if(d&&Array.isArray(d.svcs)&&d.svcs.indexOf('Other (specify)')>=0&&!d.otherSpecify)d.otherSpecify=other;
+    });
+  }
+  return {
+    clientName:(client&&client.name)||ts.clientName||'',
+    empName:(currentUser&&(currentUser.name||currentUser.empName))||'',
+    username:(currentUser&&currentUser.username)||'',
+    weekStart:(weekEl&&weekEl.value)||ts.weekStart||'',
+    svcType:ts.svcType||(svcEl&&svcEl.value)||'',
+    totalHrs:(totalEl&&totalEl.textContent)||'',
+    notes:(notesEl&&notesEl.value)||ts.notes||'',
+    otherSpecify:other,
+    days:days||{}
+  };
+}
+function sbWaitImg(img,ms){
+  if(!img)return Promise.resolve(false);
+  if(img.complete&&img.naturalWidth>0)return Promise.resolve(true);
+  return new Promise(function(resolve){
+    let done=false;
+    const finish=function(){if(done)return;done=true;resolve(!!(img.naturalWidth>0));};
+    img.addEventListener('load',finish);
+    img.addEventListener('error',finish);
+    setTimeout(finish,ms||8000);
+  });
+}
+function sbShrinkCanvas(src,factor){
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round((src.width||1)*factor));
+  c.height=Math.max(1,Math.round((src.height||1)*factor));
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,c.width,c.height);
+  ctx.imageSmoothingEnabled=true;
+  if('imageSmoothingQuality' in ctx)ctx.imageSmoothingQuality='high';
+  ctx.drawImage(src,0,0,c.width,c.height);
+  return c;
+}
+function sbJpegLetterPdf(canvas,quality){
+  const imgData=canvas.toDataURL('image/jpeg',quality);
+  const pdf=new window.jspdf.jsPDF({orientation:'p',unit:'pt',format:'letter',compress:true});
+  pdf.addImage(imgData,'JPEG',0,0,612,792,undefined,'FAST');
+  return pdf.output('blob');
+}
+async function renderTimesheetPdfBlob(r){
+  if(!sbPdfLibsReady())throw new Error('pdf lib');
+  const container=document.createElement('div');
+  container.className='ts-pdf-sheet';
+  container.setAttribute('data-print-mode','paper-overlay');
+  container.style.cssText='position:fixed;left:-9999px;top:0;width:8.5in;height:11in;padding:0;overflow:hidden;background:#fff;';
+  container.innerHTML=buildTimesheetPrintHtml(r);
+  document.body.appendChild(container);
+  try{
+    const blank=container.querySelector('img.ts-blank');
+    const ready=await sbWaitImg(blank,8000);
+    if(!ready)throw new Error('blank form');
+    const imgs=container.querySelectorAll('img');
+    await Promise.all(Array.prototype.map.call(imgs,function(img){return sbWaitImg(img,4000);}));
+    // scale 1 JPEG page. Stay under 2 MiB (Ace smoke ~261 KiB). No PNG embed.
+    const canvas=await html2canvas(container,{scale:1,useCORS:true,backgroundColor:'#ffffff'});
+    let blob=await sbJpegLetterPdf(canvas,0.72);
+    if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.55);
+    if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.4);
+    if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES){
+      const smaller=sbShrinkCanvas(canvas,0.7);
+      blob=await sbJpegLetterPdf(smaller,0.5);
+      if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(sbShrinkCanvas(canvas,0.55),0.4);
+    }
+    if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)throw new Error('PDF is too large.');
+    return blob;
+  }finally{
+    if(container.parentNode)container.parentNode.removeChild(container);
+  }
+}
+function sbBytesFromText(raw){
+  const s=String(raw==null?'':raw);
+  const out=new Uint8Array(s.length);
+  for(let i=0;i<s.length;i++)out[i]=s.charCodeAt(i)&255;
+  return out;
+}
+function sbPdfStarts(u8){
+  if(!u8||u8.length<5)return false;
+  return u8[0]===0x25&&u8[1]===0x50&&u8[2]===0x44&&u8[3]===0x46&&u8[4]===0x2D;
+}
+function sbB64ToBytes(b64){
+  const clean=String(b64||'').replace(/^data:application\/pdf;base64,/i,'').replace(/\s/g,'');
+  if(!clean||typeof atob!=='function')return null;
+  try{
+    const bin=atob(clean);
+    return sbBytesFromText(bin);
+  }catch(e){return null;}
+}
+function sbPdfFromExecBody(data){
+  if(!data)return null;
+  if(typeof data==='string'){
+    if(data.indexOf('%PDF-')===0)return sbBytesFromText(data);
+    return sbB64ToBytes(data);
+  }
+  if(typeof data!=='object')return null;
+  const b64=data.pdf||data.pdfBase64||data.pdf_base64||data.bytes||data.file||data.content||'';
+  if(b64){
+    const decoded=sbB64ToBytes(b64);
+    if(decoded)return decoded;
+    if(String(b64).indexOf('%PDF-')===0)return sbBytesFromText(b64);
+  }
+  if(data.data)return sbPdfFromExecBody(data.data);
+  return null;
+}
+// Temporary only: Sheets /exec already renders the archive PDF. Not an Edge function.
+async function sbPullSheetsTimesheetPdf(record){
+  if(typeof SHEETS_URL!=='string'||!SHEETS_URL)return null;
+  record=record||{};
+  const res=await fetch(SHEETS_URL,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({
+      action:'render_timesheet_pdf',
+      username:(currentUser&&currentUser.username)||record.username||'',
+      emp_name:record.empName||'',
+      client_name:record.clientName||'',
+      svc_type:record.svcType||'',
+      week_start:record.weekStart||'',
+      total_hours:record.totalHrs||'',
+      notes:record.notes||'',
+      days:record.days||{}
+    })
+  });
+  if(!res||!res.ok)return null;
+  let u8=null;
+  if(typeof res.arrayBuffer==='function')u8=new Uint8Array(await res.arrayBuffer());
+  else if(typeof res.text==='function')u8=sbBytesFromText(await res.text());
+  if(sbPdfStarts(u8)&&u8.length>=1024)return u8;
+  let raw='';
+  try{raw=new TextDecoder().decode(u8||new Uint8Array());}catch(e){raw='';}
+  let data=null;
+  try{data=raw?JSON.parse(raw):null;}catch(e){data=null;}
+  const parsed=sbPdfFromExecBody(data);
+  if(parsed&&sbPdfStarts(parsed)&&parsed.length>=1024)return parsed;
+  return null;
+}
+function sbPdfSize(pdfBytes){
+  if(!pdfBytes)return 0;
+  if(typeof pdfBytes.size==='number')return pdfBytes.size;
+  if(typeof pdfBytes.byteLength==='number')return pdfBytes.byteLength;
+  return 0;
+}
+async function sbPdfMagicOk(pdfBytes){
+  try{
+    if(!pdfBytes)return false;
+    let u8=null;
+    if(typeof Blob!=='undefined'&&typeof Blob==='function'&&pdfBytes instanceof Blob){
+      const buf=await pdfBytes.slice(0,5).arrayBuffer();
+      u8=new Uint8Array(buf);
+    }else if(typeof pdfBytes.byteLength==='number'){
+      const n=Math.min(5,pdfBytes.byteLength);
+      u8=new Uint8Array(n);
+      for(let i=0;i<n;i++)u8[i]=pdfBytes[i];
+    }
+    if(!u8||u8.length<4)return false;
+    let s='';
+    for(let i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);
+    return s.indexOf('%PDF')===0;
+  }catch(e){return false;}
+}
+function sbTimesheetObjectPath(orgId,timesheetId){
+  return String(orgId)+'/timesheet/'+String(timesheetId)+'.pdf';
+}
+async function sbStorageUploadPdf(objectPath,pdfBytes){
+  const token=sbToken();
+  if(!token)throw new Error('Sign in again.');
+  const encoded=String(objectPath).split('/').map(function(seg){return encodeURIComponent(seg);}).join('/');
+  const res=await fetch(SUPABASE_URL+'/storage/v1/object/'+SB_PDF_BUCKET+'/'+encoded,{
+    method:'POST',
+    headers:{
+      apikey:SUPABASE_ANON_KEY,
+      Authorization:'Bearer '+token,
+      'Content-Type':'application/pdf',
+      'x-upsert':'true'
+    },
+    body:pdfBytes
+  });
+  if(!res.ok){
+    let msg='PDF upload failed';
+    try{const t=await res.text();if(t)msg=String(t).slice(0,180);}catch(e){}
+    throw new Error(msg);
+  }
+}
+async function uploadTimesheetPdf(opts){
+  opts=opts||{};
+  const orgId=opts.orgId;
+  const timesheetId=opts.timesheetId;
+  const pdfBytes=opts.pdfBytes;
+  if(!orgId||!timesheetId||!pdfBytes)throw new Error('PDF upload missing fields.');
+  if(!(await sbPdfMagicOk(pdfBytes)))throw new Error('PDF bytes are not a PDF.');
+  const size=sbPdfSize(pdfBytes);
+  if(size<1024)throw new Error('PDF is too small.');
+  if(size>SB_PDF_MAX_BYTES)throw new Error('PDF is too large.');
+  const objectPath=sbTimesheetObjectPath(orgId,timesheetId);
+  await sbStorageUploadPdf(objectPath,pdfBytes);
+  await sbRest('timesheets?id=eq.'+encodeURIComponent(timesheetId),{
+    method:'PATCH',
+    headers:{Prefer:'return=minimal'},
+    body:{pdf_storage_path:objectPath}
+  });
+  await sbRest('pdf_documents?on_conflict=org_id,bucket,object_path',{
+    method:'POST',
+    headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+    body:{
+      org_id:orgId,
+      doc_kind:'timesheet',
+      entity_id:timesheetId,
+      bucket:SB_PDF_BUCKET,
+      object_path:objectPath,
+      content_type:'application/pdf',
+      byte_size:size,
+      is_active:true
+    }
+  });
+  return {objectPath:objectPath};
+}
+async function sbWriteTimesheetPdf(timesheetId,record){
+  const orgId=await sbEnsureOrgId();
+  if(!orgId||!timesheetId)return false;
+  let bytes=null;
+  try{
+    if(await sbEnsurePdfLibs())bytes=await renderTimesheetPdfBlob(record);
+  }catch(e){bytes=null;}
+  if(!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024){
+    try{bytes=await sbPullSheetsTimesheetPdf(record);}catch(e){bytes=null;}
+  }
+  if(!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024){
+    try{console.warn('timesheet pdf','overlay and sheets bytes unavailable');}catch(e){}
+    return false;
+  }
+  if(sbPdfSize(bytes)>SB_PDF_MAX_BYTES){
+    try{console.warn('timesheet pdf','over 25MB guard');}catch(e){}
+    return false;
+  }
+  await uploadTimesheetPdf({orgId:orgId,timesheetId:timesheetId,pdfBytes:bytes});
+  return true;
+}
+function sbRefreshTimesheetPdf(timesheetId,daysSource){
+  if(typeof sbDataEnabled!=='function'||!sbDataEnabled()||!timesheetId)return Promise.resolve(false);
+  let record=null;
+  try{record=sbTimesheetPdfRecord(daysSource);}catch(e){record={days:daysSource||{}};}
+  return Promise.resolve().then(function(){
+    return sbWriteTimesheetPdf(timesheetId,record);
+  }).catch(function(err){
+    try{console.warn('timesheet pdf',err&&err.message||err);}catch(e){}
+    return false;
   });
 }
 // GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1 §5.4 — soft-delete frees the week natural key.
