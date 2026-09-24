@@ -4,8 +4,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
-<!-- caregiver-build: 2026-09-24-offline-save v=offline1 — Offline Save Day queue. Default Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Save Day and Submit queue on the phone when offline and flush through the existing Supabase upsert then PDF upload when a caregiver JWT is valid. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec for those surfaces. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds; PDF re-queues only), bucket evercare-pdfs, SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: signup, verify_reset/reset_password, get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
+<!-- caregiver-build: 2026-09-24-sb-seal v=sbseal1 — Friday GO 2026-09-24. No new Ace RPC. Cut forgot-password: resolve_username_email, then GoTrue recover to this page, then PUT /auth/v1/user on the recovery session. Logged-in setup stays PUT /auth/v1/user. Signup on the cut does not write Sheets and does not call Auth signup. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 keeps Sheets signup, verify_reset, and reset_password. -->
+<!-- caregiver-build: 2026-09-24-offline-save v=offline1 — Offline Save Day queue. Default Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Save Day and Submit queue on the phone when offline and flush through the existing Supabase upsert then PDF upload when a caregiver JWT is valid. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec for those surfaces. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds; PDF re-queues only), bucket evercare-pdfs, SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: get_assigned_topic, get_is_reminder, get_correction, broadcast, warm ping. save_location_status posts to /exec only under the sheets rollback. -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
@@ -20,11 +22,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);color:var(--text);ma
 .screen.active{display:block !important;}
 #authScreen.active{display:flex !important;}
 #aideSetupScreen.active{display:flex !important;}
+#recoveryScreen.active{display:flex !important;}
 #locationScreen.active{display:flex !important;}
 #locDeniedScreen.active{display:flex !important;}
 #isSuccessScreen.active{display:block !important;}
 /* AUTH */
-#authScreen.active,#aideSetupScreen.active{flex-direction:column;align-items:center;justify-content:center;background:var(--teal);padding:24px 16px;min-height:100vh;min-height:100dvh;}
+#authScreen.active,#aideSetupScreen.active,#recoveryScreen.active{flex-direction:column;align-items:center;justify-content:center;background:var(--teal);padding:24px 16px;min-height:100vh;min-height:100dvh;}
 .auth-logo{font-size:48px;margin-bottom:10px;}
 .auth-title{font-family:'Playfair Display',serif;font-size:1.8rem;color:white;margin-bottom:4px;}
 .auth-sub{font-size:0.72rem;color:rgba(255,255,255,0.55);letter-spacing:2px;margin-bottom:28px;}
@@ -357,6 +360,21 @@ else setupEverCarePWA();
   </div>
 </div>
 
+<!-- RECOVERY LINK: set password after the email redirect -->
+<div class="screen" id="recoveryScreen">
+  <div class="auth-title" style="margin-top:8px">EverCare Home Agency</div>
+  <div class="auth-sub">RESET PASSWORD</div>
+  <div class="auth-box">
+    <h2>Set a new password</h2>
+    <p>This link is from your reset email. Choose the password you will use to sign in.</p>
+    <div class="field"><label>New password</label><input type="password" id="recovery_pass" placeholder="Choose a new password" autocomplete="new-password"></div>
+    <div class="field"><label>Confirm new password</label><input type="password" id="recovery_confirm" placeholder="Re-enter new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitRecoveryPassword()"></div>
+    <button class="btn btn-teal btn-full" onclick="submitRecoveryPassword()" id="recoveryBtn">Save password</button>
+    <div class="auth-err" id="recoveryErr"></div>
+    <div style="text-align:center;margin-top:12px"><button type="button" onclick="cancelRecoveryPassword()" style="background:none;border:none;color:var(--teal);font-size:0.76rem;cursor:pointer;text-decoration:underline">Back to sign in</button></div>
+  </div>
+</div>
+
 <!-- LOCATION PERMISSION (first time) -->
 <div class="screen" id="locationScreen">
   <div class="loc-icon">📍</div>
@@ -635,7 +653,7 @@ else setupEverCarePWA();
   <div class="modal">
     <div class="mico">🔑</div>
     <h3>Reset Password</h3>
-    <p>Enter your username and email to reset your password.</p>
+    <p id="reset_blurb">Enter your username and email. We will email you a link to set a new password.</p>
     <div class="field" style="text-align:left;margin-bottom:9px"><label>Username</label><input type="text" id="reset_user" placeholder="Your username"></div>
     <div class="field" style="text-align:left;margin-bottom:14px"><label>Email Address</label><input type="text" id="reset_email" placeholder="Your email"></div>
     <div id="reset_new_pass" style="display:none">
@@ -644,7 +662,7 @@ else setupEverCarePWA();
     </div>
     <div id="reset_verify_btn" style="display:flex;gap:8px;justify-content:center">
       <button class="mbtn mbtn-cancel" onclick="closeModal('resetModal')">Cancel</button>
-      <button class="mbtn mbtn-confirm" onclick="verifyReset()">Verify →</button>
+      <button class="mbtn mbtn-confirm" id="resetVerifyBtn" onclick="verifyReset()">Send reset link →</button>
     </div>
     <div style="color:var(--danger);font-size:0.73rem;margin-top:7px;display:none" id="resetErr"></div>
   </div>
@@ -1086,7 +1104,8 @@ function switchTab(tab){
 
 // AUTH
 
-// Friday GO 2026-09-24 cut, offline save queue v=offline1. Default true.
+// Friday GO 2026-09-24 cut (v=sbseal1). Default true. No new Ace RPC.
+// Offline Save Day queue (v=offline1) flushes through Supabase when a caregiver JWT is valid.
 // Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
 // Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
 // surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
@@ -1175,6 +1194,26 @@ function sbWorkingEmail(submitted,authEmail,aideEmail){
   if(cur)return cur;
   return auth;
 }
+// Anon lookup shared by sign-in and forgot-password. Returns the Auth email, or ''.
+// HTTP and shape failures throw login_failed so callers do not treat a bad body as a match.
+async function resolveAideAuthEmail(username){
+  const user=String(username||'').trim().toLowerCase();
+  if(!user){
+    const miss=new Error('login_failed');
+    throw miss;
+  }
+  const rpcRes=await fetch(SUPABASE_URL+'/rest/v1/rpc/resolve_username_email',{
+    method:'POST',
+    headers:sbAnonHeaders(),
+    body:JSON.stringify({p_username:user,p_org_slug:'evercare'})
+  });
+  const rpc=await sbRead(rpcRes);
+  if(!rpc.ok||!rpc.parsed||(rpc.data!=null&&typeof rpc.data!=='string')){
+    const rpcErr=new Error('login_failed');
+    throw rpcErr;
+  }
+  return rpc.data==null?'':String(rpc.data).trim();
+}
 // Default cut: this is the real sign-in. RPC → password grant → own aides row.
 // Blank aides.email still sets needsEmail. Failures throw so Sign In stays on the same error.
 async function loginAideWithSupabase(username,password){
@@ -1183,22 +1222,12 @@ async function loginAideWithSupabase(username,password){
     const miss=new Error('login_failed');
     throw miss;
   }
-  const headers=sbAnonHeaders();
-  const rpcRes=await fetch(SUPABASE_URL+'/rest/v1/rpc/resolve_username_email',{
-    method:'POST',
-    headers:headers,
-    body:JSON.stringify({p_username:user,p_org_slug:'evercare'})
-  });
-  const rpc=await sbRead(rpcRes);
-  if(!rpc.ok||!rpc.parsed||(rpc.data!=null&&typeof rpc.data!=='string')){
-    const rpcErr=new Error('login_failed');
-    throw rpcErr;
-  }
-  const email=rpc.data==null?'':String(rpc.data).trim();
+  const email=await resolveAideAuthEmail(user);
   if(!email){
     const noEmail=new Error('login_failed');
     throw noEmail;
   }
+  const headers=sbAnonHeaders();
   const authRes=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
     method:'POST',
     headers:headers,
@@ -1362,6 +1391,12 @@ async function doSignup(){
   const code=document.getElementById('s_code').value.trim();
   const err=document.getElementById('signupErr');
   if(!name||!user||!email||!pass||!code){err.textContent='Please fill in all fields.';err.style.display='block';return;}
+  // Cut default: aides are office-provisioned. Do not create an Auth user here and do not write a Sheets-only password.
+  if(evercareSbEnabled()){
+    err.textContent='Accounts are created by the office. Contact your manager.';
+    err.style.display='block';
+    return;
+  }
   if(code!==OFFICE_CODE){err.textContent='Invalid office code. Contact your manager.';err.style.display='block';return;}
   const btn=document.getElementById('signupBtn');btn.textContent='Creating...';btn.disabled=true;
   try{
@@ -2811,24 +2846,177 @@ function restoreHdrSigs(ts){
 
 
 // RESET PASSWORD
+// Cut default, no new RPC: resolve_username_email, then POST /auth/v1/recover
+// (resetPasswordForEmail) to this page. The recovery session PUT /auth/v1/user.
+// Logged-in setup also uses that user update only. Office temp-password reset is not called.
+// Sheets verify_reset / reset_password run only when evercareSbEnabled() is false.
+function aideEmailsMatch(resolved,entered){
+  const got=String(resolved||'').trim().toLowerCase();
+  const want=String(entered||'').trim().toLowerCase();
+  return !!got&&!!want&&got===want;
+}
+function caregiverRecoverRedirect(){
+  try{
+    const origin=String((typeof location!=='undefined'&&location&&location.origin)||'');
+    const path=String((typeof location!=='undefined'&&location&&location.pathname)||'/');
+    if(!origin||origin==='null')return '';
+    return origin+path;
+  }catch(e){return '';}
+}
+async function sendAideRecoveryEmail(email){
+  const addr=String(email||'').trim();
+  if(!addr)throw new Error('Username and email do not match.');
+  let url=SUPABASE_URL+'/auth/v1/recover';
+  const redirect=caregiverRecoverRedirect();
+  if(redirect)url+='?redirect_to='+encodeURIComponent(redirect);
+  const pack=await sbRead(await fetch(url,{
+    method:'POST',
+    headers:sbAnonHeaders(),
+    body:JSON.stringify({email:addr})
+  }));
+  if(!pack.ok)throw new Error(sbErrMsg(pack,'Could not send the reset email.'));
+  return true;
+}
+function sbReadAuthParams(raw){
+  const q=new URLSearchParams(String(raw||'').replace(/^[#?]/,''));
+  const type=String(q.get('type')||'').toLowerCase();
+  const token=String(q.get('access_token')||'').trim();
+  if(type!=='recovery'||!token)return null;
+  return {
+    access_token:token,
+    refresh_token:String(q.get('refresh_token')||''),
+    expires_in:Number(q.get('expires_in')||0),
+    expires_at:Number(q.get('expires_at')||0)
+  };
+}
+function sbTakeRecoverySession(){
+  let found=null;
+  try{found=sbReadAuthParams(location.hash);}catch(e){}
+  if(!found){
+    try{found=sbReadAuthParams(location.search);}catch(e2){}
+  }
+  if(!found)return null;
+  try{
+    const path=String((location&&location.pathname)||'/');
+    const search=new URLSearchParams(String((location&&location.search)||'').replace(/^\?/,''));
+    ['access_token','refresh_token','expires_in','expires_at','token_type','type'].forEach(function(k){search.delete(k);});
+    const qs=search.toString();
+    history.replaceState(null,'',path+(qs?('?'+qs):''));
+  }catch(e3){}
+  return found;
+}
+function showRecoveryPasswordScreen(){
+  document.querySelectorAll('.modal-bg.show').forEach(function(m){m.classList.remove('show');});
+  if(typeof unlockBodyScroll==='function')unlockBodyScroll();
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  const el=document.getElementById('recoveryScreen');
+  if(el)el.classList.add('active');
+  const err=document.getElementById('recoveryErr');
+  if(err){err.textContent='';err.style.display='none';}
+  const pass=document.getElementById('recovery_pass');
+  const confirm=document.getElementById('recovery_confirm');
+  if(pass)pass.value='';
+  if(confirm)confirm.value='';
+}
+function cancelRecoveryPassword(){
+  window.__sbRecovery=null;
+  showScreen('authScreen');
+}
+async function clearAideMustChangeAfterRecovery(token){
+  const uid=sbJwtSub(token);
+  if(!uid)return;
+  const aideUrl=SUPABASE_URL+'/rest/v1/aides?select='+encodeURIComponent('id')+'&profile_id=eq.'+encodeURIComponent(uid)+'&is_active=eq.true&limit=1';
+  const aidePack=await sbRead(await fetch(aideUrl,{method:'GET',headers:sbUserHeaders(token)}));
+  const row=aidePack.ok&&Array.isArray(aidePack.data)?aidePack.data[0]:null;
+  if(!row||!row.id)return;
+  await sbRead(await fetch(SUPABASE_URL+'/rest/v1/aides?id=eq.'+encodeURIComponent(row.id),{
+    method:'PATCH',
+    headers:Object.assign(sbUserHeaders(token),{Prefer:'return=minimal'}),
+    body:JSON.stringify({must_change_password:false})
+  }));
+}
+async function submitRecoveryPassword(){
+  const pass=((document.getElementById('recovery_pass')||{}).value)||'';
+  const confirm=((document.getElementById('recovery_confirm')||{}).value)||'';
+  const err=document.getElementById('recoveryErr');
+  const btn=document.getElementById('recoveryBtn');
+  const showErr=function(msg){if(err){err.textContent=msg;err.style.display='block';}};
+  if(!pass||!confirm){showErr('Please fill in all fields.');return;}
+  if(pass!==confirm){showErr('Passwords do not match.');return;}
+  const sess=window.__sbRecovery;
+  const token=sess&&sess.access_token;
+  if(!token){showErr('That reset link has expired. Request a new one.');return;}
+  if(btn){btn.disabled=true;btn.textContent='Saving...';}
+  try{
+    const upd=await sbRead(await fetch(SUPABASE_URL+'/auth/v1/user',{
+      method:'PUT',
+      headers:sbUserHeaders(token),
+      body:JSON.stringify({password:pass})
+    }));
+    if(!upd.ok)throw new Error(sbErrMsg(upd,'Could not update the password.'));
+    try{await clearAideMustChangeAfterRecovery(token);}catch(ignore){}
+    window.__sbRecovery=null;
+    if(err)err.style.display='none';
+    showTempMsg('Password updated. Please log in.','var(--success)');
+    showScreen('authScreen');
+  }catch(e){
+    showErr((e&&e.message)||'Could not update the password.');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Save password';}
+  }
+}
 function showResetModal(){
   document.getElementById('reset_user').value='';document.getElementById('reset_email').value='';
   if(document.getElementById('reset_newpwd'))document.getElementById('reset_newpwd').value='';
   document.getElementById('reset_new_pass').style.display='none';document.getElementById('reset_verify_btn').style.display='flex';document.getElementById('resetErr').style.display='none';
+  const blurb=document.getElementById('reset_blurb');
+  const verifyBtn=document.getElementById('resetVerifyBtn');
+  const cut=evercareSbEnabled();
+  if(blurb)blurb.textContent=cut?'Enter your username and email. We will email you a link to set a new password.':'Enter your username and email to reset your password.';
+  if(verifyBtn)verifyBtn.textContent=cut?'Send reset link →':'Verify →';
   openModal('resetModal');
 }
 async function verifyReset(){
   const user=document.getElementById('reset_user').value.trim().toLowerCase(),email=document.getElementById('reset_email').value.trim().toLowerCase(),err=document.getElementById('resetErr');
+  const verifyBtn=document.getElementById('resetVerifyBtn');
   try{
+    if(evercareSbEnabled()){
+      if(verifyBtn){verifyBtn.disabled=true;verifyBtn.textContent='Sending...';}
+      const resolved=await resolveAideAuthEmail(user);
+      if(!aideEmailsMatch(resolved,email)){
+        err.textContent='Username and email do not match.';
+        err.style.display='block';
+        return;
+      }
+      await sendAideRecoveryEmail(resolved);
+      err.style.display='none';
+      closeModal('resetModal');
+      showTempMsg('Check your email for a link to set a new password.','var(--success)');
+      return;
+    }
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'verify_reset',username:user,email})});
     const data=await res.json();
     if(data.success){document.getElementById('reset_new_pass').style.display='block';document.getElementById('reset_verify_btn').style.display='none';err.style.display='none';}
     else{err.textContent='Username and email do not match.';err.style.display='block';}
-  }catch(e){err.textContent='Network error.';err.style.display='block';}
+  }catch(e){
+    if(evercareSbEnabled()){
+      const raw=(e&&e.message)||'';
+      err.textContent=raw==='login_failed'?'Network error.':(raw||'Network error.');
+    }else{
+      err.textContent='Network error.';
+    }
+    err.style.display='block';
+  }finally{
+    if(verifyBtn&&evercareSbEnabled()){verifyBtn.disabled=false;verifyBtn.textContent='Send reset link →';}
+  }
 }
 async function doResetPassword(){
-  const user=document.getElementById('reset_user').value.trim().toLowerCase(),newpwd=document.getElementById('reset_newpwd').value;
+  const user=document.getElementById('reset_user').value.trim().toLowerCase(),newpwd=document.getElementById('reset_newpwd').value,err=document.getElementById('resetErr');
   if(!newpwd){alert('Enter new password.');return;}
+  if(evercareSbEnabled()){
+    if(err){err.textContent='Open the link in your email to set a new password.';err.style.display='block';}
+    return;
+  }
   try{await apiPost({action:'reset_password',username:user,password:newpwd});cacheInvalidate('get_users');}catch(e){}
   closeModal('resetModal');showTempMsg('✅ Password reset! Please log in.','var(--success)');
 }
@@ -5748,6 +5936,12 @@ window.addEventListener('load',()=>{
     return;
   }
   syncStorage();
+  const recovery=sbTakeRecoverySession();
+  if(recovery&&recovery.access_token){
+    window.__sbRecovery=recovery;
+    showRecoveryPasswordScreen();
+    return;
+  }
   if(restoreCgSession()){
     if(evercareSbEnabled()&&!(currentUser&&currentUser.sbAccessToken))caregiverLogout();
     else afterLogin();

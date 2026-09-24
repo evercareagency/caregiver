@@ -30,6 +30,9 @@ function extractConst(name){
   return html.slice(start, end + 2);
 }
 
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-sb-seal v=sbseal1 —'), 'sealed build marker');
+assert.ok(html.includes('v=sbseal1'), 'probe marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-seal">'), 'sealed build meta');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-offline-save v=offline1 —'), 'offline build marker');
 assert.ok(html.includes('v=offline1'), 'probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-offline-save">'), 'offline build meta');
