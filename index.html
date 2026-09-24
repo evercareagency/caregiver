@@ -3775,22 +3775,9 @@ function sbTimesheetToBackup(row){
 async function sbListTimesheetsForHome(){
   const select='id,aide_id,client_id,username,emp_name,client_name,svc_type,week_start,total_hours,notes,days,status,is_active,updated_at';
   const backups=await sbRest('timesheets?select='+encodeURIComponent(select)+'&is_active=eq.true&status=eq.backup&order=updated_at.desc');
-  let weekRows=[];
-  const week=typeof currentWeekSunday==='function'?currentWeekSunday():'';
-  if(week){
-    try{
-      weekRows=await sbRest('timesheets?select='+encodeURIComponent(select)+'&is_active=eq.true&week_start=eq.'+encodeURIComponent(week)+'&order=updated_at.desc');
-    }catch(e){weekRows=[];}
-  }
-  const seen={};
-  const merged=[];
-  (Array.isArray(backups)?backups:[]).concat(Array.isArray(weekRows)?weekRows:[]).forEach(function(row){
-    if(!row||!row.id||seen[row.id])return;
-    const st=String(row.status||'').toLowerCase();
-    if(st!=='backup'&&st!=='draft')return;
-    seen[row.id]=1;
-    merged.push(sbTimesheetToBackup(row));
-  });
+  const merged=(Array.isArray(backups)?backups:[]).filter(function(row){
+    return row&&row.id&&String(row.status||'').toLowerCase()==='backup';
+  }).map(sbTimesheetToBackup);
   return {success:true,data:merged};
 }
 function sbDayWire(day){
@@ -3812,6 +3799,36 @@ function sbDayWire(day){
   if(day.verified!=null)out.verified=day.verified;
   if(day.distanceFt!=null)out.distanceFt=day.distanceFt;
   if(day.distanceMi!=null)out.distanceMi=day.distanceMi;
+  else if(day.distanceFt!=null&&isFinite(Number(day.distanceFt)))out.distanceMi=Math.round(Number(day.distanceFt)/5280*100)/100;
+  return out;
+}
+function sbWeekSunday(value){
+  const s=String(value||'').trim().slice(0,10);
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if(!m)return s;
+  const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));
+  if(isNaN(d.getTime()))return s;
+  d.setDate(d.getDate()-d.getDay());
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function sbDayIndex(key){
+  const nameToIdx={sun:0,sunday:0,mon:1,monday:1,tue:2,tues:2,tuesday:2,wed:3,wednesday:3,thu:4,thur:4,thurs:4,thursday:4,fri:5,friday:5,sat:6,saturday:6};
+  const s=String(key==null?'':key).trim();
+  if(/^[0-6]$/.test(s))return s;
+  if(/^\d+$/.test(s)){
+    const n=Number(s);
+    if(n>=0&&n<=6)return String(n);
+  }
+  const mapped=nameToIdx[s.toLowerCase()];
+  return mapped==null?null:String(mapped);
+}
+function sbNormalizeDays(days){
+  const out={};
+  Object.keys(days||{}).forEach(function(k){
+    const idx=sbDayIndex(k);
+    if(idx==null)return;
+    out[idx]=Object.assign({},out[idx]||{},sbDayWire(days[k]));
+  });
   return out;
 }
 async function sbFindWeekRow(aideId,clientId,weekStart,status){
@@ -3835,18 +3852,14 @@ async function sbUpsertTimesheet(opts){
   opts=opts||{};
   const aideId=currentUser&&currentUser.sbAideId;
   const clientId=opts.clientId;
-  const weekStart=opts.weekStart;
+  const weekStart=sbWeekSunday(opts.weekStart);
   const status=opts.status==='submitted'?'submitted':'backup';
   if(!aideId||!clientId||!weekStart)throw new Error('Choose a client and week before saving.');
   const orgId=await sbEnsureOrgId();
   const header=opts.header||{};
-  const incoming=opts.days||{};
+  const incoming=sbNormalizeDays(opts.days||{});
   const existing=await sbFindWeekRow(aideId,clientId,weekStart,'');
-  if(existing&&existing.id&&status!=='submitted'){
-    const st=String(existing.status||'').toLowerCase();
-    if(st&&st!=='backup'&&st!=='draft')throw new Error('That week is already submitted.');
-  }
-  const days=status==='submitted'?incoming:sbMergeDays(existing&&existing.days,incoming);
+  const days=status==='submitted'?incoming:sbMergeDays(sbNormalizeDays(existing&&existing.days),incoming);
   const body={
     days:days,
     total_hours:header.total_hours||'',
@@ -3890,9 +3903,6 @@ async function sbUpsertTimesheet(opts){
     if(!sbIsConflict(err))throw err;
     const again=await sbFindWeekRow(aideId,clientId,weekStart,'');
     if(!again||!again.id)throw err;
-    if(status!=='submitted'&&again.status&&String(again.status).toLowerCase()!=='backup'&&String(again.status).toLowerCase()!=='draft'){
-      throw new Error('That week is already submitted.');
-    }
     const retry=Object.assign({},body);
     delete retry.org_id;delete retry.aide_id;delete retry.client_id;delete retry.week_start;delete retry.is_active;
     if(status==='submitted'){

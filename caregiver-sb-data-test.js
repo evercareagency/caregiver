@@ -49,6 +49,9 @@ const src = [
   extractFn(html, 'function sbDayWire(day)'),
   extractFn(html, 'async function sbFindWeekRow(aideId,clientId,weekStart,status)'),
   extractFn(html, 'function sbMergeDays(base,incoming)'),
+  extractFn(html, 'function sbWeekSunday(value)'),
+  extractFn(html, 'function sbDayIndex(key)'),
+  extractFn(html, 'function sbNormalizeDays(days)'),
   extractFn(html, 'async function sbUpsertTimesheet(opts)'),
   extractFn(html, 'async function sbSoftDeleteBackup(id)'),
   extractFn(html, 'function sbAnswerList(raw)'),
@@ -152,7 +155,10 @@ function run(opts){
   });
   const home = await vm.runInContext('sbListTimesheetsForHome()', lists);
   assert.strictEqual(home.success, true);
-  assert.strictEqual(JSON.stringify(Array.prototype.map.call(home.data, function(row){return row.id;})), JSON.stringify(['bak-1','dr-1']));
+  assert.strictEqual(lists.calls.length, 1, 'get_my_backups is the backup select only');
+  assert.ok(lists.calls[0].url.indexOf('status=eq.backup')>=0);
+  assert.ok(lists.calls[0].url.indexOf('is_active=eq.true')>=0);
+  assert.strictEqual(JSON.stringify(Array.prototype.map.call(home.data, function(row){return row.id;})), JSON.stringify(['bak-1']));
   assert.strictEqual(home.data[0].clientName, 'Ada Client');
   assert.strictEqual(home.data[0].clientId, 'c-1');
   assert.strictEqual(home.data[0].weekStart, '2026-09-13');
@@ -167,7 +173,7 @@ function run(opts){
       res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-1', status:'backup'}])}
     }]
   });
-  const merged = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"backup",days:{"1":{tin:"09:00",tout:"12:00",svcs:["Dressing"]}},header:{total_hours:"4:00",emp_name:"Aide One",client_name:"Ada Client",username:"aide.one",svc_type:"Personal Care/Home Making"}})', merge);
+  const merged = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-23",status:"backup",days:{"Mon":{in:"09:00",out:"12:00",svcs:["Dressing"]}},header:{total_hours:"4:00",emp_name:"Aide One",client_name:"Ada Client",username:"aide.one",svc_type:"Personal Care/Home Making"}})', merge);
   assert.strictEqual(merged.id, 'ts-1');
   const patch = merge.calls.find(function(c){return c.init.method === 'PATCH';});
   assert.ok(patch, 'existing backup is patched');
@@ -176,6 +182,9 @@ function run(opts){
   assert.strictEqual(patchBody.days['0'].tin, '08:00', 'earlier day is kept');
   assert.deepStrictEqual(patchBody.days['0'].svcs, ['Bathing']);
   assert.strictEqual(patchBody.days['1'].tin, '09:00');
+  assert.strictEqual(patchBody.days['1'].tout, '12:00');
+  assert.strictEqual(patchBody.days.Mon, undefined);
+  assert.ok(decodeURIComponent(merge.calls[0].url).indexOf('week_start=eq.2026-09-20')>=0, 'week_start is the Sunday of that week');
   assert.strictEqual(patchBody.total_hours, '4:00');
   assert.strictEqual(patchBody.emp_name, 'Aide One');
   assert.strictEqual(patchBody.status, 'backup');
@@ -229,14 +238,19 @@ function run(opts){
   const clash = run({
     routes:[{
       test:/limit=1/,
-      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'submitted', days:{}}])}
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'submitted', days:{'0':{tin:'08:00'}}}])}
+    },{
+      test:/\/timesheets\?id=eq\.ts-sub/,
+      res:{ok:true, status:200, raw:JSON.stringify([{id:'ts-sub', status:'backup'}])}
     }]
   });
-  await assert.rejects(
-    function(){return vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"backup",days:{"0":{tin:"08:00"}},header:{}})', clash);},
-    /already submitted/
-  );
-  assert.ok(!clash.calls.some(function(c){return c.init.method==='POST'||c.init.method==='PATCH';}), 'save day does not write over a submitted week');
+  const remarked = await vm.runInContext('sbUpsertTimesheet({clientId:"c-1",weekStart:"2026-09-20",status:"backup",days:{"0":{tin:"08:00"}},header:{}})', clash);
+  assert.strictEqual(remarked.id, 'ts-sub');
+  const remarkBody = JSON.parse(clash.calls.find(function(c){return c.init.method==='PATCH';}).init.body);
+  assert.strictEqual(remarkBody.status, 'backup');
+  assert.strictEqual(remarkBody.submitted_at, null);
+  assert.strictEqual(remarkBody.days['0'].tin, '08:00');
+  assert.ok(!clash.calls.some(function(c){return c.init.method==='POST';}), 'save day updates the active week row');
 
   // GHOST-CAREGIVER-DUAL-WRITE-CONTRACT-v1: soft-delete is PATCH is_active=false, not DELETE.
   const removed = run({
