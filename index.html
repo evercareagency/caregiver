@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-24-pw-reset-ux">
 <meta name="caregiver-build" content="2026-09-24-is-assign-unlock">
 <meta name="caregiver-build" content="2026-09-24-aide-portal">
 <meta name="caregiver-build" content="2026-09-24-is-hydrate">
@@ -14,6 +15,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-24-pw-reset-ux v=pwreset1 — Friday GO 2026-09-24. After the email link saves a new password (PUT /auth/v1/user on the recovery session), the reset page stays on “Password saved”. Primary button “Open ECA Aide Portal” goes to the LIVE Pages login https://evercareagency.github.io/caregiver/ . On caregiver Pages, including a tip preview, that button uses location.origin+pathname instead, so the preview login still opens. Forgot redirect_to stays location.origin+pathname (LIVE host, not a localhost redirect). The page follows that login after about 3 seconds. Soft copy: if you use the app icon on your phone, open it from there after this. No Universal Links. v=portal1 and the Ace Auth recovery path stay. -->
 <!-- caregiver-build: 2026-09-24-is-assign-unlock v=isassign1 — Friday GO 2026-09-24. My Inservices unlock and the home due-this-month banner read aide-JWT POST /rest/v1/rpc/my_inservice_topics (a set of topic_id strings). A topic in that set with no Active completion is startable. Completed still hydrates from inservice_results (v=ishydr1). Sheets get_assigned_topic and get_is_reminder are not on the unlock path. Aides still have no Print or View Certificate. v=portal1, ishydr1, cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-aide-portal v=portal1 — Friday GO 2026-09-24. Visible chrome is ECA Aide Portal (title, login headers, home header, PWA name and short_name). Bottom nav is Home, Timesheet, Inservices, More. Clients stay on Home only. Deleting a draft asks first. Client and aide signatures use Confirm and Redo, and each one asks before it keeps or clears the ink. Stay-logged-in TTL is CG_SESSION_MS (8 hours from loginAt). A foreground check clears the session and returns to login when that window ends. Icons A defaults: PORTAL_MARK_HANDS (teal hands+heart) and PORTAL_MARK_CLIPBOARD (navy clipboard). Same drawings live in brand/eca-hands-heart.svg and brand/eca-clipboard.svg for a later pass. The login photo is unchanged. v=cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-is-hydrate v=ishydr1 — Friday GO 2026-09-24. My Inservices hydrates Completed from inservice_results with the aide JWT (username + topic_id) before the list paints. Badge and date come from that row when the office has one. The phone store stays as a cache and in-progress answers are kept. Aides still have no Print or View Certificate. v=cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -84,6 +86,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal);}
 textarea{resize:vertical;min-height:68px;}
 .auth-err{color:var(--danger);font-size:0.75rem;margin-top:6px;display:none;}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;}
+a.btn{text-decoration:none;}
 .btn-teal{background:var(--teal);color:white;}
 .btn-teal:hover{background:var(--teal-dark);}
 .btn-navy{background:var(--navy);color:white;}
@@ -433,13 +436,21 @@ else setupEverCarePWA();
   <div class="auth-title" style="margin-top:8px">ECA Aide Portal</div>
   <div class="auth-sub">RESET PASSWORD</div>
   <div class="auth-box">
-    <h2>Set a new password</h2>
-    <p>This link is from your reset email. Choose the password you will use to sign in.</p>
-    <div class="field"><label>New password</label><input type="password" id="recovery_pass" placeholder="Choose a new password" autocomplete="new-password"></div>
-    <div class="field"><label>Confirm new password</label><input type="password" id="recovery_confirm" placeholder="Re-enter new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitRecoveryPassword()"></div>
-    <button class="btn btn-teal btn-full" onclick="submitRecoveryPassword()" id="recoveryBtn">Save password</button>
-    <div class="auth-err" id="recoveryErr"></div>
-    <div style="text-align:center;margin-top:12px"><button type="button" onclick="cancelRecoveryPassword()" style="background:none;border:none;color:var(--teal);font-size:0.76rem;cursor:pointer;text-decoration:underline">Back to sign in</button></div>
+    <div id="recoveryForm">
+      <h2>Set a new password</h2>
+      <p>This link is from your reset email. Choose the password you will use to sign in.</p>
+      <div class="field"><label>New password</label><input type="password" id="recovery_pass" placeholder="Choose a new password" autocomplete="new-password"></div>
+      <div class="field"><label>Confirm new password</label><input type="password" id="recovery_confirm" placeholder="Re-enter new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitRecoveryPassword()"></div>
+      <button class="btn btn-teal btn-full" onclick="submitRecoveryPassword()" id="recoveryBtn">Save password</button>
+      <div class="auth-err" id="recoveryErr"></div>
+      <div style="text-align:center;margin-top:12px"><button type="button" onclick="cancelRecoveryPassword()" style="background:none;border:none;color:var(--teal);font-size:0.76rem;cursor:pointer;text-decoration:underline">Back to sign in</button></div>
+    </div>
+    <div id="recoveryDone" style="display:none">
+      <h2 id="recoveryDoneTitle" style="color:var(--success)">Password saved</h2>
+      <p>Sign in with your new password.</p>
+      <a class="btn btn-teal btn-full" id="recoveryOpenPortal" href="https://evercareagency.github.io/caregiver/" onclick="openCaregiverLogin();return false;">Open ECA Aide Portal</a>
+      <p id="recoveryDoneHint" style="margin-top:14px;margin-bottom:0">If you use the app icon on your phone, open it from there after this</p>
+    </div>
   </div>
 </div>
 
@@ -3193,7 +3204,66 @@ function sbTakeRecoverySession(){
   }catch(e3){}
   return found;
 }
+function clearPwResetRedirect(){
+  const id=window.__pwResetRedirect;
+  window.__pwResetRedirect=null;
+  if(id&&typeof clearTimeout==='function'){
+    try{clearTimeout(id);}catch(e){}
+  }
+}
+function caregiverLoginUrl(){
+  const live='https://evercareagency.github.io/caregiver/';
+  try{
+    const origin=String((typeof location!=='undefined'&&location&&location.origin)||'');
+    const path=String((typeof location!=='undefined'&&location&&location.pathname)||'/');
+    let host=String((typeof location!=='undefined'&&location&&location.host)||'').toLowerCase();
+    if(!host&&origin&&origin!=='null')host=origin.replace(/^https?:\/\//,'').split('/')[0].toLowerCase();
+    const local=!host||host==='localhost'||host.indexOf('localhost:')===0||host.indexOf('127.0.0.1')===0||host.indexOf('[::1]')===0||origin==='null'||!origin;
+    if(!local)return origin+path;
+  }catch(e){}
+  return live;
+}
+function openCaregiverLogin(){
+  clearPwResetRedirect();
+  window.__sbRecovery=null;
+  const login=caregiverLoginUrl();
+  try{
+    if(login&&typeof location!=='undefined'&&location){
+      const origin=String(location.origin||'');
+      const path=String(location.pathname||'/');
+      const search=String(location.search||'');
+      const hash=String(location.hash||'');
+      const same=origin&&origin!=='null'&&login===origin+path&&!search&&!hash;
+      if(same&&typeof location.reload==='function'){
+        location.reload();
+        return;
+      }
+      if(typeof location.assign==='function'){
+        location.assign(login);
+        return;
+      }
+      location.href=login;
+      return;
+    }
+  }catch(e){}
+  if(typeof showScreen==='function')showScreen('authScreen');
+}
+function showRecoveryPasswordSaved(){
+  const form=document.getElementById('recoveryForm');
+  const done=document.getElementById('recoveryDone');
+  if(form)form.style.display='none';
+  if(done)done.style.display='block';
+  const link=document.getElementById('recoveryOpenPortal');
+  const login=caregiverLoginUrl();
+  if(link)link.href=login||'https://evercareagency.github.io/caregiver/';
+  window.__sbRecovery=null;
+  clearPwResetRedirect();
+  if(typeof setTimeout==='function'){
+    window.__pwResetRedirect=setTimeout(openCaregiverLogin,3000);
+  }
+}
 function showRecoveryPasswordScreen(){
+  clearPwResetRedirect();
   document.querySelectorAll('.modal-bg.show').forEach(function(m){m.classList.remove('show');});
   if(typeof unlockBodyScroll==='function')unlockBodyScroll();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
@@ -3205,8 +3275,15 @@ function showRecoveryPasswordScreen(){
   const confirm=document.getElementById('recovery_confirm');
   if(pass)pass.value='';
   if(confirm)confirm.value='';
+  const form=document.getElementById('recoveryForm');
+  const done=document.getElementById('recoveryDone');
+  if(form)form.style.display='';
+  if(done)done.style.display='none';
+  const btn=document.getElementById('recoveryBtn');
+  if(btn){btn.disabled=false;btn.textContent='Save password';}
 }
 function cancelRecoveryPassword(){
+  clearPwResetRedirect();
   window.__sbRecovery=null;
   showScreen('authScreen');
 }
@@ -3235,6 +3312,7 @@ async function submitRecoveryPassword(){
   const token=sess&&sess.access_token;
   if(!token){showErr('That reset link has expired. Request a new one.');return;}
   if(btn){btn.disabled=true;btn.textContent='Saving...';}
+  let saved=false;
   try{
     const upd=await sbRead(await fetch(SUPABASE_URL+'/auth/v1/user',{
       method:'PUT',
@@ -3245,12 +3323,12 @@ async function submitRecoveryPassword(){
     try{await clearAideMustChangeAfterRecovery(token);}catch(ignore){}
     window.__sbRecovery=null;
     if(err)err.style.display='none';
-    showTempMsg('Password updated. Please log in.','var(--success)');
-    showScreen('authScreen');
+    showRecoveryPasswordSaved();
+    saved=true;
   }catch(e){
     showErr((e&&e.message)||'Could not update the password.');
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='Save password';}
+    if(btn&&!saved){btn.disabled=false;btn.textContent='Save password';}
   }
 }
 function showResetModal(){
