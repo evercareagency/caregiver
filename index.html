@@ -6175,7 +6175,9 @@ function sbInserviceTopicSet(raw){
   walk(raw);
   return set;
 }
-// Aide JWT. Ace scopes ALL (aide_usernames null) and SELECTED (username in the array). No Sheets topic id.
+// GHOST-INSERVICE-TOPIC-ASSIGNMENT-CONTRACT-v1 §4. Aide JWT.
+// my_inservice_topics() returns topic_id, updated_at, topic_title.
+// NULL aide_usernames = ALL, {} = nobody, non-empty = SELECTED. Ace scopes the rows. Empty array assigns nothing.
 async function sbMyInserviceTopics(){
   if(typeof sbDataEnabled!=='function'||!sbDataEnabled())return new Set();
   try{

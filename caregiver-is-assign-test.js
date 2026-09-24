@@ -103,7 +103,11 @@ function cardsOf(htmlText){
   const shapes = [
     ['2', '5'],
     [{topic_id:'2'}, {topic_id:5}],
-    {topic_ids:['2', '5']}
+    {topic_ids:['2', '5']},
+    [
+      {topic_id:'2', updated_at:'2026-09-24T13:00:00.000Z', topic_title:null},
+      {topic_id:'5', updated_at:'2026-09-24T13:30:00.000Z', topic_title:null}
+    ]
   ];
   for(let i = 0; i < shapes.length; i++){
     const box = boot({rows: shapes[i]});
@@ -121,6 +125,13 @@ function cardsOf(htmlText){
     assert.strictEqual(box.calls[0].req.method, 'POST');
     assert.strictEqual(JSON.stringify(box.calls[0].req.body), '{}');
   }
+
+  const contractRows = boot({rows:[
+    {topic_id:'2', updated_at:'2026-09-24T13:00:00.000Z', topic_title:null},
+    {topic_id:'5', updated_at:'2026-09-24T13:30:00.000Z', topic_title:null}
+  ]});
+  const ids = await vm.runInContext('sbMyInserviceTopics().then(function(set){return Array.from(set).sort();})', contractRows);
+  assert.strictEqual(JSON.stringify(ids), JSON.stringify(['2', '5']), 'table rows yield topic ids only');
 
   const done = boot({
     rows: ['2', '5'],
