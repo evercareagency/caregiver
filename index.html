@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-coveraide2">
 <meta name="caregiver-build" content="2026-09-25-cgacct1">
 <meta name="caregiver-build" content="2026-09-25-cgsave1">
 <meta name="caregiver-build" content="2026-09-25-coveraide1">
@@ -31,6 +32,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-coveraide2 v=coveraide2 — Friday GO 2026-09-25. Home Call off (#callOffHomeBtn) still opens #callOffScreen. One Submit tap sends one POST /rest/v1/rpc/aide_record_call_off. The button disables on that tap and an in-flight guard ignores a second tap or ghost click, so the write path does not fire twice. Ace GHOST-COVERAIDE2-CONTRACT-v1 is CALLABLE (patches/coveraide2-v1.sql): a double-fire returns idempotent true and one open row. The list stays POST /rest/v1/rpc/aide_list_my_call_offs {p_include_resolved:false}. Ace returns source aide only. This screen still drops any row whose source is not exactly aide, so Office and admin-on-behalf stay off Your call-offs. Admin Coverage still uses admin_list_open_shifts and is not changed here. Account stays v=cgacct1 (no Call off, no Backup). No PTO. No Auth reseal. v=cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgacct1 v=cgacct1 — Friday GO 2026-09-25. Account (#moreScreen) no longer shows Call off or Back up this week's draft. Those stay on Home (#callOffHomeBtn and #cgBackupBtn). Account still shows the aide name, the 8-hour stay-signed-in note, Log out, and the office phone plus Home and Timesheet help. Auth, passwords, and Save Day (v=cgsave1) are unchanged. v=cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsave1 v=cgsave1 — Friday GO 2026-09-25. Save Day targets the day named on the button (the day with pending edits) even when that day's accordion is collapsed. Collapse only hides the row. Times, signatures, and services stay in the day model and in the inputs that remain on the page, and validation reads those. The collapsed label shows Filled, Signed, or Filled · Signed when that day has times and/or signatures, instead of Not filled. Phone layout keeps the Save control and day status readable and tappable. v=coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-coveraide1 v=coveraide1 — Friday GO 2026-09-25. Home Call off (#callOffHomeBtn) and More open #callOffScreen. The aide picks an upcoming client or saved shift, may add a reason, and taps Submit. Confirmation says Submitted with status Open, then lists only that aide's call-offs (local key evercare_coveraide1_ plus username). Open-shift source is exactly aide or office. This portal records source aide. GHOST-COVERAIDE1-CONTRACT-v1 is CALLABLE. Submit POSTs /rest/v1/rpc/aide_record_call_off {p_client_id, p_shift_start, p_shift_end, p_reason:null when blank}. The list POSTs /rest/v1/rpc/aide_list_my_call_offs {p_include_resolved:false}. Source is exactly aide or office. This portal records aide. It does not call the office record path. A shift whose end has already passed is not sent. No PTO. v=cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -296,6 +298,10 @@ body.has-bottom-nav footer{margin-bottom:76px;}
 .calloff-chip-aide{background:#e7eef9;color:var(--navy);}
 .calloff-chip-office{background:var(--teal-light);color:var(--teal-dark);}
 .calloff-err{color:var(--danger);font-size:0.95rem;font-weight:700;line-height:1.4;margin:0 0 10px;}
+#callOffSubmitBtn{touch-action:manipulation;min-height:52px;font-size:1rem;width:100%;justify-content:center;}
+#callOffSubmitBtn:disabled{background:#8aa4a4;color:#fff;cursor:not-allowed;}
+.calloff-status{flex-wrap:wrap;}
+#callOffList .calloff-status strong{overflow-wrap:anywhere;}
 #callOffConfirm{scroll-margin-top:76px;}
 #callOffConfirm h2{font-family:'Playfair Display',serif;color:var(--navy);font-size:1.55rem;margin:4px 0 8px;}
 #callOffScreen input[type="date"],#callOffScreen input[type="time"],#callOffScreen textarea{min-height:52px;font-size:1rem;padding:12px;}
@@ -950,7 +956,7 @@ else setupEverCarePWA();
       </div>
       <div class="field"><label for="callOffReason">Reason (optional)</label><textarea id="callOffReason" maxlength="240" placeholder="Example: sick"></textarea></div>
       <p id="callOffErr" class="calloff-err" role="alert" hidden></p>
-      <button class="btn btn-teal btn-full" type="button" id="callOffSubmitBtn" onclick="submitAideCallOff()">Submit</button>
+      <button class="btn btn-teal btn-full" type="button" id="callOffSubmitBtn" onclick="submitAideCallOff(event)">Submit</button>
     </div>
     <div class="card" id="callOffConfirm" hidden>
       <h2 id="callOffConfirmTitle">Submitted</h2>
@@ -6981,11 +6987,17 @@ function openTS(id){
 // POST rpc/aide_list_my_call_offs {p_include_resolved:false}.
 // cover_open_shifts.source is exactly aide or office. This portal records aide.
 // The office record path stays on Admin. A past shift_end is not sent.
+// v=coveraide2 GHOST-COVERAIDE2-CONTRACT-v1 CALLABLE (patches/coveraide2-v1.sql).
+// RPC names unchanged. One Submit tap is one aide_record_call_off.
+// Ace list returns source aide only. Client still keeps source exactly aide.
 
 var callOffPickKey='';
 var callOffShiftCache=[];
 var callOffBusy=false;
 var callOffBound=false;
+var callOffIgnoreUntil=0;
+var callOffGhostMs=800;
+var callOffPostFlight=null;
 function callOffYmd(d){
   const dt=d instanceof Date?d:new Date();
   const y=dt.getFullYear();
@@ -7148,6 +7160,27 @@ function callOffSource(row){
 function callOffSourceLabel(source){
   return source==='aide'?'Aide':'Office';
 }
+function callOffCaregiverRows(rows){
+  return (rows||[]).filter(function(r){return r&&callOffSource(r)==='aide';});
+}
+function callOffSameShift(a,b){
+  if(!a||!b)return false;
+  if(a.id&&b.id&&String(a.id)===String(b.id))return true;
+  const as=String(a.startsAt||'');
+  const bs=String(b.startsAt||'');
+  if(!as||as!==bs)return false;
+  if(String(a.clientId||'')&&String(b.clientId||''))return String(a.clientId)===String(b.clientId);
+  return String(a.clientName||'')!==''&&String(a.clientName||'')===String(b.clientName||'');
+}
+function callOffSubmitBlocked(){
+  return !!callOffBusy||Date.now()<callOffIgnoreUntil;
+}
+function callOffSetSubmitBtn(btn, busy){
+  if(!btn)return;
+  btn.disabled=!!busy;
+  btn.setAttribute('aria-busy', busy?'true':'false');
+  btn.textContent=busy?'Submitting...':'Submit';
+}
 function callOffAlreadyOpen(rows, clientId, clientName, startsAt){
   return (rows||[]).some(function(r){
     if(!r)return false;
@@ -7277,10 +7310,18 @@ function aideCallOffsFromRpc(data){
   return {ok:true, count:typeof node.count==='number'?node.count:rows.length, rows:rows};
 }
 async function aidePostCallOff(record){
-  if(typeof sbRest!=='function')return {ok:false, error:'Sign in again.'};
-  const body=aideCallOffRpcBody(record);
-  const got=await sbRest('rpc/aide_record_call_off',{method:'POST',body:body});
-  return aideCallOffFromRpc(got, record);
+  if(callOffPostFlight)return callOffPostFlight;
+  callOffPostFlight=(async function(){
+    try{
+      if(typeof sbRest!=='function')return {ok:false, error:'Sign in again.'};
+      const body=aideCallOffRpcBody(record);
+      const got=await sbRest('rpc/aide_record_call_off',{method:'POST',body:body});
+      return aideCallOffFromRpc(got, record);
+    }finally{
+      callOffPostFlight=null;
+    }
+  })();
+  return callOffPostFlight;
 }
 async function aideListMyCallOffs(){
   if(typeof sbRest!=='function')return {ok:false, error:'Sign in again.'};
@@ -7395,7 +7436,7 @@ function callOffPaintList(){
   const box=document.getElementById('callOffList');
   const empty=document.getElementById('callOffEmpty');
   const note=document.getElementById('callOffListNote');
-  const rows=callOffReadList().slice().sort(function(a,b){
+  const rows=callOffCaregiverRows(callOffReadList()).slice().sort(function(a,b){
     return String(b.submittedAt||'').localeCompare(String(a.submittedAt||''));
   });
   if(note){
@@ -7488,7 +7529,7 @@ async function openCallOff(){
   if(typeof sbToken==='function'&&sbToken()){
     try{
       const listed=await aideListMyCallOffs();
-      if(listed&&listed.ok&&Array.isArray(listed.rows))callOffWriteList(listed.rows);
+      if(listed&&listed.ok&&Array.isArray(listed.rows))callOffWriteList(callOffCaregiverRows(listed.rows));
       else if(listed&&listed.error)callOffShowErr(listed.error);
     }catch(e){
       callOffShowErr((e&&e.message)||'The office did not return your call-offs.');
@@ -7497,24 +7538,28 @@ async function openCallOff(){
   callOffPaintList();
 }
 async function submitAideCallOff(){
-  if(callOffBusy)return;
-  if(!currentUser||!currentUser.username){showScreen('authScreen');return;}
-  if(typeof requireAideSetup==='function'&&!requireAideSetup())return;
-  const shift=callOffSelectedShift();
-  const when=shift?callOffChosenWhen(shift):{date:'',start:'',end:''};
-  const reason=(document.getElementById('callOffReason')||{}).value||'';
-  const built=callOffBuildRecord(shift, when.date, when.start, when.end, reason, Date.now(), currentUser.username);
-  if(!built.ok){callOffShowErr(built.error);return;}
-  const rows=callOffReadList();
-  if(callOffAlreadyOpen(rows, built.record.clientId, built.record.clientName, built.record.startsAt)){
-    callOffShowErr('That shift is already called off.');
-    return;
-  }
+  const ev=arguments[0];
+  if(ev&&ev.preventDefault)ev.preventDefault();
+  if(callOffSubmitBlocked())return;
   callOffBusy=true;
   const btn=document.getElementById('callOffSubmitBtn');
-  if(btn){btn.disabled=true;btn.textContent='Submitting...';}
+  callOffSetSubmitBtn(btn, true);
+  var sent=false;
   try{
+    if(!currentUser||!currentUser.username){showScreen('authScreen');return;}
+    if(typeof requireAideSetup==='function'&&!requireAideSetup())return;
+    const shift=callOffSelectedShift();
+    const when=shift?callOffChosenWhen(shift):{date:'',start:'',end:''};
+    const reason=(document.getElementById('callOffReason')||{}).value||'';
+    const built=callOffBuildRecord(shift, when.date, when.start, when.end, reason, Date.now(), currentUser.username);
+    if(!built.ok){callOffShowErr(built.error);return;}
+    const rows=callOffReadList();
+    if(callOffAlreadyOpen(rows, built.record.clientId, built.record.clientName, built.record.startsAt)){
+      callOffShowErr('That shift is already called off.');
+      return;
+    }
     const record=built.record;
+    sent=true;
     let posted=null;
     try{posted=await aidePostCallOff(record);}
     catch(e){
@@ -7526,18 +7571,18 @@ async function submitAideCallOff(){
       return;
     }
     const saved=posted.record;
-    let next=rows.filter(function(r){return r&&r.id!==saved.id;}).concat([saved]);
+    let next=callOffCaregiverRows(rows).filter(function(r){return !callOffSameShift(r,saved);}).concat([saved]);
     try{
       const listed=await aideListMyCallOffs();
       if(listed&&listed.ok&&Array.isArray(listed.rows)){
-        next=listed.rows.map(function(r){
-          if(!r||r.id!==saved.id)return r;
+        next=callOffCaregiverRows(listed.rows).map(function(r){
+          if(!r||!callOffSameShift(r,saved))return r;
           if((!r.clientName||r.clientName==='Client')&&saved.clientName)r.clientName=saved.clientName;
           if(!r.reason&&saved.reason)r.reason=saved.reason;
           if(!r.date&&saved.date){r.date=saved.date;r.start=saved.start;r.end=saved.end;}
           return r;
         });
-        if(saved.id&&!next.some(function(r){return r&&r.id===saved.id;}))next.unshift(saved);
+        if(!next.some(function(r){return callOffSameShift(r,saved);}))next.unshift(saved);
       }
     }catch(e){}
     callOffWriteList(next);
@@ -7550,7 +7595,16 @@ async function submitAideCallOff(){
     callOffPaintConfirm(saved);
   }finally{
     callOffBusy=false;
-    if(btn){btn.disabled=false;btn.textContent='Submit';}
+    if(sent){
+      const wait=Number(callOffGhostMs||0);
+      callOffIgnoreUntil=Date.now()+wait;
+      callOffSetSubmitBtn(btn, true);
+      setTimeout(function(){
+        if(!callOffBusy&&Date.now()>=callOffIgnoreUntil)callOffSetSubmitBtn(btn, false);
+      }, wait);
+    }else{
+      callOffSetSubmitBtn(btn, false);
+    }
   }
 }
 
