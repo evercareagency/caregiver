@@ -280,8 +280,8 @@ body.has-bottom-nav footer{margin-bottom:76px;}
 .ts-pdf-sheet .ts-fill-mark{font-size:8pt;}
 .ts-pdf-sheet .ts-fill-other{font-size:7pt;max-width:12%;overflow:hidden;}
 .ts-pdf-sheet .ts-fill-notes{font-size:8pt;font-weight:400;white-space:normal;max-width:46%;line-height:1.3;transform:none;}
-.ts-pdf-sheet .ts-sig{position:absolute;z-index:2;width:11%;height:1.6%;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none;}
-.ts-pdf-sheet .ts-sig-top{width:24%;height:2.3%;}
+.ts-pdf-sheet .ts-sig{position:absolute;z-index:2;width:16%;height:1.45%;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none;}
+.ts-pdf-sheet .ts-sig-top{width:26%;height:1.9%;}
 #tsPrintRoot{display:none;}
 /* 100% Letter print (v=cgpdf1p2). A full 11in sheet leaves the Pearl Rd line in the overflow, so the printed form is 9.6in tall and the site footer is not a second page. */
 @media print{
@@ -5692,7 +5692,7 @@ const TS_FORM_PT={
   dateX:115.5,tinX:173.6,toutX:231.9,hrsX:281.1,
   dayY0:172.5,dayStep:13.4,
   dayAideSigX:356,dayClientSigX:498,
-  clientSigX:470,clientSigY:100,caregiverSigX:490,caregiverSigY:128,
+  clientSigX:476,clientSigY:100,caregiverSigX:498,caregiverSigY:129,
   totalY:267.0,
   commentsX:48,commentsY:610,
   otherSpecifyX:120,otherSpecifyY:580.88,
@@ -5876,32 +5876,92 @@ function sbLoadSigImage(src){
     }catch(e){resolve(null);}
   });
 }
+function sbSigInkRect(img){
+  if(!img||!img.naturalWidth||!img.naturalHeight||typeof document==='undefined')return null;
+  try{
+    const c=document.createElement('canvas');
+    c.width=img.naturalWidth;c.height=img.naturalHeight;
+    const g=c.getContext('2d');
+    if(!g)return null;
+    g.drawImage(img,0,0);
+    const data=g.getImageData(0,0,c.width,c.height).data;
+    let minx=c.width,miny=c.height,maxx=-1,maxy=-1;
+    for(let y=0;y<c.height;y++){
+      for(let x=0;x<c.width;x++){
+        const i=(y*c.width+x)*4;
+        if(data[i+3]<24)continue;
+        if(data[i]>246&&data[i+1]>246&&data[i+2]>246)continue;
+        if(x<minx)minx=x;
+        if(y<miny)miny=y;
+        if(x>maxx)maxx=x;
+        if(y>maxy)maxy=y;
+      }
+    }
+    if(maxx<minx)return null;
+    const pad=2;
+    minx=Math.max(0,minx-pad);miny=Math.max(0,miny-pad);
+    maxx=Math.min(c.width-1,maxx+pad);maxy=Math.min(c.height-1,maxy+pad);
+    return {x:minx,y:miny,w:maxx-minx+1,h:maxy-miny+1};
+  }catch(e){return null;}
+}
+function sbCropSigURL(img){
+  const rect=sbSigInkRect(img);
+  if(!rect)return '';
+  try{
+    const c=document.createElement('canvas');
+    c.width=rect.w;c.height=rect.h;
+    const g=c.getContext('2d');
+    if(!g)return '';
+    g.drawImage(img,rect.x,rect.y,rect.w,rect.h,0,0,rect.w,rect.h);
+    return c.toDataURL('image/png');
+  }catch(e){return '';}
+}
+async function sbFitSheetSigs(root){
+  if(!root||!root.querySelectorAll)return;
+  const imgs=root.querySelectorAll('img.ts-sig');
+  await Promise.all(Array.prototype.map.call(imgs,function(img){
+    return sbWaitImg(img,4000).then(function(){
+      const url=sbCropSigURL(img);
+      if(!url||url===img.src)return null;
+      img.src=url;
+      return sbWaitImg(img,4000);
+    });
+  }));
+}
 async function sbStampTimesheetSigs(canvas,record){
   if(!canvas||!canvas.getContext)return;
   const ctx=canvas.getContext('2d');
   if(!ctx)return;
   const F=TS_FORM_PT;
   const days=(record&&record.days)||{};
-  const sx=canvas.width/F.sheetW;
-  const sy=canvas.height/F.sheetH;
+  const scaleX=canvas.width/F.sheetW;
+  const scaleY=canvas.height/F.sheetH;
   const jobs=[];
   function queue(src,x,y,wPt,hPt){
     if(String(src||'').indexOf('data:image')!==0)return;
     jobs.push(sbLoadSigImage(src).then(function(img){
       if(!img)return;
-      const dw=wPt*sx,dh=hPt*sy;
-      ctx.drawImage(img,x*sx-dw/2,y*sy-dh/2,dw,dh);
+      const rect=sbSigInkRect(img);
+      const srcX=rect?rect.x:0;
+      const srcY=rect?rect.y:0;
+      const srcW=rect?rect.w:img.naturalWidth;
+      const srcH=rect?rect.h:img.naturalHeight;
+      const aspect=srcW/Math.max(1,srcH);
+      let dw=wPt,dh=hPt;
+      if(aspect>wPt/hPt)dh=wPt/aspect;
+      else dw=hPt*aspect;
+      ctx.drawImage(img,srcX,srcY,srcW,srcH,x*scaleX-dw*scaleX/2,y*scaleY-dh*scaleY/2,dw*scaleX,dh*scaleY);
     }));
   }
   for(let i=0;i<=6;i++){
     const d=tsPdfDay(days,i);
     const y=F.dayY0+i*F.dayStep;
-    if(tsPdfSigned(d,'aide'))queue(d.aideSig,F.dayAideSigX,y,67,12.7);
-    if(tsPdfSigned(d,'client'))queue(d.clientSig,F.dayClientSigX,y,67,12.7);
+    if(tsPdfSigned(d,'aide'))queue(d.aideSig,F.dayAideSigX,y,98,11.5);
+    if(tsPdfSigned(d,'client'))queue(d.clientSig,F.dayClientSigX,y,98,11.5);
   }
   const summary=tsPdfSummarySigs(days);
-  if(summary.client&&tsPdfSigned(summary.client,'client'))queue(summary.client.clientSig,F.clientSigX,F.clientSigY,150,18);
-  if(summary.aide&&tsPdfSigned(summary.aide,'aide'))queue(summary.aide.aideSig,F.caregiverSigX,F.caregiverSigY,150,18);
+  if(summary.client&&tsPdfSigned(summary.client,'client'))queue(summary.client.clientSig,F.clientSigX,F.clientSigY,159,15);
+  if(summary.aide&&tsPdfSigned(summary.aide,'aide'))queue(summary.aide.aideSig,F.caregiverSigX,F.caregiverSigY,159,15);
   await Promise.all(jobs);
 }
 function buildTimesheetPrintHtml(r){
@@ -6044,6 +6104,8 @@ function cgMountTimesheetPrintSheet(record){
     try{rec=sbTimesheetPdfRecord();}catch(e){rec={};}
   }
   root.innerHTML='<div class="ts-pdf-sheet">'+buildTimesheetPrintHtml(rec||{})+'</div>';
+  const sheet=root.querySelector('.ts-pdf-sheet');
+  if(sheet)sbFitSheetSigs(sheet);
 }
 function cgSyncTimesheetPrint(on){
   const htmlEl=document.documentElement;
@@ -6067,6 +6129,7 @@ async function renderTimesheetPdfBlob(r){
     if(!ready)throw new Error('blank form');
     const imgs=container.querySelectorAll('img');
     await Promise.all(Array.prototype.map.call(imgs,function(img){return sbWaitImg(img,4000);}));
+    try{await sbFitSheetSigs(container);}catch(e){}
     // scale 1 JPEG page. Lock the capture to the sheet so the site footer cannot
     // extend the bitmap past Letter. Stay under 2 MiB (Ace smoke ~261 KiB). No PNG embed.
     const sheetW=container.offsetWidth||816;

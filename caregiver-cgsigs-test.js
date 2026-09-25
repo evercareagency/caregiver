@@ -30,10 +30,12 @@ assert.ok(html.includes('v=cgquizlet1') && html.includes('v=loginkb1') && html.i
 assert.ok(html.includes('v=cgsigs1'), 'cgsigs1 probe');
 assert.ok(html.includes('v=cgpdf1') && html.includes('v=cgpdf1p2') && html.includes('v=cgpdfv1'), 'prior pdf markers stay');
 assert.ok(html.includes('v=bcast1b') && html.includes('v=home1') && html.includes('v=offline1'), 'prior markers stay');
-assert.ok(html.includes('clientSigX:470') && html.includes('clientSigY:100'), 'top client signature box');
-assert.ok(html.includes('caregiverSigX:490') && html.includes('caregiverSigY:128'), 'top caregiver signature box');
+assert.ok(html.includes('clientSigX:476') && html.includes('clientSigY:100'), 'top client signature box');
+assert.ok(html.includes('caregiverSigX:498') && html.includes('caregiverSigY:129'), 'top caregiver signature box');
 assert.ok(html.includes('ts-sig-top'), 'top signature image class');
 assert.ok(html.includes('sbStampTimesheetSigs'), 'PDF stamps signature images after the overlay capture');
+assert.ok(html.includes('sbFitSheetSigs'), 'overlay crops each scribble to its ink before capture');
+assert.ok(html.includes('dayAideSigX:356') && html.includes('dayClientSigX:498'), 'day signature columns match the blank form');
 assert.ok(html.includes('isPlausibleSigSrc(cur[key])'), 'blank pad keeps a stored signature image');
 
 const persist = extractFn(html, 'function persistPadSig(id)');
