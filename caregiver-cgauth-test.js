@@ -26,6 +26,7 @@ function extractFn(src, sig){
 assert.ok(html.includes('v=cgauth1'), 'cgauth probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-cgauth1">'), 'cgauth build meta');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-cgauth1 v=cgauth1 —'), 'cgauth build comment');
+assert.ok(html.includes('#resetModal input[type="text"],#resetModal input[type="password"]{min-height:48px;font-size:1rem;}'), 'forgot fields stay a phone tap target');
 assert.ok(!html.includes('/auth/v1/signup'), 'caregiver tip does not sign aides up in Auth');
 assert.ok(!html.includes('reset_aide_temp_password'), 'office temp-password rpc stays in Admin');
 assert.strictEqual((html.match(/\/auth\/v1\/token\?grant_type=password/g) || []).length, 2, 'password grant stays login plus setup');
