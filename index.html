@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-cgquizlet1">
 <meta name="caregiver-build" content="2026-09-25-loginkb1">
 <meta name="caregiver-build" content="2026-09-25-cgisbadge1">
 <meta name="caregiver-build" content="2026-09-25-cghome1">
@@ -24,6 +25,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-cgquizlet1 v=cgquizlet1 — Friday GO 2026-09-25. Aide take-quiz (#isOptions) shows every choice with its index letter: 0→A, 1→B, and on through F when a question has six choices. Example: “B. medical emergency”. A letter already stored on the choice text is not repeated. answerQ still stores the numeric index, and Submit Inservice still posts that index list. v=loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-loginkb1 v=loginkb1 — Friday GO 2026-09-25. Phone Sign In: focusing username or password sizes #authScreen to the visual viewport and scrolls that field and #loginBtn above the keyboard. The form stays a scrollport so Forgot password can move into view. No window.scrollTo. Desktop width does not take this path. doLogin and the Auth soft path are unchanged. v=cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgisbadge1 v=cgisbadge1 — Friday GO 2026-09-25. Bottom-nav Inservices shows a red due-count badge on the books icon. The count is the same assigned-incomplete set as the home #isNotifBanner (dueInserviceCount). Count > 0 keeps that banner and shows the badge; 0 hides both. The badge is decorative (pointer-events none) and the Inservices tab stays the control. Phone and desktop use this same bottom nav. v=cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cghome1 v=cghome1 — Friday GO 2026-09-25. Forgot no longer stops on “Username and email do not match.” before /auth/v1/recover. resolve_username_email for mossier already returns the Auth email, so that line was the Sheets verify_reset branch when evercareSbEnabled() is false (?sheets=1 or localStorage.evercare_sheets=1), or aideEmailsMatch rejecting an empty or autofilled email. Forgot clears that flag, strips sheets=1, and recovers to the resolved Auth email when the username resolves. An unknown username does not send mail and the screen does not show the Auth address. The email field stays optional. After Save password and after Finish-account, the primary button says “Open Caregiver”. Standalone (display-mode or iOS navigator.standalone) assigns a same-tab relative URL (./ or index.html). Otherwise it assigns https://evercareagency.github.io/caregiver/ or this page’s origin+path, same tab, no target=_blank. Auth PUT /auth/v1/user is unchanged. v=cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -302,6 +304,7 @@ body.has-bottom-nav footer{margin-bottom:76px;}
     break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid;
   }
 }
+.is-quiz-choice{min-height:44px;overflow-wrap:anywhere;}
 </style>
 
 <!-- PWA -->
@@ -6704,6 +6707,14 @@ function startQuiz(){
   showScreen('isQuizScreen');
 }
 
+function cgQuizChoiceLetter(i){
+  const n=Number(i);
+  if(!isFinite(n)||n<0||n>25)return '';
+  return String.fromCharCode(65+Math.floor(n));
+}
+function cgQuizChoiceText(opt){
+  return String(opt==null?'':opt).replace(/^\s*[A-Za-z][\.\)]\s+/,'').trim();
+}
 function renderQuestion(){
   const q=currentIS.questions[currentQIdx];
   const total=currentIS.questions.length;
@@ -6711,10 +6722,13 @@ function renderQuestion(){
   document.getElementById('isQuizProgress').textContent='Question '+(currentQIdx+1)+' of '+total;
   document.getElementById('isProgressBar').style.width=(currentQIdx/total*100)+'%';
   document.getElementById('isQuestionText').textContent=(currentQIdx+1)+'. '+q.q;
-  document.getElementById('isOptions').innerHTML=q.options.map((opt,i)=>
-    '<button onclick="answerQ('+i+')" style="display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--border);border-radius:8px;background:white;font-family:DM Sans,sans-serif;font-size:0.84rem;cursor:pointer;color:var(--text);transition:all 0.15s">'+
-    '<strong style="color:var(--teal)">'+String.fromCharCode(65+i)+'.</strong> '+opt+'</button>'
-  ).join('');
+  const opts=Array.isArray(q.options)?q.options:[];
+  document.getElementById('isOptions').innerHTML=opts.map(function(opt,i){
+    const letter=cgQuizChoiceLetter(i);
+    const body=escapeHtml(cgQuizChoiceText(opt));
+    return '<button type="button" class="is-quiz-choice" data-choice-index="'+i+'" data-choice-letter="'+letter+'" onclick="answerQ('+i+')" style="display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--border);border-radius:8px;background:white;font-family:\'DM Sans\',sans-serif;font-size:0.84rem;line-height:1.35;cursor:pointer;color:var(--text)">'+
+      '<strong style="color:var(--teal)">'+letter+'.</strong> '+body+'</button>';
+  }).join('');
 }
 
 function answerQ(idx){
