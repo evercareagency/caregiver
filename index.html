@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-cghome1b">
 <meta name="caregiver-build" content="2026-09-25-coveraide2">
 <meta name="caregiver-build" content="2026-09-25-cgacct1">
 <meta name="caregiver-build" content="2026-09-25-cgsave1">
@@ -32,6 +33,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-cghome1b v=cghome1b — Friday GO 2026-09-25. Assert2: after Forgot/recover Save password, and after Finish-account, stay on Password saved with the primary button Open Caregiver. No auto-login and no timer into the signed-in home. The recovery Auth JWT is not written into cg_session. Save drops the local portal session so Open Caregiver reloads Sign In. Standalone stays same-tab ./ or index.html. Browser stays same-tab https://evercareagency.github.io/caregiver/ or this page origin+path. No target=_blank. v=cghome1, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-coveraide2 v=coveraide2 — Friday GO 2026-09-25. Home Call off (#callOffHomeBtn) still opens #callOffScreen. One Submit tap sends one POST /rest/v1/rpc/aide_record_call_off. The button disables on that tap and an in-flight guard ignores a second tap or ghost click, so the write path does not fire twice. Ace GHOST-COVERAIDE2-CONTRACT-v1 is CALLABLE (patches/coveraide2-v1.sql): a double-fire returns idempotent true and one open row. The list stays POST /rest/v1/rpc/aide_list_my_call_offs {p_include_resolved:false}. Ace returns source aide only. This screen still drops any row whose source is not exactly aide, so Office and admin-on-behalf stay off Your call-offs. Admin Coverage still uses admin_list_open_shifts and is not changed here. Account stays v=cgacct1 (no Call off, no Backup). No PTO. No Auth reseal. v=cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgacct1 v=cgacct1 — Friday GO 2026-09-25. Account (#moreScreen) no longer shows Call off or Back up this week's draft. Those stay on Home (#callOffHomeBtn and #cgBackupBtn). Account still shows the aide name, the 8-hour stay-signed-in note, Log out, and the office phone plus Home and Timesheet help. Auth, passwords, and Save Day (v=cgsave1) are unchanged. v=cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsave1 v=cgsave1 — Friday GO 2026-09-25. Save Day targets the day named on the button (the day with pending edits) even when that day's accordion is collapsed. Collapse only hides the row. Times, signatures, and services stay in the day model and in the inputs that remain on the page, and validation reads those. The collapsed label shows Filled, Signed, or Filled · Signed when that day has times and/or signatures, instead of Not filled. Phone layout keeps the Save control and day status readable and tappable. v=coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -3812,7 +3814,8 @@ function caregiverLoginUrl(){
 }
 function openCaregiverLogin(){
   clearPwResetRedirect();
-  window.__sbRecovery=null;
+  clearPasswordSavedHold();
+  dropRecoveredPortalSession();
   const login=caregiverLoginUrl();
   try{
     if(login&&typeof location!=='undefined'&&location){
@@ -3852,31 +3855,75 @@ function paintCaregiverOpenLink(id){
   }
   return login;
 }
+function passwordSavedHoldKey(){return 'cghome1b_pw_saved';}
+function passwordSavedHold(){
+  try{
+    if(typeof sessionStorage==='undefined'||!sessionStorage)return '';
+    const v=sessionStorage.getItem(passwordSavedHoldKey());
+    return v==='recovery'||v==='setup'?v:'';
+  }catch(e){return '';}
+}
+function markPasswordSavedHold(which){
+  try{
+    if(typeof sessionStorage==='undefined'||!sessionStorage)return;
+    if(which!=='recovery'&&which!=='setup')return;
+    sessionStorage.setItem(passwordSavedHoldKey(), which);
+  }catch(e){}
+}
+function clearPasswordSavedHold(){
+  try{ if(typeof sessionStorage!=='undefined'&&sessionStorage) sessionStorage.removeItem(passwordSavedHoldKey()); }catch(e){}
+  try{ if(typeof localStorage!=='undefined'&&localStorage) localStorage.removeItem(passwordSavedHoldKey()); }catch(e2){}
+}
+function activatePortalScreen(id){
+  try{
+    if(document.querySelectorAll){
+      document.querySelectorAll('.modal-bg.show').forEach(function(m){m.classList.remove('show');});
+      document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+    }
+  }catch(e){}
+  try{ if(typeof unlockBodyScroll==='function') unlockBodyScroll(); }catch(e2){}
+  const el=document.getElementById(id);
+  if(el&&el.classList)el.classList.add('active');
+  try{ if(typeof syncPortalChrome==='function') syncPortalChrome(id); }catch(e3){}
+}
+// Auth password is already saved. Drop only the phone session so boot does not
+// treat a recovery JWT, or a prior cg_session, as a signed-in home.
+function dropRecoveredPortalSession(){
+  window.__sbRecovery=null;
+  try{ window.__sbSession=null; }catch(e){}
+  try{ currentUser=null; }catch(e2){}
+  try{ if(typeof sbClearAuth==='function') sbClearAuth(); }catch(e3){}
+  try{ if(typeof store!=='undefined'&&store&&typeof store.del==='function') store.del('cg_session'); }catch(e4){}
+  ['cg_session','evercare_sb_session'].forEach(function(k){
+    try{ if(typeof localStorage!=='undefined'&&localStorage) localStorage.removeItem(k); }catch(e5){}
+    try{ if(typeof sessionStorage!=='undefined'&&sessionStorage) sessionStorage.removeItem(k); }catch(e6){}
+  });
+}
 function showRecoveryPasswordSaved(){
+  activatePortalScreen('recoveryScreen');
   const form=document.getElementById('recoveryForm');
   const done=document.getElementById('recoveryDone');
   if(form)form.style.display='none';
   if(done)done.style.display='block';
   paintCaregiverOpenLink('recoveryOpenPortal');
-  window.__sbRecovery=null;
   clearPwResetRedirect();
-  if(typeof setTimeout==='function'){
-    window.__pwResetRedirect=setTimeout(openCaregiverLogin,3000);
-  }
+  markPasswordSavedHold('recovery');
+  dropRecoveredPortalSession();
 }
 function showAideSetupSaved(){
+  if(typeof activatePortalScreen==='function') activatePortalScreen('aideSetupScreen');
   const form=document.getElementById('aideSetupForm');
   const done=document.getElementById('aideSetupDone');
   if(form)form.style.display='none';
   if(done)done.style.display='block';
   paintCaregiverOpenLink('aideSetupOpenCaregiver');
-  try{ if(typeof clearPwResetRedirect==='function')clearPwResetRedirect(); }catch(e){}
-  if(typeof setTimeout==='function'&&typeof openCaregiverLogin==='function'){
-    window.__pwResetRedirect=setTimeout(openCaregiverLogin,3000);
-  }
+  try{ if(typeof clearPwResetRedirect==='function') clearPwResetRedirect(); }catch(e){}
+  if(typeof markPasswordSavedHold==='function') markPasswordSavedHold('setup');
+  if(typeof dropRecoveredPortalSession==='function') dropRecoveredPortalSession();
 }
 function showRecoveryPasswordScreen(){
   clearPwResetRedirect();
+  clearPasswordSavedHold();
   document.querySelectorAll('.modal-bg.show').forEach(function(m){m.classList.remove('show');});
   if(typeof unlockBodyScroll==='function')unlockBodyScroll();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
@@ -3897,6 +3944,7 @@ function showRecoveryPasswordScreen(){
 }
 function cancelRecoveryPassword(){
   clearPwResetRedirect();
+  clearPasswordSavedHold();
   window.__sbRecovery=null;
   showScreen('authScreen');
 }
@@ -8230,23 +8278,35 @@ function renderCaregiverCertSample(){
   document.close();
 }
 
-window.addEventListener('load',()=>{
-  if(/[?&]certSample=1(?:&|$)/.test(location.search||'')){
-    renderCaregiverCertSample();
-    return;
+function bootCaregiverPortal(){
+  if(/[?&]certSample=1(?:&|$)/.test((location&&location.search)||'')){
+    if(typeof renderCaregiverCertSample==='function') renderCaregiverCertSample();
+    return 'cert';
   }
-  syncStorage();
-  const recovery=sbTakeRecoverySession();
+  if(typeof syncStorage==='function') syncStorage();
+  const recovery=(typeof sbTakeRecoverySession==='function')?sbTakeRecoverySession():null;
   if(recovery&&recovery.access_token){
     window.__sbRecovery=recovery;
-    showRecoveryPasswordScreen();
-    return;
+    if(typeof showRecoveryPasswordScreen==='function') showRecoveryPasswordScreen();
+    return 'recovery';
   }
-  if(restoreCgSession()){
-    if(evercareSbEnabled()&&!(currentUser&&currentUser.sbAccessToken))caregiverLogout();
-    else afterLogin();
+  const hold=(typeof passwordSavedHold==='function')?passwordSavedHold():'';
+  if(hold==='recovery'||hold==='setup'){
+    if(hold==='setup'&&typeof showAideSetupSaved==='function') showAideSetupSaved();
+    else if(typeof showRecoveryPasswordSaved==='function') showRecoveryPasswordSaved();
+    return 'saved';
   }
-});
+  if(typeof restoreCgSession==='function'&&restoreCgSession()){
+    if(typeof evercareSbEnabled==='function'&&evercareSbEnabled()&&!(typeof currentUser!=='undefined'&&currentUser&&currentUser.sbAccessToken)){
+      if(typeof caregiverLogout==='function') caregiverLogout();
+      return 'logout';
+    }
+    if(typeof afterLogin==='function') afterLogin();
+    return 'home';
+  }
+  return 'auth';
+}
+window.addEventListener('load',()=>{ bootCaregiverPortal(); });
 window.addEventListener('online',function(){
   try{
     const ops=cgReadQueue();
