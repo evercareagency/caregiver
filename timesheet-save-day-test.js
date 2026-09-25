@@ -36,6 +36,14 @@ assert.ok(/freshLogin\)\{[\s\S]{0,180}clearNoticeAck\(/.test(html), 'fresh login
 assert.ok(html.includes("id==='alertModal'&&typeof isNoticeAcked==='function'&&isNoticeAcked()"), 'acked notice must not re-open');
 assert.ok(html.includes('if(!liveSvcs.length)'), 'saveDayData must refuse empty services');
 assert.ok(/function previewDay\(i\)\{[\s\S]{0,220}requireDayService\(i\)/.test(html), 'previewDay must require a service');
+assert.ok(html.includes('v=cgsave1'), 'cgsave1 marker missing');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-25-cgsave1">'), 'cgsave1 build stamp missing');
+assert.ok(html.includes('function paintDayRowStatus'), 'collapsed day status sync missing');
+assert.ok(html.includes('Filled · Signed'), 'filled and signed label missing');
+assert.ok(html.includes('function snapshotDayDraft'), 'collapse must snapshot the day');
+const refreshFn=html.slice(html.indexOf('function refreshSaveDayState'), html.indexOf('function saveActiveDay'));
+assert.ok(refreshFn&&!refreshFn.includes("contains('open')"), 'Save Day state must not require the accordion to be open');
+assert.ok(refreshFn.includes('saveTargetDayName'), 'Save button must name the target day');
 
 console.log('static checks ok');
 
@@ -110,13 +118,42 @@ async function runBrowser(){
     check(/Saving Monday/.test(document.getElementById('saveDayTarget').textContent),'closing Tuesday returns to open Monday');
     check(!btn.disabled,'Monday still has a service');
 
+    document.getElementById('d1_date').value='2026-09-21';
+    document.getElementById('d1_in').value='08:00';
+    document.getElementById('d1_out').value='12:00';
+    document.getElementById('d1_in').dispatchEvent(new Event('input'));
+    ['sp_aide_1','sp_client_1'].forEach(function(id){
+      const c=document.getElementById(id);
+      const ctx=c.getContext('2d');
+      ctx.strokeStyle='#1a2744';
+      ctx.lineWidth=4;
+      ctx.beginPath();
+      ctx.moveTo(12,24);
+      ctx.lineTo(140,78);
+      ctx.stroke();
+      persistPadSig(id);
+    });
+    toggleDay(1);
+    check(!document.getElementById('dbody_1').classList.contains('open'),'Monday accordion should collapse');
+    check(document.getElementById('dstat_1').textContent==='Filled · Signed','collapsed Monday must not stay Not filled');
+    check(!/Not filled/.test(document.getElementById('dstat_1').textContent),'collapsed label stuck on Not filled');
+    check(/Saving Monday/.test(document.getElementById('saveDayTarget').textContent),'collapsed Monday stays the save target');
+    check(btn.textContent==='✓ Save Monday','Save button should name Monday');
+    check(!btn.disabled,'Save Monday stays enabled after collapse when a service is checked');
+    const drafted=getUserWeekData()[1]||{};
+    check(drafted.tin==='08:00'&&drafted.tout==='12:00','collapse keeps times in the day model');
+    check(!!drafted.aideSig&&!!drafted.clientSig,'collapse keeps both signatures in the day model');
+
     requireSandataAck=function(){return true;};
     requireClientSelected=function(){return true;};
     requireDaySignatures=function(){return true;};
     const preview=document.getElementById('previewModal');
     saveActiveDay();
     check(preview.classList.contains('show'),'Save Day must open the existing day preview');
-    check(/Monday/.test(document.getElementById('previewDayContent').textContent),'preview names the open day');
+    check(!document.getElementById('dbody_1').classList.contains('open'),'Save must not re-expand the collapsed day');
+    check(/Monday/.test(document.getElementById('previewDayContent').textContent),'preview names the save target');
+    check(/08:00/.test(document.getElementById('previewDayContent').textContent),'preview reads times while the day is collapsed');
+    check(/✓ Signed/.test(document.getElementById('previewDayContent').textContent),'preview reads signatures while the day is collapsed');
     check(!/None checked/.test(document.getElementById('previewDayContent').textContent),'preview must list the checked service');
     closeModal('previewModal');
 
