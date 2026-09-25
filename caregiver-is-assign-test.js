@@ -88,7 +88,7 @@ function boot(opts){
   };
   box.isData = JSON.parse(JSON.stringify(opts.stored || {}));
   vm.createContext(box);
-  vm.runInContext(setFn + '\n' + topicsFn + '\n' + extractFn(html, 'function escapeHtml(str)') + '\n' + extractFn(html, 'function formatCertDate(val)') + '\n' + listFn + '\n' + notif, box);
+  vm.runInContext(setFn + '\n' + topicsFn + '\n' + extractFn(html, 'function escapeHtml(str)') + '\n' + extractFn(html, 'function formatCertDate(val)') + '\n' + listFn + '\n' + extractFn(html, 'function dueInserviceCount(assigned,isData)') + '\n' + extractFn(html, 'function paintISDueChrome(dueCount)') + '\n' + notif, box);
   box.calls = calls;
   box.el = el;
   box.banner = banner;

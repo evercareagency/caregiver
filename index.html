@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-cgisbadge1">
 <meta name="caregiver-build" content="2026-09-25-cghome1">
 <meta name="caregiver-build" content="2026-09-24-cgauth1">
 <meta name="caregiver-build" content="2026-09-24-bcast1b">
@@ -22,6 +23,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-cgisbadge1 v=cgisbadge1 — Friday GO 2026-09-25. Bottom-nav Inservices shows a red due-count badge on the books icon. The count is the same assigned-incomplete set as the home #isNotifBanner (dueInserviceCount). Count > 0 keeps that banner and shows the badge; 0 hides both. The badge is decorative (pointer-events none) and the Inservices tab stays the control. Phone and desktop use this same bottom nav. v=cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cghome1 v=cghome1 — Friday GO 2026-09-25. Forgot no longer stops on “Username and email do not match.” before /auth/v1/recover. resolve_username_email for mossier already returns the Auth email, so that line was the Sheets verify_reset branch when evercareSbEnabled() is false (?sheets=1 or localStorage.evercare_sheets=1), or aideEmailsMatch rejecting an empty or autofilled email. Forgot clears that flag, strips sheets=1, and recovers to the resolved Auth email when the username resolves. An unknown username does not send mail and the screen does not show the Auth address. The email field stays optional. After Save password and after Finish-account, the primary button says “Open Caregiver”. Standalone (display-mode or iOS navigator.standalone) assigns a same-tab relative URL (./ or index.html). Otherwise it assigns https://evercareagency.github.io/caregiver/ or this page’s origin+path, same tab, no target=_blank. Auth PUT /auth/v1/user is unchanged. v=cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cgauth1 v=cgauth1 — Friday GO 2026-09-24. Default cut password lifecycle stays Auth-only. Login is resolve_username_email then the password grant. Forgot is GoTrue recover then PUT /auth/v1/user. Finish-account (must_change) always calls that same Auth update and clears aides.must_change_password; a missing JWT does not fall through to Sheets complete_aide_setup or set_password. Signup on the cut still does not create an Auth user and does not write a Sheets password. Forgot-password inputs on #resetModal are 48px so the link form stays usable at about 390px. Sheets login, signup, verify_reset, reset_password, and set_password run only when evercareSbEnabled() is false (?sheets=1 or localStorage.evercare_sheets=1). v=bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-bcast1b v=bcast1b — Friday GO 2026-09-24. Home #broadcastBanner unwraps the Ace get_active_broadcast envelope {success,data} (or ok/data) before reading data.message, same as Admin bcastActiveFromRpc. data null, empty message, or success/ok false hides the banner. Array singleton and a string payload still paint. Cut stays aide-JWT POST /rest/v1/rpc/get_active_broadcast {} only. Caregiver never calls send_broadcast or clear_broadcast. If the JWT is missing at home paint and appears within about 2s, the banner load retries once. Rollback ?sheets=1 OR localStorage.evercare_sheets=1 still reads store broadcast_msg only. v=bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -244,12 +246,15 @@ footer{text-align:center;padding:11px;font-size:0.7rem;color:var(--muted);border
 .sig-act-redo{background:#fff;color:var(--navy);border:1.5px solid var(--border);}
 canvas.sigpad.sig-locked{cursor:default;box-shadow:inset 0 0 0 2px var(--success);}
 .draft-del{min-height:44px;min-width:76px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--danger);background:#fff;color:var(--danger);font-weight:700;font-size:0.82rem;font-family:'DM Sans',sans-serif;cursor:pointer;flex-shrink:0;}
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:flex;background:#fff;border-top:1px solid var(--border);padding:4px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(26,39,68,0.08);}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:flex;background:#fff;border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(26,39,68,0.08);overflow:visible;}
 .bottom-nav[hidden]{display:none !important;}
-.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;border-radius:12px;padding:4px 2px;}
+.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;min-width:44px;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;border-radius:12px;padding:6px 2px 4px;overflow:visible;}
 .bottom-nav button.active{color:var(--teal-dark);background:var(--teal-light);}
 .bottom-nav .bn-img{width:22px;height:22px;border-radius:6px;display:block;}
 .bottom-nav .bn-ico{font-size:1.05rem;line-height:1;}
+.bottom-nav .bn-ico-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;line-height:1;overflow:visible;}
+.bottom-nav .bn-badge{position:absolute;top:-8px;right:-11px;width:max-content;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#ff3b30;color:#fff;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:800;line-height:1;letter-spacing:-0.02em;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;pointer-events:none;z-index:2;box-sizing:border-box;}
+.bottom-nav .bn-badge[hidden]{display:none !important;}
 body.has-bottom-nav .wrap{padding-bottom:108px;}
 body.has-bottom-nav footer{margin-bottom:76px;}
 #cg_client{min-height:52px;}
@@ -904,7 +909,7 @@ else setupEverCarePWA();
 <nav class="bottom-nav" id="bottomNav" aria-label="ECA Aide Portal" hidden>
   <button type="button" data-nav="home" onclick="navGo('home')"><img class="portal-mark-hands bn-img" alt=""><span>Home</span></button>
   <button type="button" data-nav="timesheet" onclick="navGo('timesheet')"><img class="portal-mark-clip bn-img" alt=""><span>Timesheet</span></button>
-  <button type="button" data-nav="inservices" onclick="navGo('inservices')"><span class="bn-ico" aria-hidden="true">&#128218;</span><span>Inservices</span></button>
+  <button type="button" data-nav="inservices" onclick="navGo('inservices')"><span class="bn-ico-wrap"><span class="bn-ico" aria-hidden="true">&#128218;</span><span class="bn-badge" id="isNavBadge" hidden aria-hidden="true"></span></span><span>Inservices</span></button>
   <button type="button" data-nav="more" onclick="navGo('more')"><span class="bn-ico" aria-hidden="true">&#8943;</span><span>More</span></button>
 </nav>
 
@@ -6469,25 +6474,44 @@ async function sbHydrateInserviceCompletions(){
   if(changed&&typeof saveISData==='function')saveISData(isData);
   return isData;
 }
+// Home #isNotifBanner and the Inservices nav badge share this count (v=cgisbadge1).
+// A topic is due when it is in the assignment set and has no completion — the same rule the banner used.
+function dueInserviceCount(assigned,isData){
+  let n=0;
+  const data=isData||{};
+  if(!assigned||typeof assigned.forEach!=='function')return 0;
+  assigned.forEach(function(id){
+    if(!data['completed_'+id])n++;
+  });
+  return n;
+}
+function paintISDueChrome(dueCount){
+  const n=dueCount>0?dueCount:0;
+  const banner=document.getElementById('isNotifBanner');
+  if(banner){
+    if(!n){banner.style.display='none';}
+    else{
+      banner.innerHTML='&#128218; <strong>You have an inservice due this month!</strong> Tap here to complete it.';
+      banner.style.background='var(--navy)';
+      banner.style.display='block';
+    }
+  }
+  const badge=document.getElementById('isNavBadge');
+  if(!badge)return;
+  if(!n){badge.hidden=true;badge.textContent='';return;}
+  badge.textContent=String(n);
+  badge.hidden=false;
+}
 async function checkISNotif(){
   if(typeof sbHydrateInserviceCompletions==='function'){
     try{await sbHydrateInserviceCompletions();}catch(e){}
   }
   const isData=getISData();
-  const banner=document.getElementById('isNotifBanner');
-  if(!banner)return;
   let assigned=new Set();
   try{
     assigned=await sbMyInserviceTopics();
   }catch(e){}
-  let due=false;
-  assigned.forEach(function(id){
-    if(!isData['completed_'+id])due=true;
-  });
-  if(!due){banner.style.display='none';return;}
-  banner.innerHTML='&#128218; <strong>You have an inservice due this month!</strong> Tap here to complete it.';
-  banner.style.background='var(--navy)';
-  banner.style.display='block';
+  paintISDueChrome(dueInserviceCount(assigned,isData));
 }
 
 async function renderISList(){
