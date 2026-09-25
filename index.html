@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-cghome1">
 <meta name="caregiver-build" content="2026-09-24-cgauth1">
 <meta name="caregiver-build" content="2026-09-24-bcast1b">
 <meta name="caregiver-build" content="2026-09-24-bcast1">
@@ -21,6 +22,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-cghome1 v=cghome1 — Friday GO 2026-09-25. Forgot no longer stops on “Username and email do not match.” before /auth/v1/recover. resolve_username_email for mossier already returns the Auth email, so that line was the Sheets verify_reset branch when evercareSbEnabled() is false (?sheets=1 or localStorage.evercare_sheets=1), or aideEmailsMatch rejecting an empty or autofilled email. Forgot clears that flag, strips sheets=1, and recovers to the resolved Auth email when the username resolves. An unknown username does not send mail and the screen does not show the Auth address. The email field stays optional. After Save password and after Finish-account, the primary button says “Open Caregiver”. Standalone (display-mode or iOS navigator.standalone) assigns a same-tab relative URL (./ or index.html). Otherwise it assigns https://evercareagency.github.io/caregiver/ or this page’s origin+path, same tab, no target=_blank. Auth PUT /auth/v1/user is unchanged. v=cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cgauth1 v=cgauth1 — Friday GO 2026-09-24. Default cut password lifecycle stays Auth-only. Login is resolve_username_email then the password grant. Forgot is GoTrue recover then PUT /auth/v1/user. Finish-account (must_change) always calls that same Auth update and clears aides.must_change_password; a missing JWT does not fall through to Sheets complete_aide_setup or set_password. Signup on the cut still does not create an Auth user and does not write a Sheets password. Forgot-password inputs on #resetModal are 48px so the link form stays usable at about 390px. Sheets login, signup, verify_reset, reset_password, and set_password run only when evercareSbEnabled() is false (?sheets=1 or localStorage.evercare_sheets=1). v=bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-bcast1b v=bcast1b — Friday GO 2026-09-24. Home #broadcastBanner unwraps the Ace get_active_broadcast envelope {success,data} (or ok/data) before reading data.message, same as Admin bcastActiveFromRpc. data null, empty message, or success/ok false hides the banner. Array singleton and a string payload still paint. Cut stays aide-JWT POST /rest/v1/rpc/get_active_broadcast {} only. Caregiver never calls send_broadcast or clear_broadcast. If the JWT is missing at home paint and appears within about 2s, the banner load retries once. Rollback ?sheets=1 OR localStorage.evercare_sheets=1 still reads store broadcast_msg only. v=bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-bcast1 v=bcast1 — Friday GO 2026-09-24. Home #broadcastBanner / .broadcast-banner on the Supabase cut reads aide-JWT POST /rest/v1/rpc/get_active_broadcast {} only (GHOST-BROADCAST-CONTRACT-v1). If data.message is set, show it; if data is null or empty, hide. Caregiver never calls send_broadcast or clear_broadcast. Rollback ?sheets=1 OR localStorage.evercare_sheets=1 restores the localStorage/store key broadcast_msg read path and does not invent Sheets /exec. v=warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -234,7 +236,7 @@ footer{text-align:center;padding:11px;font-size:0.7rem;color:var(--muted);border
 .mbtn-danger{background:var(--danger);color:white;}
 .auth-tab{min-height:48px;}
 .auth-box input[type="text"],.auth-box input[type="password"]{min-height:48px;font-size:1rem;}
-#resetModal input[type="text"],#resetModal input[type="password"]{min-height:48px;font-size:1rem;}
+#resetModal input[type="text"],#resetModal input[type="email"],#resetModal input[type="password"]{min-height:48px;font-size:1rem;}
 .hdr-back{width:44px;height:44px;font-size:18px;}
 .sig-actions{display:flex;gap:8px;margin-top:6px;}
 .sig-act{flex:1;min-height:48px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;}
@@ -443,6 +445,7 @@ else setupEverCarePWA();
   <div class="auth-title" style="margin-top:8px">ECA Aide Portal</div>
   <div class="auth-sub">ACCOUNT SETUP REQUIRED</div>
   <div class="auth-box">
+    <div id="aideSetupForm">
     <h2>Finish your account</h2>
     <p>Office created this login with a temporary password. Set a new password and your email before using the portal. You cannot skip this step.</p>
     <div class="field"><label>Current / temp password</label><div style="position:relative"><input type="password" id="setup_curpass" placeholder="Temporary password" autocomplete="current-password" style="padding-right:64px"><button type="button" onclick="togglePasswordVisibility('setup_curpass',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted,#6b7a90);font-size:0.78rem;font-weight:600;cursor:pointer;padding:4px 6px;font-family:inherit">Show</button></div></div>
@@ -452,6 +455,12 @@ else setupEverCarePWA();
     <button class="btn btn-teal btn-full" onclick="submitAideSetup()" id="aideSetupBtn">Save &amp; Continue →</button>
     <div class="auth-err" id="aideSetupErr"></div>
     <div style="text-align:center;margin-top:12px"><button type="button" onclick="caregiverLogout()" style="background:none;border:none;color:var(--teal);font-size:0.76rem;cursor:pointer;text-decoration:underline">Log out</button></div>
+    </div>
+    <div id="aideSetupDone" style="display:none">
+      <h2 id="aideSetupDoneTitle" style="color:var(--success)">Password saved</h2>
+      <p>Open Caregiver to continue.</p>
+      <a class="btn btn-teal btn-full" id="aideSetupOpenCaregiver" href="./" onclick="openCaregiverLogin();return false;">Open Caregiver</a>
+    </div>
   </div>
 </div>
 
@@ -472,7 +481,7 @@ else setupEverCarePWA();
     <div id="recoveryDone" style="display:none">
       <h2 id="recoveryDoneTitle" style="color:var(--success)">Password saved</h2>
       <p>Sign in with your new password.</p>
-      <a class="btn btn-teal btn-full" id="recoveryOpenPortal" href="https://evercareagency.github.io/caregiver/" onclick="openCaregiverLogin();return false;">Open ECA Aide Portal</a>
+      <a class="btn btn-teal btn-full" id="recoveryOpenPortal" href="./" onclick="openCaregiverLogin();return false;">Open Caregiver</a>
       <p id="recoveryDoneHint" style="margin-top:14px;margin-bottom:0">If you use the app icon on your phone, open it from there after this</p>
     </div>
   </div>
@@ -761,15 +770,15 @@ else setupEverCarePWA();
     <div class="mico">🔑</div>
     <h3>Reset Password</h3>
     <p id="reset_blurb">Enter your username and email. We will email you a link to set a new password.</p>
-    <div class="field" style="text-align:left;margin-bottom:9px"><label>Username</label><input type="text" id="reset_user" placeholder="Your username"></div>
-    <div class="field" style="text-align:left;margin-bottom:14px"><label>Email Address</label><input type="text" id="reset_email" placeholder="Your email"></div>
+    <div class="field" style="text-align:left;margin-bottom:9px"><label>Username</label><input type="text" id="reset_user" placeholder="Your username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+    <div class="field" style="text-align:left;margin-bottom:14px"><label>Email address (optional)</label><input type="email" id="reset_email" placeholder="Email on your account" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email"></div>
     <div id="reset_new_pass" style="display:none">
       <div class="field" style="text-align:left;margin-bottom:14px"><label>New Password</label><input type="password" id="reset_newpwd" placeholder="Enter new password"></div>
       <button class="mbtn mbtn-confirm" style="width:100%;margin-bottom:8px" onclick="doResetPassword()">Set New Password</button>
     </div>
     <div id="reset_verify_btn" style="display:flex;gap:8px;justify-content:center">
-      <button class="mbtn mbtn-cancel" onclick="closeModal('resetModal')">Cancel</button>
-      <button class="mbtn mbtn-confirm" id="resetVerifyBtn" onclick="verifyReset()">Send reset link →</button>
+      <button type="button" class="mbtn mbtn-cancel" onclick="closeModal('resetModal')">Cancel</button>
+      <button type="button" class="mbtn mbtn-confirm" id="resetVerifyBtn" onclick="verifyReset()">Send reset link →</button>
     </div>
     <div style="color:var(--danger);font-size:0.73rem;margin-top:7px;display:none" id="resetErr"></div>
   </div>
@@ -1871,9 +1880,8 @@ async function submitAideSetup(){
       window._aideSetupCurrentPassword='';
       if(err)err.style.display='none';
       showTempMsg('Account setup complete.','var(--success)');
-      const fresh=!!window._cgFreshLogin;
       window._cgFreshLogin=false;
-      afterLogin({freshLogin:fresh});
+      showAideSetupSaved();
       return;
     }
     const res=await postAideAction('complete_aide_setup','set_password',{
@@ -1891,9 +1899,8 @@ async function submitAideSetup(){
       window._aideSetupCurrentPassword='';
       if(err)err.style.display='none';
       showTempMsg('Account setup complete.','var(--success)');
-      const fresh=!!window._cgFreshLogin;
       window._cgFreshLogin=false;
-      afterLogin({freshLogin:fresh});
+      showAideSetupSaved();
       return;
     }
     if(data&&(('mustChangePassword' in data)||('needsEmail' in data))){
@@ -3245,7 +3252,8 @@ function restoreHdrSigs(ts){
 // Cut default, no new RPC: resolve_username_email, then POST /auth/v1/recover
 // (resetPasswordForEmail) to this page. The recovery session PUT /auth/v1/user.
 // Logged-in setup also uses that user update only. Office temp-password reset is not called.
-// Sheets verify_reset / reset_password run only when evercareSbEnabled() is false.
+// Forgot always resolves the username, then POST /auth/v1/recover. It does not
+// call Sheets verify_reset. Sheets reset_password stays on the emergency setter.
 function aideEmailsMatch(resolved,entered){
   const got=String(resolved||'').trim().toLowerCase();
   const want=String(entered||'').trim().toLowerCase();
@@ -3261,7 +3269,7 @@ function caregiverRecoverRedirect(){
 }
 async function sendAideRecoveryEmail(email){
   const addr=String(email||'').trim();
-  if(!addr)throw new Error('Username and email do not match.');
+  if(!addr)throw new Error('Could not send the reset email.');
   let url=SUPABASE_URL+'/auth/v1/recover';
   const redirect=caregiverRecoverRedirect();
   if(redirect)url+='?redirect_to='+encodeURIComponent(redirect);
@@ -3313,6 +3321,23 @@ function caregiverLoginUrl(){
   try{
     const origin=String((typeof location!=='undefined'&&location&&location.origin)||'');
     const path=String((typeof location!=='undefined'&&location&&location.pathname)||'/');
+    let standalone=false;
+    try{
+      const nav=(typeof navigator!=='undefined'&&navigator)||(typeof window!=='undefined'&&window&&window.navigator)||null;
+      if(nav&&nav.standalone)standalone=true;
+      if(!standalone){
+        const mm=(typeof matchMedia==='function'&&matchMedia)||(typeof window!=='undefined'&&window&&typeof window.matchMedia==='function'&&window.matchMedia)||null;
+        if(mm){
+          const q=mm('(display-mode: standalone)');
+          if(q&&q.matches)standalone=true;
+        }
+      }
+    }catch(e0){}
+    // iOS home-screen webapps leave standalone when assigned an absolute https URL.
+    if(standalone){
+      if(/\/index\.html$/i.test(path))return 'index.html';
+      return './';
+    }
     let host=String((typeof location!=='undefined'&&location&&location.host)||'').toLowerCase();
     if(!host&&origin&&origin!=='null')host=origin.replace(/^https?:\/\//,'').split('/')[0].toLowerCase();
     const local=!host||host==='localhost'||host.indexOf('localhost:')===0||host.indexOf('127.0.0.1')===0||host.indexOf('[::1]')===0||origin==='null'||!origin;
@@ -3326,6 +3351,12 @@ function openCaregiverLogin(){
   const login=caregiverLoginUrl();
   try{
     if(login&&typeof location!=='undefined'&&location){
+      const relative=login.charAt(0)!=='/'&&login.indexOf('://')<0;
+      if(relative){
+        if(typeof location.assign==='function'){location.assign(login);return;}
+        location.href=login;
+        return;
+      }
       const origin=String(location.origin||'');
       const path=String(location.pathname||'/');
       const search=String(location.search||'');
@@ -3345,17 +3376,37 @@ function openCaregiverLogin(){
   }catch(e){}
   if(typeof showScreen==='function')showScreen('authScreen');
 }
+function paintCaregiverOpenLink(id){
+  const link=document.getElementById(id);
+  let login='https://evercareagency.github.io/caregiver/';
+  try{ if(typeof caregiverLoginUrl==='function')login=caregiverLoginUrl()||login; }catch(e){}
+  if(link){
+    link.textContent='Open Caregiver';
+    link.href=login;
+    try{ if(link.removeAttribute)link.removeAttribute('target'); }catch(e2){}
+  }
+  return login;
+}
 function showRecoveryPasswordSaved(){
   const form=document.getElementById('recoveryForm');
   const done=document.getElementById('recoveryDone');
   if(form)form.style.display='none';
   if(done)done.style.display='block';
-  const link=document.getElementById('recoveryOpenPortal');
-  const login=caregiverLoginUrl();
-  if(link)link.href=login||'https://evercareagency.github.io/caregiver/';
+  paintCaregiverOpenLink('recoveryOpenPortal');
   window.__sbRecovery=null;
   clearPwResetRedirect();
   if(typeof setTimeout==='function'){
+    window.__pwResetRedirect=setTimeout(openCaregiverLogin,3000);
+  }
+}
+function showAideSetupSaved(){
+  const form=document.getElementById('aideSetupForm');
+  const done=document.getElementById('aideSetupDone');
+  if(form)form.style.display='none';
+  if(done)done.style.display='block';
+  paintCaregiverOpenLink('aideSetupOpenCaregiver');
+  try{ if(typeof clearPwResetRedirect==='function')clearPwResetRedirect(); }catch(e){}
+  if(typeof setTimeout==='function'&&typeof openCaregiverLogin==='function'){
     window.__pwResetRedirect=setTimeout(openCaregiverLogin,3000);
   }
 }
@@ -3434,43 +3485,59 @@ function showResetModal(){
   document.getElementById('reset_new_pass').style.display='none';document.getElementById('reset_verify_btn').style.display='flex';document.getElementById('resetErr').style.display='none';
   const blurb=document.getElementById('reset_blurb');
   const verifyBtn=document.getElementById('resetVerifyBtn');
-  const cut=evercareSbEnabled();
-  if(blurb)blurb.textContent=cut?'Enter your username and email. We will email you a link to set a new password.':'Enter your username and email to reset your password.';
-  if(verifyBtn)verifyBtn.textContent=cut?'Send reset link →':'Verify →';
+  if(blurb)blurb.textContent='Enter your username. We will email a reset link to the address on your account.';
+  if(verifyBtn)verifyBtn.textContent='Send reset link →';
   openModal('resetModal');
 }
-async function verifyReset(){
-  const user=document.getElementById('reset_user').value.trim().toLowerCase(),email=document.getElementById('reset_email').value.trim().toLowerCase(),err=document.getElementById('resetErr');
-  const verifyBtn=document.getElementById('resetVerifyBtn');
+// A stuck ?sheets=1 or evercare_sheets=1 used to send Forgot through Sheets
+// verify_reset, which shows "Username and email do not match." and never
+// calls /auth/v1/recover. Password reset stays on Auth.
+function releaseStuckSheetsRollback(){
   try{
-    if(evercareSbEnabled()){
-      if(verifyBtn){verifyBtn.disabled=true;verifyBtn.textContent='Sending...';}
-      const resolved=await resolveAideAuthEmail(user);
-      if(!aideEmailsMatch(resolved,email)){
-        err.textContent='Username and email do not match.';
-        err.style.display='block';
-        return;
-      }
-      await sendAideRecoveryEmail(resolved);
-      err.style.display='none';
-      closeModal('resetModal');
-      showTempMsg('Check your email for a link to set a new password.','var(--success)');
+    if(typeof localStorage!=='undefined'&&localStorage&&localStorage.getItem('evercare_sheets')==='1'){
+      localStorage.removeItem('evercare_sheets');
+    }
+  }catch(e){}
+  try{
+    const search=String((typeof location!=='undefined'&&location&&location.search)||'');
+    if(!/(?:^|[?&])sheets=1(?:&|$)/.test(search))return;
+    const params=new URLSearchParams(search.replace(/^\?/,''));
+    params.delete('sheets');
+    const qs=params.toString();
+    const path=String((location&&location.pathname)||'/');
+    const hash=String((location&&location.hash)||'');
+    const next=path+(qs?('?'+qs):'')+hash;
+    if(typeof history!=='undefined'&&history&&typeof history.replaceState==='function'){
+      history.replaceState(null,'',next);
+    }
+  }catch(e2){}
+}
+async function verifyReset(){
+  const userEl=document.getElementById('reset_user');
+  const user=String((userEl&&userEl.value)||'').trim().toLowerCase();
+  const err=document.getElementById('resetErr');
+  const verifyBtn=document.getElementById('resetVerifyBtn');
+  const showErr=function(msg){if(err){err.textContent=msg;err.style.display='block';}};
+  if(!user){showErr('Enter your username.');return;}
+  releaseStuckSheetsRollback();
+  try{
+    if(verifyBtn){verifyBtn.disabled=true;verifyBtn.textContent='Sending...';}
+    const resolved=await resolveAideAuthEmail(user);
+    if(!String(resolved||'').trim()){
+      showErr('Check the username and try again.');
       return;
     }
-    const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'verify_reset',username:user,email})});
-    const data=await res.json();
-    if(data.success){document.getElementById('reset_new_pass').style.display='block';document.getElementById('reset_verify_btn').style.display='none';err.style.display='none';}
-    else{err.textContent='Username and email do not match.';err.style.display='block';}
+    // Typed email is optional. Recover always uses the Auth email on file
+    // and never prints that address.
+    await sendAideRecoveryEmail(resolved);
+    if(err)err.style.display='none';
+    closeModal('resetModal');
+    showTempMsg('Check your email for a link to set a new password.','var(--success)');
   }catch(e){
-    if(evercareSbEnabled()){
-      const raw=(e&&e.message)||'';
-      err.textContent=raw==='login_failed'?'Network error.':(raw||'Network error.');
-    }else{
-      err.textContent='Network error.';
-    }
-    err.style.display='block';
+    const raw=(e&&e.message)||'';
+    showErr(raw==='login_failed'?'Check the username and try again.':(raw||'Network error.'));
   }finally{
-    if(verifyBtn&&evercareSbEnabled()){verifyBtn.disabled=false;verifyBtn.textContent='Send reset link →';}
+    if(verifyBtn){verifyBtn.disabled=false;verifyBtn.textContent='Send reset link →';}
   }
 }
 async function doResetPassword(){

@@ -29,8 +29,11 @@ assert.ok(html.includes('v=sbseal1'), 'sealed marker');
 assert.ok(html.includes('v=pwreset1'), 'password reset ux marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-pw-reset-ux">'), 'password reset ux meta');
 assert.ok(html.includes('id="recoveryDone"') && html.includes('>Password saved</h2>'), 'success heading stays on the reset page');
-assert.ok(html.includes('id="recoveryOpenPortal"') && html.includes('>Open ECA Aide Portal</a>'), 'portal button is on the reset page');
-assert.ok(html.includes('href="https://evercareagency.github.io/caregiver/"'), 'portal button defaults to LIVE Pages login');
+assert.ok(html.includes('id="recoveryOpenPortal"') && html.includes('>Open Caregiver</a>'), 'caregiver button is on the reset page');
+assert.ok(html.includes('id="aideSetupOpenCaregiver"') && html.includes('>Open Caregiver</a>'), 'finish-account success uses the same CTA');
+assert.ok(!html.includes('target="_blank"'), 'success CTA stays in this tab');
+assert.ok(html.includes('v=cghome1'), 'cghome marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-25-cghome1">'), 'cghome meta');
 assert.ok(html.includes("const live='https://evercareagency.github.io/caregiver/'"), 'login fallback is LIVE Pages');
 assert.ok(html.includes('If you use the app icon on your phone, open it from there after this'), 'browser soft copy');
 assert.ok(html.includes('onclick="openCaregiverLogin();return false;"'), 'portal button opens the login url');
@@ -57,12 +60,12 @@ assert.ok(extractFn(html, 'async function clearAideMustChangeAfterRecovery(token
 assert.ok(recoverFn.includes('/auth/v1/recover'), 'forgot password sends a recovery email');
 assert.ok(!recoverFn.includes('reset_password') && !submitFn.includes('SHEETS_URL'), 'recovery path does not write Sheets');
 
-const verifySb = verifyFn.slice(0, verifyFn.indexOf('SHEETS_URL'));
-assert.ok(verifySb.includes('sendAideRecoveryEmail(resolved)'), 'cut verify emails the resolved Auth address');
-assert.ok(verifySb.includes('return'), 'cut verify returns before Sheets');
-assert.ok(!verifySb.includes('reset_new_pass'), 'cut verify does not open an in-modal password');
-assert.ok(!verifySb.includes('Password reset! Please log in.'), 'cut verify does not claim the password changed');
-assert.ok(verifyFn.includes("action:'verify_reset'"), 'sheets rollback still verifies on Sheets');
+assert.ok(verifyFn.includes('sendAideRecoveryEmail(resolved)'), 'forgot emails the resolved Auth address');
+assert.ok(verifyFn.includes('releaseStuckSheetsRollback()'), 'forgot clears a stuck sheets rollback before recover');
+assert.ok(!verifyFn.includes('reset_new_pass'), 'forgot does not open an in-modal password');
+assert.ok(!verifyFn.includes('Password reset! Please log in.'), 'forgot does not claim the password changed');
+assert.ok(!verifyFn.includes("action:'verify_reset'") && !verifyFn.includes('SHEETS_URL'), 'forgot does not call Sheets verify_reset');
+assert.ok(!verifyFn.includes('aideEmailsMatch'), 'a retyped email no longer blocks recover');
 
 const resetSb = resetFn.slice(0, resetFn.indexOf("action:'reset_password'"));
 assert.ok(resetSb.includes('return'), 'cut set-password does not fall through to Sheets');
@@ -135,7 +138,7 @@ function harness(opts){
     recoveryDone: {style: {display: 'none'}},
     recoveryDoneTitle: {textContent: 'Password saved'},
     recoveryDoneHint: {textContent: 'If you use the app icon on your phone, open it from there after this', style: {}},
-    recoveryOpenPortal: {textContent: 'Open ECA Aide Portal', href: './'}
+    recoveryOpenPortal: {textContent: 'Open Caregiver', href: './'}
   };
   nodes.resetVerifyBtn.textContent = 'Send reset link →';
   const box = {
@@ -223,7 +226,9 @@ function harness(opts){
     extractFn(html, 'function clearPwResetRedirect()'),
     extractFn(html, 'function caregiverLoginUrl()'),
     extractFn(html, 'function openCaregiverLogin()'),
+    extractFn(html, 'function paintCaregiverOpenLink(id)'),
     extractFn(html, 'function showRecoveryPasswordSaved()'),
+    extractFn(html, 'function releaseStuckSheetsRollback()'),
     extractFn(html, 'async function clearAideMustChangeAfterRecovery(token)'),
     submitFn,
     verifyFn,
@@ -289,16 +294,31 @@ function rpcEmail(email){
   const mismatch = harness({
     user: 'mossier',
     email: 'other@example.com',
-    rpc: rpcEmail('mo.aide@example.com')
+    rpc: rpcEmail('moshire21@hotmail.com')
   });
   await mismatch.box.verifyReset();
-  assert.strictEqual(mismatch.nodes.resetErr.textContent, 'Username and email do not match.');
-  assert.deepStrictEqual(mismatch.toasts, []);
-  assert.ok(!mismatch.calls.some(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;}));
+  assert.deepStrictEqual(mismatch.toasts, ['Check your email for a link to set a new password.']);
+  assert.deepStrictEqual(mismatch.closed, ['resetModal']);
+  assert.strictEqual(mismatch.nodes.resetErr.textContent, '');
+  const mismatchRecover = mismatch.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
+  assert.ok(mismatchRecover, 'a different typed email still recovers');
+  assert.deepStrictEqual(JSON.parse(mismatchRecover.init.body), {email: 'moshire21@hotmail.com'});
+  assert.ok(!mismatch.calls.some(function(c){return c.url === 'https://sheets.example/exec' || (c.body && c.body.action === 'verify_reset');}));
 
-  const unknown = harness({user: 'mossier', email: 'mo.aide@example.com', rpc: {ok: true, status: 200, raw: 'null'}});
+  const optionalEmail = harness({
+    user: 'mossier',
+    email: '',
+    rpc: rpcEmail('moshire21@hotmail.com')
+  });
+  await optionalEmail.box.verifyReset();
+  const optionalRecover = optionalEmail.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
+  assert.ok(optionalRecover, 'an empty email field still recovers');
+  assert.deepStrictEqual(JSON.parse(optionalRecover.init.body), {email: 'moshire21@hotmail.com'});
+
+  const unknown = harness({user: 'mossier', email: 'moshire21@hotmail.com', rpc: {ok: true, status: 200, raw: 'null'}});
   await unknown.box.verifyReset();
-  assert.strictEqual(unknown.nodes.resetErr.textContent, 'Username and email do not match.');
+  assert.strictEqual(unknown.nodes.resetErr.textContent, 'Check the username and try again.');
+  assert.deepStrictEqual(unknown.toasts, []);
   assert.ok(!unknown.calls.some(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;}));
 
   const recoverDown = harness({
@@ -313,17 +333,21 @@ function rpcEmail(email){
   assert.strictEqual(recoverDown.nodes.resetErr.textContent, 'mailer down');
 
   const sheetsVerify = harness({
-    search: '?sheets=1',
+    search: '?sheets=1&keep=1',
+    storage: {evercare_sheets: '1'},
     user: 'mossier',
-    email: 'mo.aide@example.com',
-    sheetsHttp: {ok: true, status: 200, raw: JSON.stringify({success: true})}
+    email: 'moshire21@hotmail.com',
+    rpc: rpcEmail('moshire21@hotmail.com')
   });
   await sheetsVerify.box.verifyReset();
-  assert.strictEqual(sheetsVerify.calls.length, 1);
-  assert.strictEqual(sheetsVerify.calls[0].url, 'https://sheets.example/exec');
-  assert.deepStrictEqual(JSON.parse(sheetsVerify.calls[0].init.body), {action: 'verify_reset', username: 'mossier', email: 'mo.aide@example.com'});
-  assert.strictEqual(sheetsVerify.nodes.reset_new_pass.style.display, 'block');
-  assert.ok(!sheetsVerify.calls.some(function(c){return c.url.indexOf('supabase') >= 0;}));
+  const sheetsRecover = sheetsVerify.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
+  assert.ok(sheetsRecover, 'a stuck sheets flag still sends Auth recover');
+  assert.deepStrictEqual(JSON.parse(sheetsRecover.init.body), {email: 'moshire21@hotmail.com'});
+  assert.ok(!sheetsVerify.calls.some(function(c){return c.url === 'https://sheets.example/exec' || (c.body && c.body.action === 'verify_reset');}));
+  assert.strictEqual(sheetsVerify.box.localStorage.getItem('evercare_sheets'), null);
+  assert.ok(sheetsVerify.box.location.search.indexOf('sheets=1') < 0, 'sheets=1 is stripped before the next sign-in');
+  assert.ok(sheetsVerify.box.location.search.indexOf('keep=1') >= 0, 'other query params stay');
+  assert.strictEqual(sheetsVerify.nodes.reset_new_pass.style.display, 'none');
 
   const cutSet = harness({user: 'mossier', email: 'mo.aide@example.com', password: 'new-secret'});
   await cutSet.box.doResetPassword();
@@ -367,7 +391,7 @@ function rpcEmail(email){
   assert.strictEqual(landed.nodes.recoveryForm.style.display, 'none');
   assert.strictEqual(landed.nodes.recoveryDone.style.display, 'block');
   assert.strictEqual(landed.nodes.recoveryDoneTitle.textContent, 'Password saved');
-  assert.strictEqual(landed.nodes.recoveryOpenPortal.textContent, 'Open ECA Aide Portal');
+  assert.strictEqual(landed.nodes.recoveryOpenPortal.textContent, 'Open Caregiver');
   assert.strictEqual(landed.nodes.recoveryOpenPortal.href, 'https://caregiver.example/index.html');
   assert.strictEqual(landed.nodes.recoveryDoneHint.textContent, 'If you use the app icon on your phone, open it from there after this');
   assert.strictEqual(landed.box.window.__sbRecovery, null);
@@ -460,6 +484,30 @@ function rpcEmail(email){
   assert.strictEqual(localSaved.nodes.recoveryOpenPortal.href, 'https://evercareagency.github.io/caregiver/');
   localSaved.timers[0].fn();
   assert.deepStrictEqual(localSaved.nav, [{op: 'assign', url: 'https://evercareagency.github.io/caregiver/'}]);
+
+  const iosHome = harness({
+    origin: 'https://evercareagency.github.io',
+    pathname: '/caregiver/',
+    search: '?sheets=1',
+    recoveryPass: 'new-secret',
+    recoveryConfirm: 'new-secret',
+    window: {__sbRecovery: {access_token: token, refresh_token: 'r'}, navigator: {standalone: true}},
+    aide: {ok: true, status: 200, raw: '[]'}
+  });
+  await iosHome.box.submitRecoveryPassword();
+  assert.strictEqual(iosHome.nodes.recoveryOpenPortal.textContent, 'Open Caregiver');
+  assert.strictEqual(iosHome.nodes.recoveryOpenPortal.href, './');
+  iosHome.box.openCaregiverLogin();
+  assert.deepStrictEqual(iosHome.nav, [{op: 'assign', url: './'}]);
+
+  const iosIndex = harness({
+    origin: 'https://evercareagency.github.io',
+    pathname: '/caregiver/index.html',
+    window: {navigator: {standalone: true}, matchMedia: function(){return {matches: true};}}
+  });
+  assert.strictEqual(iosIndex.box.caregiverLoginUrl(), 'index.html');
+  iosIndex.box.openCaregiverLogin();
+  assert.deepStrictEqual(iosIndex.nav, [{op: 'assign', url: 'index.html'}]);
 
   const taken = harness({hash: '#access_token=' + encodeURIComponent(token) + '&refresh_token=r&type=recovery&expires_in=3600'});
   const session = taken.box.sbTakeRecoverySession();

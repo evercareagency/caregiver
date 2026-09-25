@@ -26,7 +26,7 @@ function extractFn(src, sig){
 assert.ok(html.includes('v=cgauth1'), 'cgauth probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-cgauth1">'), 'cgauth build meta');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-cgauth1 v=cgauth1 —'), 'cgauth build comment');
-assert.ok(html.includes('#resetModal input[type="text"],#resetModal input[type="password"]{min-height:48px;font-size:1rem;}'), 'forgot fields stay a phone tap target');
+assert.ok(html.includes('#resetModal input[type="text"],#resetModal input[type="email"],#resetModal input[type="password"]{min-height:48px;font-size:1rem;}'), 'forgot fields stay a phone tap target');
 assert.ok(!html.includes('/auth/v1/signup'), 'caregiver tip does not sign aides up in Auth');
 assert.ok(!html.includes('reset_aide_temp_password'), 'office temp-password rpc stays in Admin');
 assert.strictEqual((html.match(/\/auth\/v1\/token\?grant_type=password/g) || []).length, 2, 'password grant stays login plus setup');
@@ -49,8 +49,9 @@ const signupCut = signupFn.slice(0, signupFn.indexOf('SHEETS_URL'));
 assert.ok(signupCut.includes('evercareSbEnabled()') && signupCut.includes('return;'), 'cut signup returns before Sheets');
 assert.ok(!signupCut.includes('password:pass'), 'cut signup does not store a local password');
 
-const verifyCut = verifyFn.slice(0, verifyFn.indexOf('SHEETS_URL'));
-assert.ok(verifyCut.includes('sendAideRecoveryEmail(resolved)') && verifyCut.includes('return;'), 'cut forgot returns before Sheets');
+assert.ok(verifyFn.includes('sendAideRecoveryEmail(resolved)'), 'forgot recovers to the resolved Auth email');
+assert.ok(verifyFn.includes('releaseStuckSheetsRollback()'), 'forgot clears a stuck sheets rollback');
+assert.ok(!verifyFn.includes('verify_reset') && !verifyFn.includes('SHEETS_URL'), 'forgot does not call Sheets verify_reset');
 assert.ok(recoverFn.includes('/auth/v1/recover') && !recoverFn.includes('SHEETS_URL'), 'forgot email is Auth recover');
 assert.ok(recoverSubmit.includes("method:'PUT'") && recoverSubmit.includes('/auth/v1/user') && !recoverSubmit.includes('SHEETS_URL'), 'recovery save is Auth updateUser');
 
@@ -93,6 +94,8 @@ const src = [
   extractFn(html, 'function aideSetupSuccess(data)'),
   extractFn(html, 'async function postAideAction(primary,alias,payload)'),
   extractFn(html, 'async function completeAideSetupSupabase(currentPassword,newPassword,email)'),
+  extractFn(html, 'function paintCaregiverOpenLink(id)'),
+  extractFn(html, 'function showAideSetupSaved()'),
   extractFn(html, 'async function submitAideSetup()')
 ].join('\n');
 
