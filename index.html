@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-cguser1">
 <meta name="caregiver-build" content="2026-09-25-cghome1b">
 <meta name="caregiver-build" content="2026-09-25-coveraide2">
 <meta name="caregiver-build" content="2026-09-25-cgacct1">
@@ -33,6 +34,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-cguser1 v=cguser1 — Friday GO 2026-09-25. Sign In pre-fills the last username used on this device after Logout and on a cold open of Sign In. The key is cg_last_username (username only). The password field is cleared and the password is never written to storage. Sign Up and Forgot password stay blank. No Auth password reseal. After Forgot/recover Save password and Finish-account, Password saved and Open Caregiver still do not auto-login (v=cghome1b). v=cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cghome1b v=cghome1b — Friday GO 2026-09-25. Assert2: after Forgot/recover Save password, and after Finish-account, stay on Password saved with the primary button Open Caregiver. No auto-login and no timer into the signed-in home. The recovery Auth JWT is not written into cg_session. Save drops the local portal session so Open Caregiver reloads Sign In. Standalone stays same-tab ./ or index.html. Browser stays same-tab https://evercareagency.github.io/caregiver/ or this page origin+path. No target=_blank. v=cghome1, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-coveraide2 v=coveraide2 — Friday GO 2026-09-25. Home Call off (#callOffHomeBtn) still opens #callOffScreen. One Submit tap sends one POST /rest/v1/rpc/aide_record_call_off. The button disables on that tap and an in-flight guard ignores a second tap or ghost click, so the write path does not fire twice. Ace GHOST-COVERAIDE2-CONTRACT-v1 is CALLABLE (patches/coveraide2-v1.sql): a double-fire returns idempotent true and one open row. The list stays POST /rest/v1/rpc/aide_list_my_call_offs {p_include_resolved:false}. Ace returns source aide only. This screen still drops any row whose source is not exactly aide, so Office and admin-on-behalf stay off Your call-offs. Admin Coverage still uses admin_list_open_shifts and is not changed here. Account stays v=cgacct1 (no Call off, no Backup). No PTO. No Auth reseal. v=cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgacct1 v=cgacct1 — Friday GO 2026-09-25. Account (#moreScreen) no longer shows Call off or Back up this week's draft. Those stay on Home (#callOffHomeBtn and #cgBackupBtn). Account still shows the aide name, the 8-hour stay-signed-in note, Log out, and the office phone plus Home and Timesheet help. Auth, passwords, and Save Day (v=cgsave1) are unchanged. v=cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -477,8 +479,8 @@ else setupEverCarePWA();
       <button class="auth-tab" id="tabSignup" onclick="switchTab('signup')">Sign Up</button>
     </div>
     <div id="loginForm">
-      <div class="field"><label>Username</label><input type="text" id="l_user" placeholder="Your username" autocomplete="username"></div>
-      <div class="field"><label>Password</label><div style="position:relative"><input type="password" id="l_pass" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:64px"><button type="button" onclick="togglePasswordVisibility('l_pass',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted,#6b7a90);font-size:0.78rem;font-weight:600;cursor:pointer;padding:4px 6px;font-family:inherit">Show</button></div></div>
+      <div class="field"><label>Username</label><input type="text" id="l_user" placeholder="Your username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+      <div class="field"><label>Password</label><div style="position:relative"><input type="password" id="l_pass" placeholder="Your password" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:64px"><button type="button" onclick="togglePasswordVisibility('l_pass',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted,#6b7a90);font-size:0.78rem;font-weight:600;cursor:pointer;padding:4px 6px;font-family:inherit">Show</button></div></div>
       <button class="btn btn-teal btn-full" onclick="doLogin()" id="loginBtn">Sign In →</button>
       <div class="auth-err" id="loginErr">Incorrect username or password.</div>
       <div style="text-align:center;margin-top:10px"><button type="button" id="loginForgot" onclick="showResetModal()" style="background:none;border:none;color:var(--teal);font-size:0.95rem;font-weight:600;cursor:pointer;text-decoration:underline;min-height:44px;padding:10px 12px">Forgot password?</button></div>
@@ -1125,6 +1127,33 @@ const store={
   del:k=>{try{localStorage.removeItem(k);}catch(e){}try{sessionStorage.removeItem(k);}catch(e){}}
 };
 
+// Last successful Sign In username only. Password is never written here.
+// Logout removes cg_session. It does not remove this key.
+const CG_LAST_USERNAME_KEY='cg_last_username';
+function rememberSignInUsername(user){
+  const u=String(user||'').trim().toLowerCase();
+  if(!u)return;
+  store.set(CG_LAST_USERNAME_KEY,u);
+}
+function readRememberedUsername(){
+  try{
+    const raw=store.get(CG_LAST_USERNAME_KEY);
+    if(typeof raw!=='string')return '';
+    return raw.trim().toLowerCase();
+  }catch(e){return '';}
+}
+function blankSignInPassword(){
+  const pass=document.getElementById('l_pass');
+  if(pass)pass.value='';
+}
+function paintSignInForm(){
+  blankSignInPassword();
+  const userEl=document.getElementById('l_user');
+  if(!userEl)return;
+  const saved=readRememberedUsername();
+  if(saved)userEl.value=saved;
+}
+
 // Stay-logged-in TTL. CG_SESSION_MS is 8 hours from loginAt. Taps do not extend it.
 // Missing loginAt is backfilled, not a forced re-login.
 // CG_SESSION_CHECK_MS is how often an open app checks the window, clears cg_session, and returns to login.
@@ -1356,6 +1385,7 @@ function showScreen(id){
   if(el)el.classList.add('active');
   window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),50);
   if(typeof syncPortalChrome==='function')syncPortalChrome(id);
+  if(id==='authScreen'&&typeof paintSignInForm==='function')paintSignInForm();
 }
 const PORTAL_NAV_SCREENS={
   caregiverScreen:'home',
@@ -1463,6 +1493,7 @@ function switchTab(tab){
   document.getElementById('signupForm').style.display=tab==='signup'?'block':'none';
   document.getElementById('tabLogin').classList.toggle('active',tab==='login');
   document.getElementById('tabSignup').classList.toggle('active',tab==='signup');
+  if(tab==='login'&&typeof paintSignInForm==='function')paintSignInForm();
 }
 
 // Phone Sign In keyboard (v=loginkb1). Layout only. Does not sign in, store a username, or call Auth.
@@ -1873,20 +1904,20 @@ async function doLogin(){
     if(evercareSbEnabled()){
       sbClearAuth();
       const signed=await loginAideWithSupabase(user,pass);
-      window._aceLoginOk=true;window._aceHealthBad=false;startCgSession(signed);window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
+      window._aceLoginOk=true;window._aceHealthBad=false;rememberSignInUsername(user);startCgSession(signed);window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
     }
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
     const data=await res.json();
     if(data.success){
       try{sbClearAuth();}catch(sbClr){}
-      window._aceLoginOk=true;window._aceHealthBad=false;startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
+      window._aceLoginOk=true;window._aceHealthBad=false;rememberSignInUsername(user);startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
     }
     else{document.getElementById('loginErr').style.display='block';}
   }catch(e){
     if(evercareSbEnabled()){document.getElementById('loginErr').style.display='block';}
     else{
       const users=store.get('cg_users')||{};
-      if(users[user]&&users[user].password===pass){startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
+      if(users[user]&&users[user].password===pass){rememberSignInUsername(user);startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
       else{document.getElementById('loginErr').style.display='block';}
     }
   }finally{
@@ -1939,6 +1970,7 @@ function caregiverLogout(){
   const openModals=document.querySelectorAll('.modal-bg.show');
   for(let i=0;i<openModals.length;i++)openModals[i].classList.remove('show');
   if(typeof unlockBodyScroll==='function')unlockBodyScroll();
+  rememberSignInUsername((currentUser&&currentUser.username)||((store.get('cg_session')||'').username));
   store.del('cg_session');sbClearAuth();clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');
 }
 
@@ -8284,6 +8316,7 @@ function bootCaregiverPortal(){
     return 'cert';
   }
   if(typeof syncStorage==='function') syncStorage();
+  if(typeof paintSignInForm==='function') paintSignInForm();
   const recovery=(typeof sbTakeRecoverySession==='function')?sbTakeRecoverySession():null;
   if(recovery&&recovery.access_token){
     window.__sbRecovery=recovery;
