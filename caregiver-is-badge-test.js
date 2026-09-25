@@ -61,6 +61,7 @@ function boot(opts){
   const banner = {innerHTML:'', style:{display:'none', background:''}};
   const badge = {hidden:true, textContent:'', style:{}};
   const box = {
+    INSERVICES:[{id:2, shortTitle:'Dementia Care', title:'Dementia'},{id:5, shortTitle:'Food Allergies', title:'Food Allergies'}],
     currentUser: opts.user === null ? null : (opts.user || {username:'mossier', name:'Mo Aide', sbAccessToken:'jwt'}),
     sbDataEnabled: function(){return opts.sb !== false && !!(box.currentUser && box.currentUser.sbAccessToken);},
     getISData: function(){return box.isData;},
