@@ -114,18 +114,17 @@ async function runBrowser(){
       }, id);
     }
     async function drawStroke(id){
-      const box = await page.evaluate(function(padId){
+      await page.evaluate(function(padId){
         const c = document.getElementById(padId);
         c.scrollIntoView({block:'center'});
         const r = c.getBoundingClientRect();
-        return {x:r.left, y:r.top, w:r.width, h:r.height};
+        function ev(type, px, py){
+          c.dispatchEvent(new MouseEvent(type, {bubbles:true, cancelable:true, clientX:px, clientY:py, buttons:1}));
+        }
+        ev('mousedown', r.left + 20, r.top + 40);
+        ev('mousemove', r.left + Math.min(r.width - 16, 180), r.top + 62);
+        ev('mouseup', r.left + Math.min(r.width - 16, 180), r.top + 62);
       }, id);
-      const x = box.x + 24;
-      const y = box.y + Math.min(50, box.h / 2);
-      await page.mouse.move(x, y);
-      await page.mouse.down();
-      await page.mouse.move(x + Math.min(140, box.w - 40), y + 18, {steps:12});
-      await page.mouse.up();
       const n = await inkOf(id);
       assert.ok(n >= 18, id + ' stroke should leave ink, got ' + n);
     }
@@ -190,6 +189,22 @@ async function runBrowser(){
     await confirmPad('sp_hdr_aide');
     await assertLocked('sp_hdr_client');
     await assertLocked('sp_hdr_aide');
+    const touchGuard = await page.evaluate(function(){
+      const c = document.getElementById('sp_hdr_client');
+      const before = countCanvasInkPixels(c);
+      const r = c.getBoundingClientRect();
+      if(typeof Touch !== 'function' || typeof TouchEvent !== 'function')return {skipped:true, before:before, after:before};
+      function fire(type){
+        const t = new Touch({identifier:1, target:c, clientX:r.left + 36, clientY:r.top + 48});
+        const touches = type === 'touchend' ? [] : [t];
+        c.dispatchEvent(new TouchEvent(type, {bubbles:true, cancelable:true, touches:touches, targetTouches:touches, changedTouches:[t]}));
+      }
+      fire('touchstart');
+      fire('touchmove');
+      fire('touchend');
+      return {skipped:false, before:before, after:countCanvasInkPixels(c)};
+    });
+    assert.strictEqual(touchGuard.after, touchGuard.before, 'touch listeners do not ink a locked pad');
 
     const flags = await page.evaluate(function(){
       const ts = getAllTimesheets().find(function(t){return t.id === currentTS;}) || {};
