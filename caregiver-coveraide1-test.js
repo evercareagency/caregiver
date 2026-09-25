@@ -34,11 +34,22 @@ assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-25-cgsigl
 assert.ok(html.includes('v=cgauth1') && html.includes('v=bcast1b') && html.includes('v=offline1'), 'older markers stay');
 
 assert.ok(html.includes('var AIDE_CALL_OFF_RPC_CALLABLE=false;'), 'rpc flag stays off until Ace pings CALLABLE');
-assert.ok(html.includes('rpc/aide_record_call_off'), 'aide rpc path is named');
+assert.ok(html.includes('rpc/aide_record_call_off'), 'aide record rpc path is named');
+assert.ok(html.includes('rpc/aide_list_my_call_offs'), 'aide list rpc path is named');
+assert.ok(!html.includes('rpc/admin_record_call_off'), 'office record path stays on Admin');
+assert.ok(!html.includes('aide_submitted'), 'source is not aide_submitted');
+assert.ok(!html.includes("source:'phone'") && !html.includes("source:'ace'"), 'phone and ace are not source values');
+assert.ok(html.includes("source:'aide'"), 'aide submit records source aide');
 assert.ok(html.includes('TODO(GHOST-COVERAIDE1-CONTRACT-v1)'), 'stub todo stays visible');
 const rpcBody = extractFn(html, 'function aideCallOffRpcBody(record)');
-assert.ok(rpcBody.includes('throw'), 'unpublished params fail closed');
-assert.ok(!rpcBody.includes('p_client_id') && !rpcBody.includes('p_shift_start') && !rpcBody.includes('p_regular_aide_id'), 'admin record params are not copied');
+assert.ok(rpcBody.includes('throw'), 'unpublished record params fail closed');
+assert.ok(!rpcBody.includes('p_client_id') && !rpcBody.includes('p_shift_start') && !rpcBody.includes('p_regular_aide_id'), 'office record params are not copied');
+const listBody = extractFn(html, 'function aideListCallOffsBody()');
+assert.ok(listBody.includes('throw'), 'unpublished list params fail closed');
+const refresh = extractFn(html, 'async function openCallOff()');
+const listFlag = refresh.indexOf('AIDE_CALL_OFF_RPC_CALLABLE');
+const listCall = refresh.indexOf('aideListMyCallOffs');
+assert.ok(listFlag >= 0 && listCall > listFlag, 'list rpc is behind the callable flag');
 const submit = extractFn(html, 'async function submitAideCallOff()');
 const flagAt = submit.indexOf('AIDE_CALL_OFF_RPC_CALLABLE');
 const postAt = submit.indexOf('aidePostCallOff');
@@ -89,7 +100,10 @@ vm.createContext(ctx);
   'function callOffStoreKey()',
   'function callOffReadList()',
   'function callOffWriteList(list)',
+  'function callOffSource(row)',
+  'function callOffSourceLabel(source)',
   'function aideCallOffRpcBody(record)',
+  'function aideListCallOffsBody()',
   'function aideCallOffFromRpc(data, record)'
 ].forEach(function(sig){
   vm.runInContext(extractFn(html, sig), ctx);
@@ -131,7 +145,7 @@ assert.strictEqual(built.ok, true);
 assert.strictEqual(built.record.status, 'open');
 assert.strictEqual(built.record.reason, 'sick');
 assert.strictEqual(built.record.aideUsername, 'aide.one');
-assert.strictEqual(built.record.source, 'phone');
+assert.strictEqual(built.record.source, 'aide');
 assert.strictEqual(built.record.clientId, 'c1');
 assert.ok(built.record.startsAt && built.record.endsAt, 'start and end are stored');
 
@@ -158,11 +172,23 @@ assert.strictEqual(vm.runInContext('callOffReadList()[0].id', ctx), 'keep');
 ctx.currentUser = {username:'aide.two'};
 assert.strictEqual(vm.runInContext('callOffReadList().length', ctx), 0, 'another aide does not read this list');
 
+assert.strictEqual(vm.runInContext('callOffSource({source:"aide"})', ctx), 'aide');
+assert.strictEqual(vm.runInContext('callOffSource({source:" office "})', ctx), 'office');
+assert.strictEqual(vm.runInContext('callOffSource({source:"Aide"})', ctx), 'office', 'only the exact value aide counts');
+assert.strictEqual(vm.runInContext('callOffSource({})', ctx), 'office');
+assert.strictEqual(vm.runInContext('callOffSource({source:"phone"})', ctx), 'office');
+assert.strictEqual(vm.runInContext('callOffSource({source:"ace"})', ctx), 'office');
+assert.strictEqual(vm.runInContext('callOffSourceLabel("aide")', ctx), 'Aide');
+assert.strictEqual(vm.runInContext('callOffSourceLabel("office")', ctx), 'Office');
 assert.throws(function(){vm.runInContext('aideCallOffRpcBody({clientId:"c1"})', ctx);}, /not callable yet/);
+assert.throws(function(){vm.runInContext('aideListCallOffsBody()', ctx);}, /not callable yet/);
 const mapped = vm.runInContext('aideCallOffFromRpc({success:true, open_shift_id:"os1", status:"open"}, {id:"local"})', ctx);
 assert.strictEqual(mapped.ok, true);
 assert.strictEqual(mapped.id, 'os1');
 assert.strictEqual(mapped.status, 'open');
+assert.strictEqual(mapped.source, 'aide', 'a record reply without source stays aide');
+assert.strictEqual(vm.runInContext('aideCallOffFromRpc({success:true, source:"office"}, {id:"local"}).source', ctx), 'office');
+assert.strictEqual(vm.runInContext('aideCallOffFromRpc({success:true, source:"aide"}, {id:"local"}).source', ctx), 'aide');
 const failed = vm.runInContext('aideCallOffFromRpc({success:false, error:"nope"}, {id:"local"})', ctx);
 assert.strictEqual(failed.ok, false);
 assert.strictEqual(vm.runInContext('aideCallOffFromRpc({success:true}, {id:"local"}).status', ctx), 'open');
