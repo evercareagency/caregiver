@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-cgsiglock1">
 <meta name="caregiver-build" content="2026-09-25-cgsigs1">
 <meta name="caregiver-build" content="2026-09-25-cgisbadge2">
 <meta name="caregiver-build" content="2026-09-25-cgquizlet1">
@@ -27,6 +28,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-cgsiglock1 v=cgsiglock1 — Friday GO 2026-09-25. Client and Caregiver/HHA pads lock after Confirm and when a saved or confirmed signature is hydrated. A locked canvas is pointer-events:none with touch-action:auto, so a phone scroll does not paint ink. The hint stays Signed ✓. Confirm is hidden while locked. Redo clears the lock and the strokes and shows Confirm again. Day flags are aideSigLocked and clientSigLocked (Save Day sets both; a saved day with ink and no flag still hydrates locked). Header flags are headerAideSigLocked and headerClientSigLocked. Lock: commitSigDialog confirm, saveDayData, paintSigLock. Unlock: commitSigDialog redo, clearSig, clearHeaderSigPads (UI only). Hydrate: readSigLocked, applySigDataUrl, refreshSigFromStore, restoreHdrSigs, loadSavedWeek. A tiny rebuilt pad still keeps a stored signature image (v=cgsigs1). v=cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigs1 v=cgsigs1 — Friday GO 2026-09-25. Save Day PDF paints every saved day's HHA and Client scribble on that row, and fills the top CLIENT SIGNATURE and CAREGIVER/HHA SIGNATURE boxes from the latest day that has both (date, then day index). A blank rebuilt pad no longer erases a stored signature image. v=cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgisbadge2 v=cgisbadge2 — Friday GO 2026-09-25. My Inservices and the due badge share one fresh read. sbMyInserviceTopics and sbHydrateInserviceCompletions call sbEnsureCaregiverJwt, then sbRest with the aide session JWT (sbUserHeaders Bearer, not the anon key). A 401/403 refreshes once via sbRefreshCaregiverJwt and retries that read once; a second failure stays soft (empty assignment, phone completion cache) and the next Home or Inservices open tries again. dueInserviceCount is assigned topic ids that are in the static INSERVICES catalog, or that carry a topic_title, minus completed_*. Those titled non-catalog rows paint as Due cards so the badge matches the list. Home open (showCaregiverHome and the existing login schedule), Inservices open (renderISList paints #isNavBadge and #isNotifBanner from that same fetch), pageshow and visibilitychange while logged in, and submitInservice success all re-fetch. No login-only assigned cache. No Clear-assignment client event exists; the next refresh reads the office set. v=cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgquizlet1 v=cgquizlet1 — Friday GO 2026-09-25. Aide take-quiz (#isOptions) shows every choice with its index letter: 0→A, 1→B, and on through F when a question has six choices. Example: “B. medical emergency”. A letter already stored on the choice text is not repeated. answerQ still stores the numeric index, and Submit Inservice still posts that index list. v=loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -255,7 +257,8 @@ footer{text-align:center;padding:11px;font-size:0.7rem;color:var(--muted);border
 .sig-act{flex:1;min-height:48px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;}
 .sig-act-confirm{background:var(--teal);color:#fff;border:none;}
 .sig-act-redo{background:#fff;color:var(--navy);border:1.5px solid var(--border);}
-canvas.sigpad.sig-locked{cursor:default;box-shadow:inset 0 0 0 2px var(--success);}
+canvas.sigpad.sig-locked{cursor:default;box-shadow:inset 0 0 0 2px var(--success);pointer-events:none;touch-action:auto;}
+.sig-act-confirm[hidden]{display:none;}
 .draft-del{min-height:44px;min-width:76px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--danger);background:#fff;color:var(--danger);font-weight:700;font-size:0.82rem;font-family:'DM Sans',sans-serif;cursor:pointer;flex-shrink:0;}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:flex;background:#fff;border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(26,39,68,0.08);overflow:visible;}
 .bottom-nav[hidden]{display:none !important;}
@@ -2578,7 +2581,12 @@ function resizeSigCanvas(id){
   c.width=w;c.height=h;
   if(keep){
     const img=new Image();
-    img.onload=()=>{c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};
+    img.onload=()=>{
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      c.classList.add('signed');
+      setSigHint(id,true);
+      if(sigPadBlocksDraw(c)||(typeof readSigLocked==='function'&&readSigLocked(id)))paintSigLock(id,true);
+    };
     img.src=keep;
   }else{
     refreshSigFromStore(id);
@@ -2775,7 +2783,10 @@ function saveDayData(i,dayObj){
     showTempMsg('Aide and Client signatures required to save this day','var(--danger)');
     return;
   }
+  dayObj.aideSigLocked=true;
+  dayObj.clientSigLocked=true;
   const wd=getUserWeekData();wd[i]={...dayObj,savedAt:new Date().toLocaleString()};saveUserWeekData(wd);
+  if(typeof paintSigLock==='function'){paintSigLock('sp_aide_'+i,true);paintSigLock('sp_client_'+i,true);}
   const stat=document.getElementById(`dstat_${i}`);if(stat){stat.textContent=`✅ ${dayObj.hrs}`;stat.classList.add('saved');}
   // Show verification badge (miles in UI; 500ft radius stays internal)
   const locEl=document.getElementById(`loc_${i}`);
@@ -2871,6 +2882,8 @@ function buildDaysPayload(){
     if(d.verified!=null)day.verified=d.verified;
     if(d.distanceFt!=null)day.distanceFt=d.distanceFt;
     if(d.savedAt)day.savedAt=d.savedAt;
+    if(d.aideSigLocked===true||d.aideSigLocked===false)day.aideSigLocked=d.aideSigLocked===true;
+    if(d.clientSigLocked===true||d.clientSigLocked===false)day.clientSigLocked=d.clientSigLocked===true;
     out[String(i)]=day;
   }
   return out;
@@ -3218,13 +3231,91 @@ function cgNewWeek(){
 }
 
 // SIGNATURES
+// Lock: paintSigLock + storeSigLock from commitSigDialog (confirm) and saveDayData.
+// Unlock: commitSigDialog redo → clearSig; clearHeaderSigPads is UI-only when switching weeks.
+// Hydrate: readSigLocked from applySigDataUrl, refreshSigFromStore, restoreHdrSigs, loadSavedWeek.
+function sigConfirmBtn(id){
+  if(typeof document==='undefined'||!document.getElementById)return null;
+  const hint=document.getElementById('hint_'+id);
+  const actions=hint&&hint.nextElementSibling;
+  if(!actions||typeof actions.querySelector!=='function')return null;
+  return actions.querySelector('.sig-act-confirm');
+}
+function paintSigLock(id,locked){
+  const on=!!locked;
+  const pad=(typeof document!=='undefined'&&document.getElementById)?document.getElementById(id):null;
+  if(pad){
+    const cl=pad.classList;
+    if(cl){
+      if(typeof cl.toggle==='function'){
+        try{cl.toggle('sig-locked',on);}catch(e){
+          if(on&&typeof cl.add==='function')cl.add('sig-locked');
+          else if(!on&&typeof cl.remove==='function')cl.remove('sig-locked');
+        }
+      }else if(on&&typeof cl.add==='function')cl.add('sig-locked');
+      else if(!on&&typeof cl.remove==='function')cl.remove('sig-locked');
+    }
+    if(pad.style){
+      pad.style.pointerEvents=on?'none':'';
+      pad.style.touchAction=on?'auto':'';
+    }
+    if(typeof sigPads!=='undefined'&&sigPads&&sigPads[id])sigPads[id].drawing=false;
+  }
+  const btn=sigConfirmBtn(id);
+  if(btn){
+    btn.disabled=on;
+    btn.hidden=on;
+    if(btn.style)btn.style.display=on?'none':'';
+    if(on&&btn.setAttribute)btn.setAttribute('aria-disabled','true');
+    else if(btn.removeAttribute)btn.removeAttribute('aria-disabled');
+  }
+}
+function readSigLocked(id){
+  const m=String(id||'').match(/^sp_(aide|client)_(\d+)$/);
+  if(m){
+    let wd={};
+    try{wd=(getUserWeekData()||{})[parseInt(m[2],10)]||{};}catch(e){wd={};}
+    const key=m[1]==='aide'?'aideSigLocked':'clientSigLocked';
+    if(wd[key]===true)return true;
+    if(wd[key]===false)return false;
+    const src=m[1]==='aide'?wd.aideSig:wd.clientSig;
+    if(wd.savedAt&&typeof isPlausibleSigSrc==='function'&&isPlausibleSigSrc(src))return true;
+    return false;
+  }
+  if(id==='sp_hdr_aide'||id==='sp_hdr_client'){
+    let ts={};
+    try{
+      const list=typeof getAllTimesheets==='function'?getAllTimesheets():[];
+      ts=(list||[]).find(function(x){return x.id===currentTS;})||{};
+    }catch(e){ts={};}
+    return id==='sp_hdr_aide'?ts.headerAideSigLocked===true:ts.headerClientSigLocked===true;
+  }
+  return false;
+}
+function storeSigLock(id,locked){
+  const on=!!locked;
+  const m=String(id||'').match(/^sp_(aide|client)_(\d+)$/);
+  if(m){
+    if(!currentUser||typeof getUserWeekData!=='function'||typeof saveUserWeekData!=='function')return;
+    const i=parseInt(m[2],10);
+    const wd=getUserWeekData();
+    const cur=wd[i]?{...wd[i]}:{};
+    cur[m[1]==='aide'?'aideSigLocked':'clientSigLocked']=on;
+    wd[i]=cur;
+    saveUserWeekData(wd);
+    return;
+  }
+  if((id==='sp_hdr_aide'||id==='sp_hdr_client')&&currentTS&&typeof updateTSMeta==='function'){
+    updateTSMeta(currentTS,id==='sp_hdr_aide'?{headerAideSigLocked:on}:{headerClientSigLocked:on});
+  }
+}
+function sigPadBlocksDraw(c){
+  return !!(c&&((c.classList&&c.classList.contains('sig-locked'))||(c.style&&c.style.pointerEvents==='none')));
+}
 function setSigHint(id,signed){
   const hint=document.getElementById('hint_'+id);
   if(!hint)return;
-  const pad=document.getElementById(id);
-  const locked=!!(pad&&pad.classList.contains('sig-locked'));
-  if(locked&&signed){hint.textContent='Confirmed ✓';hint.classList.add('signed');}
-  else if(signed){hint.textContent='Signed ✓';hint.classList.add('signed');}
+  if(signed){hint.textContent='Signed ✓';hint.classList.add('signed');}
   else{hint.textContent='Tap to sign';hint.classList.remove('signed');}
 }
 function initSig(id){
@@ -3241,16 +3332,31 @@ function initSig(id){
   const w=Math.max(1,c.offsetWidth||280);
   c.width=w;c.height=h;
   sigPads[id]={ctx,drawing:false,wired:true};
-  if(prev){const img=new Image();img.onload=()=>{ctx.drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};img.src=prev;setSigHint(id,true);}
+  if(prev){
+    const img=new Image();
+    img.onload=()=>{
+      ctx.drawImage(img,0,0,c.width,c.height);
+      c.classList.add('signed');
+      setSigHint(id,true);
+      if(sigPadBlocksDraw(c)||readSigLocked(id))paintSigLock(id,true);
+    };
+    img.src=prev;
+    setSigHint(id,true);
+    if(readSigLocked(id))paintSigLock(id,true);
+  }
   else setSigHint(id,false);
   const pos=e=>{const r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)};};
-  const start=e=>{if(c.classList.contains('sig-locked'))return;const dayHit=/^sp_(?:aide|client)_(\d+)$/.exec(id);if(dayHit)setActiveDay(parseInt(dayHit[1],10));const p=pos(e);sigPads[id].drawing=true;ctx.beginPath();ctx.moveTo(p.x,p.y);c.classList.add('signed');setSigHint(id,true);};
-  const move=e=>{if(!sigPads[id]||!sigPads[id].drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1a2744';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();};
-  const stop=()=>{if(!sigPads[id])return;sigPads[id].drawing=false;persistPadSig(id);};
-  c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);c.addEventListener('mouseup',stop);c.addEventListener('mouseleave',stop);
-  c.addEventListener('touchstart',e=>{e.preventDefault();start(e);},{passive:false});
-  c.addEventListener('touchmove',e=>{e.preventDefault();move(e);},{passive:false});
-  c.addEventListener('touchend',stop);
+  const start=e=>{if(sigPadBlocksDraw(c))return;const dayHit=/^sp_(?:aide|client)_(\d+)$/.exec(id);if(dayHit)setActiveDay(parseInt(dayHit[1],10));const p=pos(e);sigPads[id].drawing=true;ctx.beginPath();ctx.moveTo(p.x,p.y);c.classList.add('signed');setSigHint(id,true);};
+  const move=e=>{if(sigPadBlocksDraw(c)){if(sigPads[id])sigPads[id].drawing=false;return;}if(!sigPads[id]||!sigPads[id].drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1a2744';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();};
+  const stop=()=>{if(!sigPads[id])return;const was=sigPads[id].drawing;sigPads[id].drawing=false;if(was&&!sigPadBlocksDraw(c))persistPadSig(id);};
+  c.addEventListener('mousedown',e=>{if(sigPadBlocksDraw(c))return;start(e);});
+  c.addEventListener('mousemove',e=>{if(sigPadBlocksDraw(c))return;move(e);});
+  c.addEventListener('mouseup',e=>{if(sigPadBlocksDraw(c))return;stop();});
+  c.addEventListener('mouseleave',e=>{if(sigPadBlocksDraw(c)){if(sigPads[id])sigPads[id].drawing=false;return;}stop();});
+  c.addEventListener('touchstart',e=>{if(sigPadBlocksDraw(c))return;e.preventDefault();start(e);},{passive:false});
+  c.addEventListener('touchmove',e=>{if(sigPadBlocksDraw(c)||!sigPads[id]||!sigPads[id].drawing)return;e.preventDefault();move(e);},{passive:false});
+  c.addEventListener('touchend',e=>{if(sigPadBlocksDraw(c))return;stop();});
+  c.addEventListener('touchcancel',e=>{if(sigPads[id])sigPads[id].drawing=false;});
 }
 function isCanvasInk(c){
   return countCanvasInkPixels(c)>=SIG_INK_MIN_PX;
@@ -3294,21 +3400,45 @@ function persistPadSig(id){
 }
 function applySigDataUrl(id,src){
   if(!src||typeof src!=='string'||src.indexOf('data:image')!==0||src.length<120)return;
+  if(typeof readSigLocked==='function'&&readSigLocked(id)){
+    paintSigLock(id,true);
+    setSigHint(id,true);
+  }
   const img=new Image();
   img.onload=()=>{
     const c=document.getElementById(id);if(!c)return;
     const ctx=c.getContext('2d');
     ctx.clearRect(0,0,c.width,c.height);
     ctx.drawImage(img,0,0,c.width,c.height);
-    if(c.width<40||c.height<40){c.classList.add('signed');setSigHint(id,true);return;}
-    if(isCanvasInk(c)){rememberSigInk(src,true);c.classList.add('signed');setSigHint(id,true);}
-    else{rememberSigInk(src,false);ctx.clearRect(0,0,c.width,c.height);c.classList.remove('signed');setSigHint(id,false);}
+    if(c.width<40||c.height<40){
+      c.classList.add('signed');
+      setSigHint(id,true);
+      if(readSigLocked(id)||sigPadBlocksDraw(c))paintSigLock(id,true);
+      return;
+    }
+    if(isCanvasInk(c)){
+      rememberSigInk(src,true);
+      c.classList.add('signed');
+      setSigHint(id,true);
+      if(readSigLocked(id)||sigPadBlocksDraw(c))paintSigLock(id,true);
+    }else{
+      rememberSigInk(src,false);
+      ctx.clearRect(0,0,c.width,c.height);
+      c.classList.remove('signed');
+      paintSigLock(id,false);
+      setSigHint(id,false);
+    }
   };
   img.src=src;
 }
 function refreshSigFromStore(id){
   const c=document.getElementById(id);if(!c)return;
-  if(isCanvasInk(c)){c.classList.add('signed');setSigHint(id,true);return;}
+  if(isCanvasInk(c)){
+    c.classList.add('signed');
+    setSigHint(id,true);
+    if(readSigLocked(id)||sigPadBlocksDraw(c))paintSigLock(id,true);
+    return;
+  }
   let src='';
   const m=String(id).match(/^sp_(aide|client)_(\d+)$/);
   if(m){
@@ -3326,6 +3456,7 @@ function refreshDaySigs(i){
 }
 function clearSig(id){
   const c=document.getElementById(id);if(!c)return;
+  if(typeof paintSigLock==='function')paintSigLock(id,false);
   c.getContext('2d').clearRect(0,0,c.width,c.height);c.classList.remove('signed');setSigHint(id,false);
   const m=String(id).match(/^sp_(aide|client)_(\d+)$/);
   if(m&&currentUser){
@@ -3335,10 +3466,11 @@ function clearSig(id){
     const key=role==='aide'?'aideSig':'clientSig';
     if(cur[key])rememberSigInk(cur[key],false);
     delete cur[key];delete cur[key+'Ink'];
+    cur[key+'Locked']=false;
     wd[i]=cur;saveUserWeekData(wd);
   }
   if((id==='sp_hdr_aide'||id==='sp_hdr_client')&&currentTS){
-    const patch=id==='sp_hdr_aide'?{headerAideSig:'',headerAideSigInk:false}:{headerClientSig:'',headerClientSigInk:false};
+    const patch=id==='sp_hdr_aide'?{headerAideSig:'',headerAideSigInk:false,headerAideSigLocked:false}:{headerClientSig:'',headerClientSigInk:false,headerClientSigLocked:false};
     updateTSMeta(currentTS,patch);
   }
 }
@@ -3351,6 +3483,8 @@ function sigWho(id){
   return '';
 }
 function askConfirmSig(id){
+  const pad=document.getElementById(id);
+  if(pad&&typeof sigPadBlocksDraw==='function'&&sigPadBlocksDraw(pad))return;
   if(typeof padHasInk==='function'&&!padHasInk(id)){showTempMsg('Sign first, then tap Confirm.','var(--warn)');return;}
   _sigDialogId=id;
   _sigDialogMode='confirm';
@@ -3389,12 +3523,16 @@ function commitSigDialog(){
     if(typeof persistPadSig==='function')persistPadSig(id);
     const pad=document.getElementById(id);
     if(!pad||(typeof isCanvasInk==='function'&&!isCanvasInk(pad))){showTempMsg('Sign first, then tap Confirm.','var(--warn)');return;}
+    if(typeof storeSigLock==='function')storeSigLock(id,true);
     pad.classList.add('sig-locked','signed');
+    if(typeof paintSigLock==='function')paintSigLock(id,true);
     setSigHint(id,true);
     return;
   }
   const pad=document.getElementById(id);
   if(pad)pad.classList.remove('sig-locked');
+  if(typeof storeSigLock==='function')storeSigLock(id,false);
+  if(typeof paintSigLock==='function')paintSigLock(id,false);
   clearSig(id);
 }
 function captureHdrSigs(){
@@ -3402,6 +3540,8 @@ function captureHdrSigs(){
   const a=document.getElementById('sp_hdr_aide'),c=document.getElementById('sp_hdr_client');
   if(a&&isSigned('sp_hdr_aide')){out.headerAideSig=capturePadSig(a);out.headerAideSigInk=true;}
   if(c&&isSigned('sp_hdr_client')){out.headerClientSig=capturePadSig(c);out.headerClientSigInk=true;}
+  if(a&&a.classList&&a.classList.contains('sig-locked'))out.headerAideSigLocked=true;
+  if(c&&c.classList&&c.classList.contains('sig-locked'))out.headerClientSigLocked=true;
   return out;
 }
 function restoreHdrSigs(ts){
@@ -4250,7 +4390,9 @@ function clearHeaderSigPads(){
     if(!c)return;
     const ctx=c.getContext('2d');
     if(ctx)ctx.clearRect(0,0,c.width,c.height);
-    c.classList.remove('signed');
+    c.classList.remove('signed','sig-locked');
+    if(c.style){c.style.pointerEvents='';c.style.touchAction='';}
+    if(typeof paintSigLock==='function')paintSigLock(id,false);
     setSigHint(id,false);
   });
 }
@@ -4303,6 +4445,8 @@ function daysPayloadFromWeekData(wd){
     if(d.verified!=null)day.verified=d.verified;
     if(d.distanceFt!=null)day.distanceFt=d.distanceFt;
     if(d.savedAt)day.savedAt=d.savedAt;
+    if(d.aideSigLocked===true||d.aideSigLocked===false)day.aideSigLocked=d.aideSigLocked===true;
+    if(d.clientSigLocked===true||d.clientSigLocked===false)day.clientSigLocked=d.clientSigLocked===true;
     out[String(i)]=day;
   }
   return out;
@@ -4821,6 +4965,8 @@ function sbDayWire(day){
   if(day.distanceFt!=null)out.distanceFt=day.distanceFt;
   if(day.distanceMi!=null)out.distanceMi=day.distanceMi;
   else if(day.distanceFt!=null&&isFinite(Number(day.distanceFt)))out.distanceMi=Math.round(Number(day.distanceFt)/5280*100)/100;
+  if(day.aideSigLocked===true||day.aideSigLocked===false)out.aideSigLocked=day.aideSigLocked===true;
+  if(day.clientSigLocked===true||day.clientSigLocked===false)out.clientSigLocked=day.clientSigLocked===true;
   return out;
 }
 function sbWeekSunday(value){
@@ -7347,7 +7493,12 @@ window.addEventListener('resize',()=>{
     c.width=w;c.height=h;
     if(keep){
       const img=new Image();
-      img.onload=()=>{c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');setSigHint(id,true);};
+      img.onload=()=>{
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        c.classList.add('signed');
+        setSigHint(id,true);
+        if(typeof sigPadBlocksDraw==='function'&&(sigPadBlocksDraw(c)||(typeof readSigLocked==='function'&&readSigLocked(id))))paintSigLock(id,true);
+      };
       img.src=keep;
     }else{
       refreshSigFromStore(id);
