@@ -67,7 +67,7 @@ assert.ok(!doLogin.includes('requestAnimationFrame'), 'login must not defer navi
 assert.ok(!/get_users|get_all/.test(doLogin), 'doLogin must not fetch user or full lists');
 
 const setup = extractFn(html, 'async function submitAideSetup()');
-assert.ok(setup.includes('afterLogin({freshLogin:fresh})'), 'setup completion still enters through afterLogin');
+assert.ok(setup.includes('showAideSetupSaved()'), 'setup completion shows the Open Caregiver success CTA');
 
 console.log('login-feel static checks ok');
 

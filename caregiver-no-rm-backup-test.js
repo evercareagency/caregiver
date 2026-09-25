@@ -14,7 +14,7 @@ assert.ok(html.includes('v=cgpdf1p2'), 'print one-page marker stays');
 assert.ok(html.includes('v=isassign1'), 'assign unlock marker stays');
 assert.ok(html.includes('v=pwreset1'), 'password reset marker stays');
 assert.ok(html.includes('>Password saved</h2>'), 'password saved heading stays');
-assert.ok(html.includes('>Open ECA Aide Portal</a>'), 'open portal button stays');
+assert.ok(html.includes('>Open Caregiver</a>'), 'open caregiver button stays');
 assert.ok(html.includes('v=portal1'), 'portal marker stays');
 assert.ok(html.includes('v=cgpdfv1'), 'view pdf marker stays');
 assert.ok(html.includes('v=ishydr1'), 'inservice hydrate marker stays');
