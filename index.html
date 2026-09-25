@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-coveraide1">
 <meta name="caregiver-build" content="2026-09-25-cgsiglock1">
 <meta name="caregiver-build" content="2026-09-25-cgsigs1">
 <meta name="caregiver-build" content="2026-09-25-cgisbadge2">
@@ -28,6 +29,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-coveraide1 v=coveraide1 — Friday GO 2026-09-25. Home Call off (#callOffHomeBtn) and More open #callOffScreen. The aide picks an upcoming client or saved shift, may add a reason, and taps Submit. Confirmation says Submitted with status Open, then lists only that aide's call-offs (local key evercare_coveraide1_ plus username). Open-shift source is exactly aide or office. This portal records source aide. GHOST-COVERAIDE1-CONTRACT-v1 is CALLABLE. Submit POSTs /rest/v1/rpc/aide_record_call_off {p_client_id, p_shift_start, p_shift_end, p_reason:null when blank}. The list POSTs /rest/v1/rpc/aide_list_my_call_offs {p_include_resolved:false}. Source is exactly aide or office. This portal records aide. It does not call the office record path. A shift whose end has already passed is not sent. No PTO. v=cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsiglock1 v=cgsiglock1 — Friday GO 2026-09-25. Client and Caregiver/HHA pads lock after Confirm and when a saved or confirmed signature is hydrated. A locked canvas is pointer-events:none with touch-action:auto, so a phone scroll does not paint ink. The hint stays Signed ✓. Confirm is hidden while locked. Redo clears the lock and the strokes and shows Confirm again. Day flags are aideSigLocked and clientSigLocked (Save Day sets both; a saved day with ink and no flag still hydrates locked). Header flags are headerAideSigLocked and headerClientSigLocked. Lock: commitSigDialog confirm, saveDayData, paintSigLock. Unlock: commitSigDialog redo, clearSig, clearHeaderSigPads (UI only). Hydrate: readSigLocked, applySigDataUrl, refreshSigFromStore, restoreHdrSigs, loadSavedWeek. A tiny rebuilt pad still keeps a stored signature image (v=cgsigs1). v=cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigs1 v=cgsigs1 — Friday GO 2026-09-25. Save Day PDF paints every saved day's HHA and Client scribble on that row, and fills the top CLIENT SIGNATURE and CAREGIVER/HHA SIGNATURE boxes from the latest day that has both (date, then day index). A blank rebuilt pad no longer erases a stored signature image. v=cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgisbadge2 v=cgisbadge2 — Friday GO 2026-09-25. My Inservices and the due badge share one fresh read. sbMyInserviceTopics and sbHydrateInserviceCompletions call sbEnsureCaregiverJwt, then sbRest with the aide session JWT (sbUserHeaders Bearer, not the anon key). A 401/403 refreshes once via sbRefreshCaregiverJwt and retries that read once; a second failure stays soft (empty assignment, phone completion cache) and the next Home or Inservices open tries again. dueInserviceCount is assigned topic ids that are in the static INSERVICES catalog, or that carry a topic_title, minus completed_*. Those titled non-catalog rows paint as Due cards so the badge matches the list. Home open (showCaregiverHome and the existing login schedule), Inservices open (renderISList paints #isNavBadge and #isNotifBanner from that same fetch), pageshow and visibilitychange while logged in, and submitInservice success all re-fetch. No login-only assigned cache. No Clear-assignment client event exists; the next refresh reads the office set. v=cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -272,6 +274,27 @@ canvas.sigpad.sig-locked{cursor:default;box-shadow:inset 0 0 0 2px var(--success
 body.has-bottom-nav .wrap{padding-bottom:108px;}
 body.has-bottom-nav footer{margin-bottom:76px;}
 #cg_client{min-height:52px;}
+/* Call off (v=coveraide1). Phone-first: full-width taps, stacked times, no sideways scroll. */
+.calloff-home p{font-size:1rem;color:var(--navy);line-height:1.5;margin-bottom:12px;}
+.calloff-lead{font-size:1rem;color:var(--navy);line-height:1.5;margin-bottom:12px;}
+.calloff-choices{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.calloff-card{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px 14px;min-height:64px;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--navy);touch-action:manipulation;}
+.calloff-card strong{display:block;font-size:1.05rem;line-height:1.3;}
+.calloff-card.selected{border-color:var(--teal);background:var(--teal-light);box-shadow:0 0 0 2px rgba(42,127,127,0.25);}
+.calloff-meta{font-size:0.95rem;color:var(--muted);margin-top:4px;line-height:1.45;}
+.calloff-kicker{font-size:0.78rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--teal-dark);margin:14px 0 8px;}
+.calloff-status{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.calloff-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-items:center;}
+.calloff-chip{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:4px 12px;border-radius:999px;background:var(--navy);color:#fff;font-size:0.85rem;font-weight:800;}
+.calloff-chip-open{background:var(--navy);color:#fff;}
+.calloff-chip-aide{background:#e7eef9;color:var(--navy);}
+.calloff-chip-office{background:var(--teal-light);color:var(--teal-dark);}
+.calloff-err{color:var(--danger);font-size:0.95rem;font-weight:700;line-height:1.4;margin:0 0 10px;}
+#callOffConfirm{scroll-margin-top:76px;}
+#callOffConfirm h2{font-family:'Playfair Display',serif;color:var(--navy);font-size:1.55rem;margin:4px 0 8px;}
+#callOffScreen input[type="date"],#callOffScreen input[type="time"],#callOffScreen textarea{min-height:52px;font-size:1rem;padding:12px;}
+#callOffScreen textarea{min-height:96px;}
+#callOffWhen[hidden],#callOffConfirm[hidden],#callOffErr[hidden]{display:none !important;}
 /* Offscreen paper overlay for the soft-flag Storage PDF. Not a print screen. */
 .ts-pdf-sheet{position:relative;width:8.5in;height:11in;background:#fff;overflow:hidden;color:#111;font-family:Times,'Times New Roman',serif;box-sizing:border-box;}
 .ts-pdf-sheet .ts-blank{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:0;border:0;}
@@ -566,6 +589,11 @@ else setupEverCarePWA();
         &#128218; <strong>You have an inservice due this month!</strong> Tap here to complete it.
       </div>
       <div class="correction-banner" id="correctionBanner" onclick="loadCorrectionMode()"></div>
+      <div class="card calloff-home" id="callOffHomeCard">
+        <div class="card-title"><span class="ico">&#128222;</span> Call off</div>
+        <p>Cannot work an upcoming shift? Tell the office here. It is listed as an open shift.</p>
+        <button class="btn btn-navy btn-full" type="button" id="callOffHomeBtn" onclick="openCallOff()">Call off</button>
+      </div>
       <div class="card" style="background:var(--teal-light);border-color:var(--teal)">
         <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a card below to continue a <strong>draft</strong> or a week the office <strong>sent back</strong>. The two most recent <strong>submitted</strong> weeks stay listed. <strong>+ Start Another Timesheet</strong> always starts a <strong>new blank week and client</strong> — it does not reopen a submitted week.</p>
       </div>
@@ -896,6 +924,42 @@ else setupEverCarePWA();
     </div>
   </div>
 </div>
+<!-- CALL OFF -->
+<div class="screen" id="callOffScreen">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Call off</h2><p id="callOffAideName">ECA Aide Portal</p></div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="card-title"><span class="ico">&#128222;</span> Upcoming shift</div>
+      <p class="calloff-lead">Pick the client or shift you cannot work. A reason is optional.</p>
+      <div id="callOffChoices" class="calloff-choices"></div>
+      <p id="callOffEmptyPick" class="calloff-meta" hidden>No upcoming clients yet. They show here after the office list loads. Call <strong>(216) 377-5991</strong> if you need the office now.</p>
+      <div id="callOffWhen" hidden>
+        <div class="field"><label for="callOffDate">Shift date</label><input type="date" id="callOffDate" autocomplete="off"></div>
+        <div class="field"><label for="callOffStart">Start time</label><input type="time" id="callOffStart" autocomplete="off"></div>
+        <div class="field"><label for="callOffEnd">End time</label><input type="time" id="callOffEnd" autocomplete="off"></div>
+      </div>
+      <div class="field"><label for="callOffReason">Reason (optional)</label><textarea id="callOffReason" maxlength="240" placeholder="Example: sick"></textarea></div>
+      <p id="callOffErr" class="calloff-err" role="alert" hidden></p>
+      <button class="btn btn-teal btn-full" type="button" id="callOffSubmitBtn" onclick="submitAideCallOff()">Submit</button>
+    </div>
+    <div class="card" id="callOffConfirm" hidden>
+      <h2 id="callOffConfirmTitle">Submitted</h2>
+      <p class="calloff-status">Status <span class="calloff-chips"><span class="calloff-chip calloff-chip-open" id="callOffConfirmChip">Open</span><span class="calloff-chip calloff-chip-aide" id="callOffConfirmSource">Aide</span></span></p>
+      <p id="callOffConfirmDetail" class="calloff-meta"></p>
+      <p id="callOffConfirmNote" class="calloff-meta"></p>
+    </div>
+    <div class="card" id="callOffListCard">
+      <div class="card-title">Your call-offs</div>
+      <p id="callOffListNote" class="calloff-meta" style="margin-bottom:10px"></p>
+      <div id="callOffList"></div>
+      <p id="callOffEmpty" class="calloff-meta">No call-offs yet.</p>
+    </div>
+  </div>
+</div>
 <!-- MORE -->
 <div class="screen" id="moreScreen">
   <div class="hdr">
@@ -909,6 +973,7 @@ else setupEverCarePWA();
       <p style="font-size:0.84rem;color:var(--muted);margin-top:8px;line-height:1.5">You stay signed in for 8 hours from sign-in. Then the portal signs you out and returns to login.</p>
     </div>
     <div class="action-stack">
+      <button class="btn btn-navy btn-full" type="button" id="callOffMoreBtn" onclick="openCallOff()">Call off</button>
       <button class="btn btn-teal btn-full" type="button" onclick="askCloudBackup()">Back up this week's draft</button>
       <button class="btn btn-ghost btn-full ec-install-cta" type="button" onclick="installPWA()"><span class="ec-install-cta-label">Add to Home Screen</span></button>
       <button class="btn btn-navy btn-full" type="button" onclick="confirmLogout()">Log out</button>
@@ -1282,6 +1347,7 @@ function showScreen(id){
 }
 const PORTAL_NAV_SCREENS={
   caregiverScreen:'home',
+  callOffScreen:'home',
   previewScreen:'timesheet',
   inserviceScreen:'inservices',
   isReadScreen:'inservices',
@@ -6819,6 +6885,584 @@ function openTS(id){
   updateTotal();
   if(ts&&(ts.headerAideSig||ts.headerClientSig))restoreHdrSigs(ts);
   if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
+}
+
+// v=coveraide1 Call off. GHOST-COVERAIDE1-CONTRACT-v1 CALLABLE.
+// POST rpc/aide_record_call_off {p_client_id, p_shift_start, p_shift_end, p_reason}.
+// POST rpc/aide_list_my_call_offs {p_include_resolved:false}.
+// cover_open_shifts.source is exactly aide or office. This portal records aide.
+// The office record path stays on Admin. A past shift_end is not sent.
+
+var callOffPickKey='';
+var callOffShiftCache=[];
+var callOffBusy=false;
+var callOffBound=false;
+function callOffYmd(d){
+  const dt=d instanceof Date?d:new Date();
+  const y=dt.getFullYear();
+  const m=String(dt.getMonth()+1).padStart(2,'0');
+  const day=String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function callOffTomorrowYmd(nowMs){
+  const d=new Date(nowMs==null?Date.now():Number(nowMs));
+  d.setDate(d.getDate()+1);
+  return callOffYmd(d);
+}
+function callOffStoreKey(){
+  const u=currentUser&&currentUser.username?String(currentUser.username):'';
+  return 'evercare_coveraide1_'+u;
+}
+function callOffCleanReason(reason){
+  return String(reason==null?'':reason).replace(/[\u0000-\u001F]+/g,' ').trim().slice(0,240);
+}
+function callOffFormatTime(hm){
+  const s=String(hm||'').slice(0,5);
+  if(!/^\d{2}:\d{2}$/.test(s))return '';
+  const h=Number(s.slice(0,2));
+  const m=s.slice(3,5);
+  const ap=h>=12?'PM':'AM';
+  const h12=h%12||12;
+  return h12+':'+m+' '+ap;
+}
+function callOffFormatWhen(date, start, end){
+  const day=String(date||'').slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return 'Pick the date and times';
+  let label=day;
+  try{
+    const parsed=new Date(Number(day.slice(0,4)),Number(day.slice(5,7))-1,Number(day.slice(8,10)));
+    label=new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric'}).format(parsed);
+  }catch(e){}
+  const a=callOffFormatTime(start);
+  const b=callOffFormatTime(end);
+  if(a&&b)return label+' · '+a+'–'+b;
+  if(a)return label+' · '+a;
+  return label;
+}
+function callOffUpcomingFromDays(timesheets, weekDataById, clients, nowMs){
+  const now=nowMs==null?Date.now():Number(nowMs);
+  const today=callOffYmd(new Date(now));
+  const shifts=[];
+  const seen={};
+  (timesheets||[]).forEach(function(ts){
+    if(!ts)return;
+    const wd=(weekDataById&&weekDataById[ts.id])||{};
+    Object.keys(wd).forEach(function(k){
+      const dayRow=wd[k];
+      if(!dayRow||typeof dayRow!=='object')return;
+      const date=String(dayRow.date||'').slice(0,10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<today)return;
+      const start=String(dayRow.tin||dayRow.in||'').slice(0,5);
+      const end=String(dayRow.tout||dayRow.out||'').slice(0,5);
+      const startOk=/^\d{2}:\d{2}$/.test(start);
+      const endOk=/^\d{2}:\d{2}$/.test(end);
+      if(startOk){
+        const startMs=new Date(date+'T'+start).getTime();
+        if(isFinite(startMs)&&startMs<=now)return;
+      }else if(date===today&&endOk){
+        const endMs=new Date(date+'T'+end).getTime();
+        if(isFinite(endMs)&&endMs<now)return;
+      }
+      const clientName=String(ts.clientName||'').trim();
+      const clientId=String(ts.clientId||'');
+      if(!clientName&&!clientId)return;
+      const key='day:'+(clientId||clientName)+':'+date+':'+(startOk?start:'');
+      if(seen[key])return;
+      seen[key]=1;
+      shifts.push({
+        key:key,
+        kind:'shift',
+        clientId:clientId,
+        clientName:clientName||'Client',
+        date:date,
+        start:startOk?start:'',
+        end:endOk?end:''
+      });
+    });
+  });
+  (clients||[]).forEach(function(c){
+    if(!c||c.is_active===false)return;
+    const id=String(c.id||'');
+    const name=String(c.name||'').trim();
+    if(!id&&!name)return;
+    const key='client:'+(id||name);
+    if(seen[key])return;
+    seen[key]=1;
+    shifts.push({
+      key:key,
+      kind:'client',
+      clientId:id,
+      clientName:name||'Client',
+      date:'',
+      start:'',
+      end:''
+    });
+  });
+  shifts.sort(function(a,b){
+    if(a.kind!==b.kind)return a.kind==='shift'?-1:1;
+    const ad=a.date||'9999-99-99';
+    const bd=b.date||'9999-99-99';
+    if(ad!==bd)return ad<bd?-1:1;
+    return String(a.clientName).localeCompare(String(b.clientName));
+  });
+  return shifts;
+}
+function callOffValidate(shift, date, start, end, reason, nowMs){
+  if(!shift)return 'Pick an upcoming client or shift.';
+  const day=String(date||'').slice(0,10);
+  const tin=String(start||'').slice(0,5);
+  const tout=String(end||'').slice(0,5);
+  const now=nowMs==null?Date.now():Number(nowMs);
+  const today=callOffYmd(new Date(now));
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return 'Enter the shift date.';
+  if(day<today)return 'That date has already passed.';
+  if(!/^\d{2}:\d{2}$/.test(tin)||!/^\d{2}:\d{2}$/.test(tout))return 'Enter a start and end time.';
+  if(tout<=tin)return 'End time must be after the start time.';
+  const endMs=new Date(day+'T'+tout).getTime();
+  if(!isFinite(endMs)||endMs<=now)return 'That shift has already ended.';
+  const startMs=new Date(day+'T'+tin).getTime();
+  if(!isFinite(startMs)||startMs<=now)return 'That shift has already started. Pick an upcoming one.';
+  if(callOffCleanReason(reason).length>240)return 'Keep the reason short.';
+  return '';
+}
+function callOffBuildRecord(shift, date, start, end, reason, nowMs, aideUsername){
+  const err=callOffValidate(shift, date, start, end, reason, nowMs);
+  if(err)return {ok:false, error:err};
+  const now=nowMs==null?Date.now():Number(nowMs);
+  const day=String(date).slice(0,10);
+  const tin=String(start).slice(0,5);
+  const tout=String(end).slice(0,5);
+  return {
+    ok:true,
+    record:{
+      id:'co_'+now+'_'+Math.random().toString(36).slice(2,7),
+      clientId:String(shift.clientId||''),
+      clientName:String(shift.clientName||'Client'),
+      date:day,
+      start:tin,
+      end:tout,
+      startsAt:new Date(day+'T'+tin).toISOString(),
+      endsAt:new Date(day+'T'+tout).toISOString(),
+      reason:callOffCleanReason(reason),
+      status:'open',
+      submittedAt:new Date(now).toISOString(),
+      aideUsername:String(aideUsername||''),
+      source:'aide'
+    }
+  };
+}
+function callOffSource(row){
+  const key=row&&typeof row.source==='string'?row.source.trim():'';
+  if(key==='aide'||key==='office')return key;
+  return 'office';
+}
+function callOffSourceLabel(source){
+  return source==='aide'?'Aide':'Office';
+}
+function callOffAlreadyOpen(rows, clientId, clientName, startsAt){
+  return (rows||[]).some(function(r){
+    if(!r)return false;
+    const st=String(r.status||'open').toLowerCase();
+    if(st!=='open'&&st!=='submitted'&&st!=='call_off')return false;
+    if(String(r.startsAt||'')!==String(startsAt||''))return false;
+    if(clientId&&r.clientId)return String(r.clientId)===String(clientId);
+    return String(r.clientName||'')===String(clientName||'');
+  });
+}
+function callOffStatusChip(status){
+  const st=String(status||'open').toLowerCase().replace(/[\s-]+/g,'_');
+  if(st===''||st==='open'||st==='submitted'||st==='call_off'||st==='calloff')return 'Open';
+  return st.replace(/_/g,' ');
+}
+function callOffRowsForAide(all, username){
+  const u=String(username||'');
+  return (all||[]).filter(function(r){return r&&String(r.aideUsername||'')===u;});
+}
+function callOffNormalizeRow(row){
+  if(!row||typeof row!=='object')return row;
+  // Draft rows saved before the source lock used other spellings. This portal only records aide.
+  if(row.source==='phone'||row.source==='ace')row.source='aide';
+  return row;
+}
+function callOffReadList(){
+  if(!currentUser||!currentUser.username)return [];
+  let raw=null;
+  try{raw=store.get(callOffStoreKey());}catch(e){raw=[];}
+  const list=Array.isArray(raw)?raw.map(callOffNormalizeRow):[];
+  const mine=callOffRowsForAide(list, currentUser.username);
+  const dirty=Array.isArray(raw)&&raw.some(function(r){return r&&(r.source==='phone'||r.source==='ace');});
+  if(dirty)callOffWriteList(mine);
+  return mine;
+}
+function callOffWriteList(list){
+  if(!currentUser||!currentUser.username)return;
+  try{store.set(callOffStoreKey(), callOffRowsForAide(list, currentUser.username));}catch(e){}
+}
+function callOffPartsFromIso(iso){
+  const d=new Date(iso);
+  if(!isFinite(d.getTime()))return {date:'', hm:''};
+  const hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return {date:callOffYmd(d), hm:hm};
+}
+function aideCallOffRpcBody(record){
+  const id=String(record&&record.clientId||'').trim();
+  if(!id)throw new Error('Pick a client the office assigned to you.');
+  const start=String(record&&record.startsAt||'');
+  const end=String(record&&record.endsAt||'');
+  if(!start||!end)throw new Error('Enter a start and end time.');
+  const reason=callOffCleanReason(record&&record.reason);
+  return {
+    p_client_id:id,
+    p_shift_start:start,
+    p_shift_end:end,
+    p_reason:reason?reason:null
+  };
+}
+function aideListCallOffsBody(){
+  return {p_include_resolved:false};
+}
+function aideUnwrapRpc(data){
+  let node=data;
+  if(typeof node==='string'){
+    try{node=JSON.parse(node);}catch(e){node=null;}
+  }
+  if(Array.isArray(node))node=node[0]||null;
+  if(node&&node.data&&typeof node.data==='object'&&!Array.isArray(node.data))node=node.data;
+  return node&&typeof node==='object'?node:null;
+}
+function callOffRpcError(node, fallback){
+  const msg=node&&(node.error||node.message||node.hint);
+  if(msg&&typeof msg==='object')return String(msg.message||fallback||'The office did not take this call-off.');
+  return String(msg||fallback||'The office did not take this call-off.');
+}
+function aideCallOffRowFromList(item, fallback){
+  if(!item||typeof item!=='object')return null;
+  const client=item.client&&typeof item.client==='object'?item.client:null;
+  const startIso=item.shift_start||(fallback&&fallback.startsAt)||'';
+  const endIso=item.shift_end||(fallback&&fallback.endsAt)||'';
+  const start=callOffPartsFromIso(startIso);
+  const end=callOffPartsFromIso(endIso);
+  const name=item.client_name||(client&&client.name)||(fallback&&fallback.clientName)||'Client';
+  const clientId=item.client_id||(client&&client.id)||(fallback&&fallback.clientId)||'';
+  const reasonRaw=item.reason!=null?item.reason:(fallback&&fallback.reason);
+  const sent=typeof item.source==='string'?item.source.trim():'';
+  const source=sent==='aide'||sent==='office'?sent:(fallback&&fallback.source==='aide'?'aide':'office');
+  const who=currentUser&&currentUser.username?String(currentUser.username):(fallback&&fallback.aideUsername)||'';
+  return {
+    id:String(item.open_shift_id||(fallback&&fallback.id)||''),
+    clientId:String(clientId||''),
+    clientName:String(name||'Client'),
+    date:start.date||(fallback&&fallback.date)||'',
+    start:start.hm||(fallback&&fallback.start)||'',
+    end:end.hm||(fallback&&fallback.end)||'',
+    startsAt:startIso,
+    endsAt:endIso,
+    reason:callOffCleanReason(reasonRaw),
+    status:item.status!=null&&String(item.status)!==''?String(item.status):'open',
+    submittedAt:item.created_at||item.submitted_at||(fallback&&fallback.submittedAt)||'',
+    aideUsername:String(who||''),
+    source:source,
+    submittedByAideId:item.submitted_by_aide_id?String(item.submitted_by_aide_id):'',
+    scheduleExceptionId:item.schedule_exception_id?String(item.schedule_exception_id):'',
+    urgencyWithin48h:item.urgency_within_48h===true,
+    idempotent:item.idempotent===true,
+    reachedOffice:true
+  };
+}
+function aideCallOffFromRpc(data, record){
+  const node=aideUnwrapRpc(data);
+  if(!node)return {ok:false, error:'The office did not take this call-off.'};
+  if(node.success===false||node.ok===false)return {ok:false, error:callOffRpcError(node)};
+  const row=aideCallOffRowFromList(node, record);
+  if(!row||!row.id)return {ok:false, error:'The office did not take this call-off.'};
+  const sent=typeof node.source==='string'?node.source.trim():'';
+  if(sent!=='aide'&&sent!=='office')row.source='aide';
+  return {ok:true, record:row};
+}
+function aideCallOffsFromRpc(data){
+  const node=aideUnwrapRpc(data);
+  if(!node)return {ok:false, error:'The office did not return your call-offs.'};
+  if(node.success===false)return {ok:false, error:callOffRpcError(node, 'The office did not return your call-offs.')};
+  if(!Array.isArray(node.call_offs))return {ok:false, error:'The office did not return your call-offs.'};
+  const rows=node.call_offs.map(function(item){return aideCallOffRowFromList(item);}).filter(Boolean);
+  return {ok:true, count:typeof node.count==='number'?node.count:rows.length, rows:rows};
+}
+async function aidePostCallOff(record){
+  if(typeof sbRest!=='function')return {ok:false, error:'Sign in again.'};
+  const body=aideCallOffRpcBody(record);
+  const got=await sbRest('rpc/aide_record_call_off',{method:'POST',body:body});
+  return aideCallOffFromRpc(got, record);
+}
+async function aideListMyCallOffs(){
+  if(typeof sbRest!=='function')return {ok:false, error:'Sign in again.'};
+  const body=aideListCallOffsBody();
+  const got=await sbRest('rpc/aide_list_my_call_offs',{method:'POST',body:body});
+  return aideCallOffsFromRpc(got);
+}
+function callOffShowErr(msg){
+  const err=document.getElementById('callOffErr');
+  if(!err)return;
+  if(!msg){err.hidden=true;err.textContent='';return;}
+  err.hidden=false;
+  err.textContent=msg;
+}
+function callOffWeekMap(){
+  const map={};
+  if(typeof getAllTimesheets!=='function'||typeof weekDataForTS!=='function')return map;
+  getAllTimesheets().forEach(function(ts){
+    if(ts&&ts.id)map[ts.id]=weekDataForTS(ts.id)||{};
+  });
+  return map;
+}
+function callOffSelectedShift(){
+  for(let i=0;i<(callOffShiftCache||[]).length;i++){
+    if(callOffShiftCache[i].key===callOffPickKey)return callOffShiftCache[i];
+  }
+  return null;
+}
+function callOffNeedsWhen(shift){
+  if(!shift)return false;
+  if(shift.kind==='client')return true;
+  return !shift.date||!shift.start||!shift.end;
+}
+function callOffPaintWhen(shift){
+  const box=document.getElementById('callOffWhen');
+  if(!box)return;
+  const show=!!(shift&&callOffNeedsWhen(shift));
+  box.hidden=!show;
+  if(!show)return;
+  const dateEl=document.getElementById('callOffDate');
+  const startEl=document.getElementById('callOffStart');
+  const endEl=document.getElementById('callOffEnd');
+  const today=callOffYmd(new Date());
+  if(dateEl){
+    dateEl.min=today;
+    if(!dateEl.value||dateEl.value<today)dateEl.value=shift.date||callOffTomorrowYmd(Date.now());
+  }
+  if(startEl&&!startEl.value&&shift.start)startEl.value=shift.start;
+  if(endEl&&!endEl.value&&shift.end)endEl.value=shift.end;
+}
+function callOffEsc(s){
+  if(typeof escapeHtml==='function')return escapeHtml(s);
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function callOffPaintChoices(){
+  const box=document.getElementById('callOffChoices');
+  const empty=document.getElementById('callOffEmptyPick');
+  if(!box)return;
+  const timesheets=typeof getAllTimesheets==='function'?getAllTimesheets():[];
+  const clients=(typeof myClients!=='undefined'&&Array.isArray(myClients))?myClients:[];
+  callOffShiftCache=callOffUpcomingFromDays(timesheets, callOffWeekMap(), clients, Date.now());
+  if(callOffPickKey&&!callOffSelectedShift())callOffPickKey='';
+  if(!callOffShiftCache.length){
+    box.innerHTML='';
+    if(empty)empty.hidden=false;
+    callOffPaintWhen(null);
+    return;
+  }
+  if(empty)empty.hidden=true;
+  let html='';
+  let sawShift=false;
+  let sawClient=false;
+  callOffShiftCache.forEach(function(s){
+    if(s.kind==='shift'&&!sawShift){html+='<div class="calloff-kicker">Upcoming shifts</div>';sawShift=true;}
+    if(s.kind==='client'&&!sawClient){html+='<div class="calloff-kicker">Your clients</div>';sawClient=true;}
+    const on=s.key===callOffPickKey;
+    const when=s.kind==='shift'?callOffFormatWhen(s.date, s.start, s.end):'Tap to choose the date and times';
+    html+='<button type="button" class="calloff-card'+(on?' selected':'')+'" data-calloff-key="'+callOffEsc(s.key)+'" aria-pressed="'+(on?'true':'false')+'">'
+      +'<strong>'+callOffEsc(s.clientName||'Client')+'</strong>'
+      +'<span class="calloff-meta">'+callOffEsc(when)+(on?' · Selected':'')+'</span>'
+      +'</button>';
+  });
+  box.innerHTML=html;
+  callOffPaintWhen(callOffSelectedShift());
+}
+function callOffSelect(key){
+  const next=String(key||'');
+  if(next!==callOffPickKey){
+    const dateEl=document.getElementById('callOffDate');
+    const startEl=document.getElementById('callOffStart');
+    const endEl=document.getElementById('callOffEnd');
+    if(dateEl)dateEl.value='';
+    if(startEl)startEl.value='';
+    if(endEl)endEl.value='';
+  }
+  callOffPickKey=next;
+  callOffShowErr('');
+  callOffPaintChoices();
+}
+function callOffEnsureBound(){
+  if(callOffBound)return;
+  const root=document.getElementById('callOffScreen');
+  if(!root)return;
+  callOffBound=true;
+  root.addEventListener('click',function(ev){
+    const card=ev.target&&ev.target.closest?ev.target.closest('[data-calloff-key]'):null;
+    if(!card||!root.contains(card))return;
+    callOffSelect(card.getAttribute('data-calloff-key'));
+  });
+}
+function callOffPaintList(){
+  const box=document.getElementById('callOffList');
+  const empty=document.getElementById('callOffEmpty');
+  const note=document.getElementById('callOffListNote');
+  const rows=callOffReadList().slice().sort(function(a,b){
+    return String(b.submittedAt||'').localeCompare(String(a.submittedAt||''));
+  });
+  if(note){
+    const live=rows.some(function(r){return r&&r.reachedOffice;});
+    note.textContent=rows.length&&!live
+      ?'Submitted on this phone. Each one stays Open until the office line is connected.'
+      :'';
+  }
+  if(!box)return;
+  if(!rows.length){
+    box.innerHTML='';
+    if(empty)empty.hidden=false;
+    return;
+  }
+  if(empty)empty.hidden=true;
+  box.innerHTML=rows.map(function(r){
+    const chip=callOffStatusChip(r.status);
+    const when=callOffFormatWhen(r.date, r.start, r.end);
+    const reason=r.reason?('<div class="calloff-meta">'+callOffEsc(r.reason)+'</div>'):'';
+    const sourceKey=callOffSource(r);
+    return '<div class="calloff-status" style="align-items:flex-start;margin-bottom:14px">'
+      +'<div style="min-width:0"><strong style="color:var(--navy);font-size:1.05rem">'+callOffEsc(r.clientName||'Client')+'</strong>'
+      +'<div class="calloff-meta">Submitted · '+callOffEsc(when)+'</div>'+reason+'</div>'
+      +'<span class="calloff-chips"><span class="calloff-chip calloff-chip-open">'+callOffEsc(chip)+'</span>'
+      +'<span class="calloff-chip calloff-chip-'+sourceKey+'">'+callOffEsc(callOffSourceLabel(sourceKey))+'</span></span></div>';
+  }).join('');
+}
+function callOffPaintConfirm(record){
+  const box=document.getElementById('callOffConfirm');
+  if(!box||!record)return;
+  box.hidden=false;
+  const title=document.getElementById('callOffConfirmTitle');
+  const chip=document.getElementById('callOffConfirmChip');
+  const detail=document.getElementById('callOffConfirmDetail');
+  const note=document.getElementById('callOffConfirmNote');
+  if(title)title.textContent='Submitted';
+  if(chip)chip.textContent=callOffStatusChip(record.status);
+  const sourceEl=document.getElementById('callOffConfirmSource');
+  const sourceKey=callOffSource(record);
+  if(sourceEl){
+    sourceEl.textContent=callOffSourceLabel(sourceKey);
+    sourceEl.className='calloff-chip calloff-chip-'+sourceKey;
+  }
+  if(detail){
+    const bits=[record.clientName||'Client', callOffFormatWhen(record.date, record.start, record.end)];
+    if(record.reason)bits.push(record.reason);
+    detail.textContent=bits.join(' · ');
+  }
+  if(note){
+    note.textContent=record.idempotent
+      ?'The office already has this open shift.'
+      :(record.reachedOffice
+        ?'The office has this as an open shift.'
+        :'Saved on this phone for you. The office Coverage list does not have it until the call-off line is connected.');
+  }
+  try{box.scrollIntoView({block:'start'});}catch(e){}
+}
+function callOffChosenWhen(shift){
+  if(!callOffNeedsWhen(shift))return {date:shift.date, start:shift.start, end:shift.end};
+  return {
+    date:(document.getElementById('callOffDate')||{}).value||'',
+    start:(document.getElementById('callOffStart')||{}).value||'',
+    end:(document.getElementById('callOffEnd')||{}).value||''
+  };
+}
+async function openCallOff(){
+  if(!currentUser){showScreen('authScreen');return;}
+  if(typeof requireAideSetup==='function'&&!requireAideSetup())return;
+  callOffEnsureBound();
+  callOffPickKey='';
+  callOffShowErr('');
+  const confirm=document.getElementById('callOffConfirm');
+  if(confirm)confirm.hidden=true;
+  const reasonEl=document.getElementById('callOffReason');
+  if(reasonEl)reasonEl.value='';
+  const dateEl=document.getElementById('callOffDate');
+  const startEl=document.getElementById('callOffStart');
+  const endEl=document.getElementById('callOffEnd');
+  if(dateEl)dateEl.value='';
+  if(startEl)startEl.value='';
+  if(endEl)endEl.value='';
+  showScreen('callOffScreen');
+  const nameEl=document.getElementById('callOffAideName');
+  if(nameEl)nameEl.textContent=currentUser.name||currentUser.username||'ECA Aide Portal';
+  callOffPaintChoices();
+  callOffPaintList();
+  try{if(typeof loadMyClients==='function')await loadMyClients();}catch(e){}
+  if(!document.getElementById('callOffScreen')||!document.getElementById('callOffScreen').classList.contains('active'))return;
+  callOffPaintChoices();
+  if(typeof sbToken==='function'&&sbToken()){
+    try{
+      const listed=await aideListMyCallOffs();
+      if(listed&&listed.ok&&Array.isArray(listed.rows))callOffWriteList(listed.rows);
+      else if(listed&&listed.error)callOffShowErr(listed.error);
+    }catch(e){
+      callOffShowErr((e&&e.message)||'The office did not return your call-offs.');
+    }
+  }
+  callOffPaintList();
+}
+async function submitAideCallOff(){
+  if(callOffBusy)return;
+  if(!currentUser||!currentUser.username){showScreen('authScreen');return;}
+  if(typeof requireAideSetup==='function'&&!requireAideSetup())return;
+  const shift=callOffSelectedShift();
+  const when=shift?callOffChosenWhen(shift):{date:'',start:'',end:''};
+  const reason=(document.getElementById('callOffReason')||{}).value||'';
+  const built=callOffBuildRecord(shift, when.date, when.start, when.end, reason, Date.now(), currentUser.username);
+  if(!built.ok){callOffShowErr(built.error);return;}
+  const rows=callOffReadList();
+  if(callOffAlreadyOpen(rows, built.record.clientId, built.record.clientName, built.record.startsAt)){
+    callOffShowErr('That shift is already called off.');
+    return;
+  }
+  callOffBusy=true;
+  const btn=document.getElementById('callOffSubmitBtn');
+  if(btn){btn.disabled=true;btn.textContent='Submitting...';}
+  try{
+    const record=built.record;
+    let posted=null;
+    try{posted=await aidePostCallOff(record);}
+    catch(e){
+      callOffShowErr((e&&e.message)||'The office did not take this call-off.');
+      return;
+    }
+    if(!posted||!posted.ok||!posted.record){
+      callOffShowErr((posted&&posted.error)||'The office did not take this call-off.');
+      return;
+    }
+    const saved=posted.record;
+    let next=rows.filter(function(r){return r&&r.id!==saved.id;}).concat([saved]);
+    try{
+      const listed=await aideListMyCallOffs();
+      if(listed&&listed.ok&&Array.isArray(listed.rows)){
+        next=listed.rows.map(function(r){
+          if(!r||r.id!==saved.id)return r;
+          if((!r.clientName||r.clientName==='Client')&&saved.clientName)r.clientName=saved.clientName;
+          if(!r.reason&&saved.reason)r.reason=saved.reason;
+          if(!r.date&&saved.date){r.date=saved.date;r.start=saved.start;r.end=saved.end;}
+          return r;
+        });
+        if(saved.id&&!next.some(function(r){return r&&r.id===saved.id;}))next.unshift(saved);
+      }
+    }catch(e){}
+    callOffWriteList(next);
+    callOffShowErr('');
+    callOffPickKey='';
+    const reasonEl=document.getElementById('callOffReason');
+    if(reasonEl)reasonEl.value='';
+    callOffPaintChoices();
+    callOffPaintList();
+    callOffPaintConfirm(saved);
+  }finally{
+    callOffBusy=false;
+    if(btn){btn.disabled=false;btn.textContent='Submit';}
+  }
 }
 
 function showCaregiverHome(){
