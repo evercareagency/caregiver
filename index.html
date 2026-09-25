@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-cgsigs2">
 <meta name="caregiver-build" content="2026-09-25-cguser1">
 <meta name="caregiver-build" content="2026-09-25-cghome1b">
 <meta name="caregiver-build" content="2026-09-25-coveraide2">
@@ -34,6 +35,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-cgsigs2 v=cgsigs2 — Friday GO 2026-09-25. Folds cgsiglock into the signature PDF tip. Audit of LIVE: Save Day PDF already paints every saved day's HHA and Client scribble on that row (v=cgsigs1), and the top CLIENT and CAREGIVER/HHA boxes from the latest day with both. Pads already lock after Confirm and Save Day (pointer-events:none, touch-action:auto) so a phone scroll does not draw (v=cgsiglock1). Saved PDF is one US Letter page and print of the open timesheet is one page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on that page. Residual: Redo on a locked pad asks "Are you sure?" and the pad stays locked until Yes, redo. Go back leaves the lock. v=cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cguser1 v=cguser1 — Friday GO 2026-09-25. Sign In pre-fills the last username used on this device after Logout and on a cold open of Sign In. The key is cg_last_username (username only). The password field is cleared and the password is never written to storage. Sign Up and Forgot password stay blank. No Auth password reseal. After Forgot/recover Save password and Finish-account, Password saved and Open Caregiver still do not auto-login (v=cghome1b). v=cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cghome1b v=cghome1b — Friday GO 2026-09-25. Assert2: after Forgot/recover Save password, and after Finish-account, stay on Password saved with the primary button Open Caregiver. No auto-login and no timer into the signed-in home. The recovery Auth JWT is not written into cg_session. Save drops the local portal session so Open Caregiver reloads Sign In. Standalone stays same-tab ./ or index.html. Browser stays same-tab https://evercareagency.github.io/caregiver/ or this page origin+path. No target=_blank. v=cghome1, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-coveraide2 v=coveraide2 — Friday GO 2026-09-25. Home Call off (#callOffHomeBtn) still opens #callOffScreen. One Submit tap sends one POST /rest/v1/rpc/aide_record_call_off. The button disables on that tap and an in-flight guard ignores a second tap or ghost click, so the write path does not fire twice. Ace GHOST-COVERAIDE2-CONTRACT-v1 is CALLABLE (patches/coveraide2-v1.sql): a double-fire returns idempotent true and one open row. The list stays POST /rest/v1/rpc/aide_list_my_call_offs {p_include_resolved:false}. Ace returns source aide only. This screen still drops any row whose source is not exactly aide, so Office and admin-on-behalf stay off Your call-offs. Admin Coverage still uses admin_list_open_shifts and is not changed here. Account stays v=cgacct1 (no Call off, no Backup). No PTO. No Auth reseal. v=cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -3700,9 +3702,9 @@ function askRedoSig(id){
   const title=document.getElementById('sigDialogTitle');
   const body=document.getElementById('sigDialogBody');
   const go=document.getElementById('sigDialogGo');
-  if(title)title.textContent='Redo '+(who?who+' ':'')+'signature?';
-  if(body)body.textContent='This clears the '+(who?who+' ':'')+'signature so it can be signed again.';
-  if(go){go.textContent='Redo';go.className='mbtn mbtn-danger';}
+  if(title)title.textContent='Are you sure?';
+  if(body)body.textContent='This clears the '+(who?who+' ':'')+'signature and unlocks the pad so it can be signed again.';
+  if(go){go.textContent='Yes, redo';go.className='mbtn mbtn-danger';}
   openModal('sigDialogModal');
 }
 function commitSigDialog(){
