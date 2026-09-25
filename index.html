@@ -7077,12 +7077,21 @@ function callOffRowsForAide(all, username){
   const u=String(username||'');
   return (all||[]).filter(function(r){return r&&String(r.aideUsername||'')===u;});
 }
+function callOffNormalizeRow(row){
+  if(!row||typeof row!=='object')return row;
+  // Draft rows saved before the source lock used other spellings. This portal only records aide.
+  if(row.source==='phone'||row.source==='ace')row.source='aide';
+  return row;
+}
 function callOffReadList(){
   if(!currentUser||!currentUser.username)return [];
   let raw=null;
   try{raw=store.get(callOffStoreKey());}catch(e){raw=[];}
-  const list=Array.isArray(raw)?raw:[];
-  return callOffRowsForAide(list, currentUser.username);
+  const list=Array.isArray(raw)?raw.map(callOffNormalizeRow):[];
+  const mine=callOffRowsForAide(list, currentUser.username);
+  const dirty=Array.isArray(raw)&&raw.some(function(r){return r&&(r.source==='phone'||r.source==='ace');});
+  if(dirty)callOffWriteList(mine);
+  return mine;
 }
 function callOffWriteList(list){
   if(!currentUser||!currentUser.username)return;

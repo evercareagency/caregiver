@@ -100,6 +100,7 @@ vm.createContext(ctx);
   'function callOffStoreKey()',
   'function callOffReadList()',
   'function callOffWriteList(list)',
+  'function callOffNormalizeRow(row)',
   'function callOffSource(row)',
   'function callOffSourceLabel(source)',
   'function aideCallOffRpcBody(record)',
@@ -172,6 +173,9 @@ assert.strictEqual(vm.runInContext('callOffReadList()[0].id', ctx), 'keep');
 ctx.currentUser = {username:'aide.two'};
 assert.strictEqual(vm.runInContext('callOffReadList().length', ctx), 0, 'another aide does not read this list');
 
+assert.strictEqual(vm.runInContext('callOffNormalizeRow({source:"phone"}).source', ctx), 'aide');
+assert.strictEqual(vm.runInContext('callOffNormalizeRow({source:"ace"}).source', ctx), 'aide');
+assert.strictEqual(vm.runInContext('callOffNormalizeRow({source:"office"}).source', ctx), 'office');
 assert.strictEqual(vm.runInContext('callOffSource({source:"aide"})', ctx), 'aide');
 assert.strictEqual(vm.runInContext('callOffSource({source:" office "})', ctx), 'office');
 assert.strictEqual(vm.runInContext('callOffSource({source:"Aide"})', ctx), 'office', 'only the exact value aide counts');
