@@ -41,7 +41,9 @@ assert.ok(html.includes('>ECA Aide Portal</h2>'), 'home header');
 assert.ok(html.includes('class="auth-title">ECA Aide Portal</div>'), 'login title');
 
 const more = html.slice(html.indexOf('id="moreScreen"'), html.indexOf('id="bottomNav"'));
-assert.ok(more.includes("Back up this week's draft"), 'more still backs up');
+const homeBackup = html.slice(html.indexOf('id="cgHomeView"'), html.indexOf('id="cgFormView"'));
+assert.ok(homeBackup.includes("Back up this week's draft"), 'home still backs up');
+assert.ok(!more.includes("Back up this week's draft") && !more.includes('>Call off</button>'), 'account does not duplicate call off or backup');
 assert.ok(more.includes('>Log out</button>'), 'more still logs out');
 assert.ok(more.includes('8 hours'), 'more still documents the 8 hour stay');
 assert.ok(!/Remove office backup/i.test(more), 'more has no remove-office-backup control');
@@ -215,8 +217,13 @@ async function runBrowser(){
     }, {timeout:5000});
     const moreText = await page.$eval('#moreScreen', function(el){return el.innerText;});
     assert.ok(moreText.indexOf('8 hours')>=0, 'more documents the 8 hour stay');
-    assert.ok(moreText.indexOf('Back up this week')>=0, 'more can back up');
+    assert.ok(moreText.indexOf('Call off')<0, 'account does not duplicate call off');
+    assert.ok(moreText.indexOf('Back up this week')<0, 'account does not duplicate backup');
     assert.ok(moreText.indexOf('Log out')>=0, 'more can log out');
+    const homeCallOff = await page.$eval('#callOffHomeBtn', function(el){return el.textContent.trim();});
+    assert.strictEqual(homeCallOff, 'Call off', 'home still has call off');
+    const homeBackupLabel = await page.$eval('#cgBackupBtn', function(el){return el.textContent.replace(/\s+/g,' ').trim();});
+    assert.ok(homeBackupLabel.indexOf("Back up this week's draft")>=0, 'home still has backup');
     assert.ok(moreText.indexOf('Remove office backup')<0, 'more has no remove office backup');
     const moreLabels = await page.$$eval('#moreScreen .action-stack button', function(btns){
       return btns.map(function(b){return b.textContent.replace(/\s+/g,' ').trim();});

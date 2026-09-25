@@ -26,7 +26,9 @@ assert.ok(html.includes('v=sbseal1'), 'auth seal marker stays');
 assert.ok(html.includes('v=offline1'), 'offline marker stays');
 
 const more = html.slice(html.indexOf('id="moreScreen"'), html.indexOf('id="bottomNav"'));
-assert.ok(more.includes("onclick=\"askCloudBackup()\""), 'more backup stays');
+const home = html.slice(html.indexOf('id="cgHomeView"'), html.indexOf('id="cgFormView"'));
+assert.ok(home.includes('onclick="askCloudBackup()"'), 'home backup stays');
+assert.ok(!more.includes('askCloudBackup') && !more.includes("Back up this week's draft"), 'account does not duplicate backup');
 assert.ok(more.includes('>Log out</button>'), 'more logout stays');
 assert.ok(more.includes('8 hours'), '8 hour note stays');
 assert.ok(!/Remove office backup/i.test(html), 'remove office backup label is gone');
