@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-loginkb1">
 <meta name="caregiver-build" content="2026-09-25-cgisbadge1">
 <meta name="caregiver-build" content="2026-09-25-cghome1">
 <meta name="caregiver-build" content="2026-09-24-cgauth1">
@@ -23,6 +24,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-loginkb1 v=loginkb1 — Friday GO 2026-09-25. Phone Sign In: focusing username or password sizes #authScreen to the visual viewport and scrolls that field and #loginBtn above the keyboard. The form stays a scrollport so Forgot password can move into view. No window.scrollTo. Desktop width does not take this path. doLogin and the Auth soft path are unchanged. v=cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgisbadge1 v=cgisbadge1 — Friday GO 2026-09-25. Bottom-nav Inservices shows a red due-count badge on the books icon. The count is the same assigned-incomplete set as the home #isNotifBanner (dueInserviceCount). Count > 0 keeps that banner and shows the badge; 0 hides both. The badge is decorative (pointer-events none) and the Inservices tab stays the control. Phone and desktop use this same bottom nav. v=cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cghome1 v=cghome1 — Friday GO 2026-09-25. Forgot no longer stops on “Username and email do not match.” before /auth/v1/recover. resolve_username_email for mossier already returns the Auth email, so that line was the Sheets verify_reset branch when evercareSbEnabled() is false (?sheets=1 or localStorage.evercare_sheets=1), or aideEmailsMatch rejecting an empty or autofilled email. Forgot clears that flag, strips sheets=1, and recovers to the resolved Auth email when the username resolves. An unknown username does not send mail and the screen does not show the Auth address. The email field stays optional. After Save password and after Finish-account, the primary button says “Open Caregiver”. Standalone (display-mode or iOS navigator.standalone) assigns a same-tab relative URL (./ or index.html). Otherwise it assigns https://evercareagency.github.io/caregiver/ or this page’s origin+path, same tab, no target=_blank. Auth PUT /auth/v1/user is unchanged. v=cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cgauth1 v=cgauth1 — Friday GO 2026-09-24. Default cut password lifecycle stays Auth-only. Login is resolve_username_email then the password grant. Forgot is GoTrue recover then PUT /auth/v1/user. Finish-account (must_change) always calls that same Auth update and clears aides.must_change_password; a missing JWT does not fall through to Sheets complete_aide_setup or set_password. Signup on the cut still does not create an Auth user and does not write a Sheets password. Forgot-password inputs on #resetModal are 48px so the link form stays usable at about 390px. Sheets login, signup, verify_reset, reset_password, and set_password run only when evercareSbEnabled() is false (?sheets=1 or localStorage.evercare_sheets=1). v=bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -45,7 +47,7 @@
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>ECA Aide Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -62,6 +64,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);color:var(--text);ma
 #isSuccessScreen.active{display:block !important;}
 /* AUTH */
 #authScreen.active,#aideSetupScreen.active,#recoveryScreen.active{flex-direction:column;align-items:center;justify-content:center;background:var(--teal);padding:24px 16px;min-height:100vh;min-height:100dvh;}
+/* Phone Sign In keyboard (v=loginkb1). JS adds this class only while a phone keyboard covers the login inputs. */
+#authScreen.login-kb-open{justify-content:flex-start;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:28px;}
+#loginForgot{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 12px;font-size:0.95rem;font-weight:600;}
 .auth-logo{font-size:48px;margin-bottom:10px;}
 .auth-title{font-family:'Playfair Display',serif;font-size:1.8rem;color:white;margin-bottom:4px;}
 .auth-sub{font-size:0.72rem;color:rgba(255,255,255,0.55);letter-spacing:2px;margin-bottom:28px;}
@@ -428,7 +433,7 @@ else setupEverCarePWA();
       <div class="field"><label>Password</label><div style="position:relative"><input type="password" id="l_pass" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:64px"><button type="button" onclick="togglePasswordVisibility('l_pass',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted,#6b7a90);font-size:0.78rem;font-weight:600;cursor:pointer;padding:4px 6px;font-family:inherit">Show</button></div></div>
       <button class="btn btn-teal btn-full" onclick="doLogin()" id="loginBtn">Sign In →</button>
       <div class="auth-err" id="loginErr">Incorrect username or password.</div>
-      <div style="text-align:center;margin-top:10px"><button onclick="showResetModal()" style="background:none;border:none;color:var(--teal);font-size:0.76rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div>
+      <div style="text-align:center;margin-top:10px"><button type="button" id="loginForgot" onclick="showResetModal()" style="background:none;border:none;color:var(--teal);font-size:0.95rem;font-weight:600;cursor:pointer;text-decoration:underline;min-height:44px;padding:10px 12px">Forgot password?</button></div>
     </div>
     <div id="signupForm" style="display:none">
       <div class="field"><label>Full Name</label><input type="text" id="s_name" placeholder="Your full name"></div>
@@ -1370,6 +1375,148 @@ function switchTab(tab){
   document.getElementById('tabLogin').classList.toggle('active',tab==='login');
   document.getElementById('tabSignup').classList.toggle('active',tab==='signup');
 }
+
+// Phone Sign In keyboard (v=loginkb1). Layout only. Does not sign in, store a username, or call Auth.
+function loginKbIsPhone(width){
+  width=width==null?(window.innerWidth||0):width;
+  return width>0&&width<=932;
+}
+function loginKbCovered(layoutH,vvTop,vvHeight,baseline){
+  if(!(layoutH>0)||!(vvHeight>0))return false;
+  var visibleEnd=(vvTop||0)+vvHeight;
+  if(layoutH-visibleEnd>72)return true;
+  if(baseline>0&&layoutH<baseline-72)return true;
+  if(baseline>0&&vvHeight<baseline-72)return true;
+  return false;
+}
+function loginKbScrollDelta(viewH,inputTop,inputBottom,btnBottom,margin){
+  margin=margin==null?12:margin;
+  if(!(viewH>0))return 0;
+  var limit=viewH-margin;
+  var inputOk=inputTop>=margin&&inputBottom<=limit;
+  var btnOk=btnBottom<=limit&&btnBottom>=margin;
+  if(inputOk&&btnOk)return 0;
+  var clusterBottom=btnBottom>inputBottom?btnBottom:inputBottom;
+  var clusterH=clusterBottom-inputTop;
+  var delta=clusterBottom-limit;
+  if(clusterH+margin*2<=viewH){
+    if(inputTop-delta<margin)delta=inputTop-margin;
+  }else if(inputBottom-delta<margin){
+    delta=inputBottom-margin;
+  }
+  if(Math.abs(delta)<1)return 0;
+  return delta;
+}
+function loginKbReadVv(){
+  var vv=window.visualViewport;
+  if(!vv)return{top:0,left:0,height:window.innerHeight||0,width:window.innerWidth||0};
+  return{top:vv.offsetTop||0,left:vv.offsetLeft||0,height:vv.height||0,width:vv.width||0};
+}
+var loginKbBaseline=window.innerHeight||0;
+var loginKbBaseW=window.innerWidth||0;
+var loginKbLock=false;
+function loginKbNoteBaseline(){
+  if(loginKbActiveInput())return;
+  var w=window.innerWidth||0;
+  var h=window.innerHeight||0;
+  if(Math.abs(w-loginKbBaseW)>40){
+    loginKbBaseline=h;
+    loginKbBaseW=w;
+    return;
+  }
+  if(h>=loginKbBaseline-40)loginKbBaseline=h;
+}
+function loginKbActiveInput(){
+  var form=document.getElementById('loginForm');
+  var active=document.activeElement;
+  if(!form||!active||active.tagName!=='INPUT'||!form.contains(active))return null;
+  return active;
+}
+function loginKbRelease(){
+  var screen=document.getElementById('authScreen');
+  if(!screen||!screen.classList.contains('login-kb-open'))return;
+  screen.classList.remove('login-kb-open');
+  screen.style.position='';
+  screen.style.left='';
+  screen.style.top='';
+  screen.style.width='';
+  screen.style.height='';
+  screen.style.maxHeight='';
+  screen.style.zIndex='';
+}
+function loginKbPin(screen,vv){
+  screen.classList.add('login-kb-open');
+  screen.style.position='fixed';
+  screen.style.left=(vv.left||0)+'px';
+  screen.style.top=(vv.top||0)+'px';
+  screen.style.width=vv.width+'px';
+  screen.style.height=vv.height+'px';
+  screen.style.maxHeight=vv.height+'px';
+  screen.style.zIndex='30';
+}
+function loginKbNudge(input){
+  var screen=document.getElementById('authScreen');
+  var btn=document.getElementById('loginBtn');
+  if(!screen||!btn||!input)return;
+  var sRect=screen.getBoundingClientRect();
+  var iRect=input.getBoundingClientRect();
+  var bRect=btn.getBoundingClientRect();
+  var delta=loginKbScrollDelta(screen.clientHeight,iRect.top-sRect.top,iRect.bottom-sRect.top,bRect.bottom-sRect.top,12);
+  if(delta)screen.scrollTop+=delta;
+}
+function loginKbApply(input){
+  if(loginKbLock)return;
+  var screen=document.getElementById('authScreen');
+  if(!screen||!input)return;
+  if(!loginKbIsPhone()){loginKbRelease();return;}
+  var vv=loginKbReadVv();
+  if(!loginKbCovered(window.innerHeight||0,vv.top,vv.height,loginKbBaseline)){loginKbRelease();return;}
+  loginKbLock=true;
+  try{
+    loginKbPin(screen,vv);
+    loginKbNudge(input);
+  }finally{
+    loginKbLock=false;
+  }
+}
+function loginKbSchedule(input){
+  var run=function(){
+    if(loginKbActiveInput()!==input)return;
+    loginKbApply(input);
+  };
+  run();
+  setTimeout(run,60);
+  setTimeout(run,320);
+  setTimeout(run,680);
+}
+function bindLoginKeyboard(){
+  var form=document.getElementById('loginForm');
+  if(!form||form.dataset.loginKb==='1')return;
+  form.dataset.loginKb='1';
+  form.addEventListener('focusin',function(e){
+    var t=e.target;
+    if(!t||t.tagName!=='INPUT')return;
+    loginKbSchedule(t);
+  });
+  form.addEventListener('focusout',function(){
+    setTimeout(function(){
+      if(loginKbActiveInput())return;
+      loginKbRelease();
+      setTimeout(loginKbNoteBaseline,400);
+    },180);
+  });
+  window.addEventListener('resize',loginKbNoteBaseline);
+  if(window.visualViewport){
+    var onVv=function(){
+      var input=loginKbActiveInput();
+      if(!input)return;
+      loginKbApply(input);
+    };
+    window.visualViewport.addEventListener('resize',onVv);
+    window.visualViewport.addEventListener('scroll',onVv);
+  }
+}
+bindLoginKeyboard();
 
 // AUTH
 
