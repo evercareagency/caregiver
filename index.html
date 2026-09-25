@@ -7285,7 +7285,10 @@ async function openCallOff(){
   showScreen('callOffScreen');
   const nameEl=document.getElementById('callOffAideName');
   if(nameEl)nameEl.textContent=currentUser.name||currentUser.username||'ECA Aide Portal';
+  callOffPaintChoices();
+  callOffPaintList();
   try{if(typeof loadMyClients==='function')await loadMyClients();}catch(e){}
+  if(!document.getElementById('callOffScreen')||!document.getElementById('callOffScreen').classList.contains('active'))return;
   callOffPaintChoices();
   callOffPaintList();
 }
