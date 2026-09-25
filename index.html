@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-cgsigs1">
 <meta name="caregiver-build" content="2026-09-25-cgisbadge2">
 <meta name="caregiver-build" content="2026-09-25-cgquizlet1">
 <meta name="caregiver-build" content="2026-09-25-loginkb1">
@@ -26,6 +27,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-cgsigs1 v=cgsigs1 — Friday GO 2026-09-25. Save Day PDF paints every saved day's HHA and Client scribble on that row, and fills the top CLIENT SIGNATURE and CAREGIVER/HHA SIGNATURE boxes from the latest day that has both (date, then day index). A blank rebuilt pad no longer erases a stored signature image. v=cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgisbadge2 v=cgisbadge2 — Friday GO 2026-09-25. My Inservices and the due badge share one fresh read. sbMyInserviceTopics and sbHydrateInserviceCompletions call sbEnsureCaregiverJwt, then sbRest with the aide session JWT (sbUserHeaders Bearer, not the anon key). A 401/403 refreshes once via sbRefreshCaregiverJwt and retries that read once; a second failure stays soft (empty assignment, phone completion cache) and the next Home or Inservices open tries again. dueInserviceCount is assigned topic ids that are in the static INSERVICES catalog, or that carry a topic_title, minus completed_*. Those titled non-catalog rows paint as Due cards so the badge matches the list. Home open (showCaregiverHome and the existing login schedule), Inservices open (renderISList paints #isNavBadge and #isNotifBanner from that same fetch), pageshow and visibilitychange while logged in, and submitInservice success all re-fetch. No login-only assigned cache. No Clear-assignment client event exists; the next refresh reads the office set. v=cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgquizlet1 v=cgquizlet1 — Friday GO 2026-09-25. Aide take-quiz (#isOptions) shows every choice with its index letter: 0→A, 1→B, and on through F when a question has six choices. Example: “B. medical emergency”. A letter already stored on the choice text is not repeated. answerQ still stores the numeric index, and Submit Inservice still posts that index list. v=loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-loginkb1 v=loginkb1 — Friday GO 2026-09-25. Phone Sign In: focusing username or password sizes #authScreen to the visual viewport and scrolls that field and #loginBtn above the keyboard. The form stays a scrollport so Forgot password can move into view. No window.scrollTo. Desktop width does not take this path. doLogin and the Auth soft path are unchanged. v=cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -278,7 +280,8 @@ body.has-bottom-nav footer{margin-bottom:76px;}
 .ts-pdf-sheet .ts-fill-mark{font-size:8pt;}
 .ts-pdf-sheet .ts-fill-other{font-size:7pt;max-width:12%;overflow:hidden;}
 .ts-pdf-sheet .ts-fill-notes{font-size:8pt;font-weight:400;white-space:normal;max-width:46%;line-height:1.3;transform:none;}
-.ts-pdf-sheet .ts-sig{position:absolute;z-index:2;width:11%;height:1.6%;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none;}
+.ts-pdf-sheet .ts-sig{position:absolute;z-index:2;width:16%;height:1.45%;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none;}
+.ts-pdf-sheet .ts-sig-top{width:26%;height:1.9%;}
 #tsPrintRoot{display:none;}
 /* 100% Letter print (v=cgpdf1p2). A full 11in sheet leaves the Pearl Rd line in the overflow, so the printed form is 9.6in tall and the site footer is not a second page. */
 @media print{
@@ -3265,8 +3268,11 @@ function persistPadSig(id){
       const url=capturePadSig(c);
       cur[key]=url;cur[key+'Ink']=true;c.classList.add('signed');setSigHint(id,true);
     }else{
-      // Keep a previously stored REAL signature (resize/rebuild). Drop blank PNGs.
-      if(cur[key]&&sigDataInkState(cur[key])===false){
+      // A rebuilt or closed pad is blank. Keep a saved signature image (v=cgsigs1).
+      // Erasing it left the day's times in place and the PDF row showed no scribble.
+      if(isPlausibleSigSrc(cur[key])){
+        cur[key+'Ink']=true;
+      }else if(cur[key]&&sigDataInkState(cur[key])===false){
         rememberSigInk(cur[key],false);delete cur[key];delete cur[key+'Ink'];
       }else if(storedHasRealInk(cur[key],cur[key+'Ink'])){
         cur[key+'Ink']=true;
@@ -3294,6 +3300,7 @@ function applySigDataUrl(id,src){
     const ctx=c.getContext('2d');
     ctx.clearRect(0,0,c.width,c.height);
     ctx.drawImage(img,0,0,c.width,c.height);
+    if(c.width<40||c.height<40){c.classList.add('signed');setSigHint(id,true);return;}
     if(isCanvasInk(c)){rememberSigInk(src,true);c.classList.add('signed');setSigHint(id,true);}
     else{rememberSigInk(src,false);ctx.clearRect(0,0,c.width,c.height);c.classList.remove('signed');setSigHint(id,false);}
   };
@@ -5685,6 +5692,7 @@ const TS_FORM_PT={
   dateX:115.5,tinX:173.6,toutX:231.9,hrsX:281.1,
   dayY0:172.5,dayStep:13.4,
   dayAideSigX:356,dayClientSigX:498,
+  clientSigX:476,clientSigY:100,caregiverSigX:498,caregiverSigY:129,
   totalY:267.0,
   commentsX:48,commentsY:610,
   otherSpecifyX:120,otherSpecifyY:580.88,
@@ -5807,13 +5815,154 @@ function tsPdfSigned(d,role){
   if(String(src).indexOf('data:image')===0&&String(src).length>80)return true;
   return !!(flag===true&&src);
 }
-function tsPdfSigHtml(d,role,x,y){
+function tsPdfSigHtml(d,role,x,y,extra){
   if(!tsPdfSigned(d,role))return '';
   const src=role==='aide'?(d.aideSig||''):(d.clientSig||'');
   if(String(src).indexOf('data:image')===0){
-    return '<img class="ts-sig" alt="" src="'+tsPdfEscape(src)+'" style="left:'+tsPdfPctX(x)+';top:'+tsPdfPctY(y)+'">';
+    const cls='ts-sig'+(extra?' '+extra:'');
+    return '<img class="'+cls+'" alt="" src="'+tsPdfEscape(src)+'" style="left:'+tsPdfPctX(x)+';top:'+tsPdfPctY(y)+'">';
   }
   return tsPdfFill('✓',x,y,'ts-fill-c ts-fill-mark');
+}
+function tsPdfDayRank(d,i){
+  const date=String((d&&d.date)||'');
+  return (date||'0000-00-00')+'|'+String(i).padStart(2,'0');
+}
+// Top letter boxes: latest day that has both scribbles (by date, then day index).
+// If no day has both, each box uses the latest day that has that signature.
+function tsPdfSummarySigs(days){
+  let both=null,bothRank='',aide=null,aideRank='',client=null,clientRank='';
+  for(let i=0;i<=6;i++){
+    const d=tsPdfDay(days,i);
+    const rank=tsPdfDayRank(d,i);
+    const a=tsPdfSigned(d,'aide');
+    const c=tsPdfSigned(d,'client');
+    if(a&&rank>=aideRank){aide=d;aideRank=rank;}
+    if(c&&rank>=clientRank){client=d;clientRank=rank;}
+    if(a&&c&&rank>=bothRank){both=d;bothRank=rank;}
+  }
+  if(both)return {aide:both,client:both};
+  return {aide:aide,client:client};
+}
+function tsPdfMergeLiveSigs(days){
+  if(!days||typeof document==='undefined'||!document.getElementById)return days;
+  if(typeof isCanvasInk!=='function'||typeof capturePadSig!=='function')return days;
+  for(let i=0;i<=6;i++){
+    const key=String(i);
+    const d=Object.assign({},days[key]||days[i]||{});
+    const a=document.getElementById('sp_aide_'+i);
+    const c=document.getElementById('sp_client_'+i);
+    let changed=false;
+    if(a&&isCanvasInk(a)){
+      const url=capturePadSig(a);
+      if(url){d.aideSig=url;d.aideSigInk=true;changed=true;}
+    }
+    if(c&&isCanvasInk(c)){
+      const url=capturePadSig(c);
+      if(url){d.clientSig=url;d.clientSigInk=true;changed=true;}
+    }
+    if(changed||d.date||d.tin||d.tout||d.hrs||d.aideSig||d.clientSig||(d.svcs&&d.svcs.length))days[key]=d;
+  }
+  return days;
+}
+function sbLoadSigImage(src){
+  return new Promise(function(resolve){
+    if(!src||String(src).indexOf('data:image')!==0){resolve(null);return;}
+    try{
+      const img=new Image();
+      img.onload=function(){resolve(img);};
+      img.onerror=function(){resolve(null);};
+      img.src=src;
+    }catch(e){resolve(null);}
+  });
+}
+function sbSigInkRect(img){
+  if(!img||!img.naturalWidth||!img.naturalHeight||typeof document==='undefined')return null;
+  try{
+    const c=document.createElement('canvas');
+    c.width=img.naturalWidth;c.height=img.naturalHeight;
+    const g=c.getContext('2d');
+    if(!g)return null;
+    g.drawImage(img,0,0);
+    const data=g.getImageData(0,0,c.width,c.height).data;
+    let minx=c.width,miny=c.height,maxx=-1,maxy=-1;
+    for(let y=0;y<c.height;y++){
+      for(let x=0;x<c.width;x++){
+        const i=(y*c.width+x)*4;
+        if(data[i+3]<24)continue;
+        if(data[i]>246&&data[i+1]>246&&data[i+2]>246)continue;
+        if(x<minx)minx=x;
+        if(y<miny)miny=y;
+        if(x>maxx)maxx=x;
+        if(y>maxy)maxy=y;
+      }
+    }
+    if(maxx<minx)return null;
+    const pad=2;
+    minx=Math.max(0,minx-pad);miny=Math.max(0,miny-pad);
+    maxx=Math.min(c.width-1,maxx+pad);maxy=Math.min(c.height-1,maxy+pad);
+    return {x:minx,y:miny,w:maxx-minx+1,h:maxy-miny+1};
+  }catch(e){return null;}
+}
+function sbCropSigURL(img){
+  const rect=sbSigInkRect(img);
+  if(!rect)return '';
+  try{
+    const c=document.createElement('canvas');
+    c.width=rect.w;c.height=rect.h;
+    const g=c.getContext('2d');
+    if(!g)return '';
+    g.drawImage(img,rect.x,rect.y,rect.w,rect.h,0,0,rect.w,rect.h);
+    return c.toDataURL('image/png');
+  }catch(e){return '';}
+}
+async function sbFitSheetSigs(root){
+  if(!root||!root.querySelectorAll)return;
+  const imgs=root.querySelectorAll('img.ts-sig');
+  await Promise.all(Array.prototype.map.call(imgs,function(img){
+    return sbWaitImg(img,4000).then(function(){
+      const url=sbCropSigURL(img);
+      if(!url||url===img.src)return null;
+      img.src=url;
+      return sbWaitImg(img,4000);
+    });
+  }));
+}
+async function sbStampTimesheetSigs(canvas,record){
+  if(!canvas||!canvas.getContext)return;
+  const ctx=canvas.getContext('2d');
+  if(!ctx)return;
+  const F=TS_FORM_PT;
+  const days=(record&&record.days)||{};
+  const scaleX=canvas.width/F.sheetW;
+  const scaleY=canvas.height/F.sheetH;
+  const jobs=[];
+  function queue(src,x,y,wPt,hPt){
+    if(String(src||'').indexOf('data:image')!==0)return;
+    jobs.push(sbLoadSigImage(src).then(function(img){
+      if(!img)return;
+      const rect=sbSigInkRect(img);
+      const srcX=rect?rect.x:0;
+      const srcY=rect?rect.y:0;
+      const srcW=rect?rect.w:img.naturalWidth;
+      const srcH=rect?rect.h:img.naturalHeight;
+      const aspect=srcW/Math.max(1,srcH);
+      let dw=wPt,dh=hPt;
+      if(aspect>wPt/hPt)dh=wPt/aspect;
+      else dw=hPt*aspect;
+      ctx.drawImage(img,srcX,srcY,srcW,srcH,x*scaleX-dw*scaleX/2,y*scaleY-dh*scaleY/2,dw*scaleX,dh*scaleY);
+    }));
+  }
+  for(let i=0;i<=6;i++){
+    const d=tsPdfDay(days,i);
+    const y=F.dayY0+i*F.dayStep;
+    if(tsPdfSigned(d,'aide'))queue(d.aideSig,F.dayAideSigX,y,98,11.5);
+    if(tsPdfSigned(d,'client'))queue(d.clientSig,F.dayClientSigX,y,98,11.5);
+  }
+  const summary=tsPdfSummarySigs(days);
+  if(summary.client&&tsPdfSigned(summary.client,'client'))queue(summary.client.clientSig,F.clientSigX,F.clientSigY,159,15);
+  if(summary.aide&&tsPdfSigned(summary.aide,'aide'))queue(summary.aide.aideSig,F.caregiverSigX,F.caregiverSigY,159,15);
+  await Promise.all(jobs);
 }
 function buildTimesheetPrintHtml(r){
   const F=TS_FORM_PT;
@@ -5843,6 +5992,9 @@ function buildTimesheetPrintHtml(r){
     fills.push(tsPdfSigHtml(d,'aide',F.dayAideSigX,y));
     fills.push(tsPdfSigHtml(d,'client',F.dayClientSigX,y));
   }
+  const summary=tsPdfSummarySigs(days);
+  if(summary.client)fills.push(tsPdfSigHtml(summary.client,'client',F.clientSigX,F.clientSigY,'ts-sig-top'));
+  if(summary.aide)fills.push(tsPdfSigHtml(summary.aide,'aide',F.caregiverSigX,F.caregiverSigY,'ts-sig-top'));
   const rawTotal=(r&&r.totalHrs&&r.totalHrs!=='0:00'&&r.totalHrs!=='—')?r.totalHrs:((r&&r.total_hours)||tsPdfHrsDisplay(regular));
   const totalWeekly=tsPdfHrsDisplay(rawTotal)||String(rawTotal||'').trim();
   if(totalWeekly)fills.push(tsPdfFill(totalWeekly,F.hrsX,F.totalY,'ts-fill-c ts-fill-total'));
@@ -5873,6 +6025,7 @@ function sbTimesheetPdfRecord(daysSource){
   const otherEl=typeof document!=='undefined'?document.getElementById('cg_other_specify'):null;
   const source=daysSource||(typeof getUserWeekData==='function'?getUserWeekData():{});
   const days=typeof sbNormalizeDays==='function'?sbNormalizeDays(source):source;
+  tsPdfMergeLiveSigs(days);
   const other=(otherEl&&otherEl.value||'').trim();
   if(other){
     Object.keys(days||{}).forEach(function(k){
@@ -5951,6 +6104,8 @@ function cgMountTimesheetPrintSheet(record){
     try{rec=sbTimesheetPdfRecord();}catch(e){rec={};}
   }
   root.innerHTML='<div class="ts-pdf-sheet">'+buildTimesheetPrintHtml(rec||{})+'</div>';
+  const sheet=root.querySelector('.ts-pdf-sheet');
+  if(sheet)sbFitSheetSigs(sheet);
 }
 function cgSyncTimesheetPrint(on){
   const htmlEl=document.documentElement;
@@ -5974,6 +6129,7 @@ async function renderTimesheetPdfBlob(r){
     if(!ready)throw new Error('blank form');
     const imgs=container.querySelectorAll('img');
     await Promise.all(Array.prototype.map.call(imgs,function(img){return sbWaitImg(img,4000);}));
+    try{await sbFitSheetSigs(container);}catch(e){}
     // scale 1 JPEG page. Lock the capture to the sheet so the site footer cannot
     // extend the bitmap past Letter. Stay under 2 MiB (Ace smoke ~261 KiB). No PNG embed.
     const sheetW=container.offsetWidth||816;
@@ -5993,6 +6149,7 @@ async function renderTimesheetPdfBlob(r){
     if(!canvas||canvas.width<200||canvas.height<200){
       canvas=await html2canvas(container,{scale:1,useCORS:true,backgroundColor:'#ffffff'});
     }
+    try{await sbStampTimesheetSigs(canvas,r);}catch(e){}
     let blob=await sbJpegLetterPdf(canvas,0.72);
     if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.55);
     if(sbPdfSize(blob)>=SB_PDF_TARGET_BYTES)blob=await sbJpegLetterPdf(canvas,0.4);
