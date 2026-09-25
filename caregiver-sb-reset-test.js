@@ -34,6 +34,10 @@ assert.ok(html.includes('id="aideSetupOpenCaregiver"') && html.includes('>Open C
 assert.ok(!html.includes('target="_blank"'), 'success CTA stays in this tab');
 assert.ok(html.includes('v=cghome1'), 'cghome marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-25-cghome1">'), 'cghome meta');
+assert.ok(html.includes('v=cghome1b'), 'cghome1b marker');
+assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-25-cghome1b">'), 'cghome1b meta');
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-25-cghome1b v=cghome1b —'), 'cghome1b comment');
+assert.ok(!html.includes('setTimeout(openCaregiverLogin'), 'save does not schedule a jump into the portal');
 assert.ok(html.includes("const live='https://evercareagency.github.io/caregiver/'"), 'login fallback is LIVE Pages');
 assert.ok(html.includes('If you use the app icon on your phone, open it from there after this'), 'browser soft copy');
 assert.ok(html.includes('onclick="openCaregiverLogin();return false;"'), 'portal button opens the login url');
@@ -162,6 +166,7 @@ function harness(opts){
       loc.search = next.indexOf('?') >= 0 ? next.slice(next.indexOf('?')) : '';
     }},
     localStorage: storage(opts.storage),
+    sessionStorage: storage(opts.sessionStorage),
     window: opts.window || {},
     document: {
       getElementById: function(id){return nodes[id] || null;},
@@ -227,7 +232,16 @@ function harness(opts){
     extractFn(html, 'function caregiverLoginUrl()'),
     extractFn(html, 'function openCaregiverLogin()'),
     extractFn(html, 'function paintCaregiverOpenLink(id)'),
+    extractFn(html, 'function passwordSavedHoldKey()'),
+    extractFn(html, 'function passwordSavedHold()'),
+    extractFn(html, 'function markPasswordSavedHold(which)'),
+    extractFn(html, 'function clearPasswordSavedHold()'),
+    extractFn(html, 'function activatePortalScreen(id)'),
+    extractFn(html, 'function dropRecoveredPortalSession()'),
     extractFn(html, 'function showRecoveryPasswordSaved()'),
+    extractFn(html, 'function showAideSetupSaved()'),
+    extractFn(html, 'function showRecoveryPasswordScreen()'),
+    extractFn(html, 'function bootCaregiverPortal()'),
     extractFn(html, 'function releaseStuckSheetsRollback()'),
     extractFn(html, 'async function clearAideMustChangeAfterRecovery(token)'),
     submitFn,
@@ -378,16 +392,22 @@ function rpcEmail(email){
   const aideId = '22222222-2222-2222-2222-222222222222';
   const userId = '11111111-1111-1111-1111-111111111111';
   const token = 'hdr.' + b64url({sub: userId}) + '.sig';
+  const probeSession = JSON.stringify({username:'probeqa', name:'Probe QA Test', loginAt:Date.now(), sbAccessToken:token});
   const landed = harness({
     recoveryPass: 'new-secret',
     recoveryConfirm: 'new-secret',
-    window: {__sbRecovery: {access_token: token, refresh_token: 'r'}},
+    storage: {
+      cg_session: probeSession,
+      evercare_sb_session: JSON.stringify({access_token:token, refresh_token:'r'})
+    },
+    window: {__sbRecovery: {access_token: token, refresh_token: 'r'}, __sbSession: {access_token: token}},
     aide: {ok: true, status: 200, raw: JSON.stringify([{id: aideId}])},
     patch: {ok: true, status: 204, raw: ''}
   });
   await landed.box.submitRecoveryPassword();
   assert.deepStrictEqual(landed.toasts, []);
   assert.deepStrictEqual(landed.screens, []);
+  assert.deepStrictEqual(landed.nav, []);
   assert.strictEqual(landed.nodes.recoveryForm.style.display, 'none');
   assert.strictEqual(landed.nodes.recoveryDone.style.display, 'block');
   assert.strictEqual(landed.nodes.recoveryDoneTitle.textContent, 'Password saved');
@@ -395,11 +415,13 @@ function rpcEmail(email){
   assert.strictEqual(landed.nodes.recoveryOpenPortal.href, 'https://caregiver.example/index.html');
   assert.strictEqual(landed.nodes.recoveryDoneHint.textContent, 'If you use the app icon on your phone, open it from there after this');
   assert.strictEqual(landed.box.window.__sbRecovery, null);
-  assert.strictEqual(landed.timers.length, 1);
-  assert.strictEqual(landed.timers[0].ms, 3000);
-  assert.strictEqual(landed.timers[0].cleared, false);
+  assert.strictEqual(landed.box.window.__sbSession, null);
+  assert.strictEqual(landed.box.localStorage.getItem('cg_session'), null);
+  assert.strictEqual(landed.box.localStorage.getItem('evercare_sb_session'), null);
+  assert.strictEqual(landed.box.sessionStorage.getItem('cghome1b_pw_saved'), 'recovery');
+  assert.strictEqual(landed.timers.length, 0);
   landed.box.openCaregiverLogin();
-  assert.strictEqual(landed.timers[0].cleared, true);
+  assert.strictEqual(landed.box.sessionStorage.getItem('cghome1b_pw_saved'), null);
   assert.deepStrictEqual(landed.nav, [{op: 'reload'}]);
   const put = landed.calls.filter(function(c){return c.url.indexOf('/auth/v1/user') >= 0;})[0];
   const patch = landed.calls.filter(function(c){return c.init.method === 'PATCH';})[0];
@@ -453,9 +475,9 @@ function rpcEmail(email){
   });
   await delayed.box.submitRecoveryPassword();
   assert.strictEqual(delayed.nodes.recoveryOpenPortal.href, 'https://caregiver.example/index.html');
-  assert.strictEqual(delayed.timers.length, 1);
-  assert.strictEqual(delayed.timers[0].ms, 3000);
-  delayed.timers[0].fn();
+  assert.strictEqual(delayed.nodes.recoveryDone.style.display, 'block');
+  assert.strictEqual(delayed.timers.length, 0);
+  delayed.box.openCaregiverLogin();
   assert.deepStrictEqual(delayed.nav, [{op: 'assign', url: 'https://caregiver.example/index.html'}]);
 
   const pagesSaved = harness({
@@ -482,7 +504,8 @@ function rpcEmail(email){
   });
   await localSaved.box.submitRecoveryPassword();
   assert.strictEqual(localSaved.nodes.recoveryOpenPortal.href, 'https://evercareagency.github.io/caregiver/');
-  localSaved.timers[0].fn();
+  assert.strictEqual(localSaved.timers.length, 0);
+  localSaved.box.openCaregiverLogin();
   assert.deepStrictEqual(localSaved.nav, [{op: 'assign', url: 'https://evercareagency.github.io/caregiver/'}]);
 
   const iosHome = harness({
@@ -546,6 +569,38 @@ function rpcEmail(email){
     email: 'mo.aide@example.com'
   });
   assert.ok(signupSheets.calls.some(function(c){return c.url === 'session';}));
+
+  const bootRec = harness({hash: '#access_token=' + encodeURIComponent(token) + '&refresh_token=r&type=recovery&expires_in=3600'});
+  bootRec.box.restoreCgSession = function(){bootRec.calls.push({url: 'restore'}); return true;};
+  bootRec.box.afterLogin = function(){bootRec.calls.push({url: 'home'});};
+  bootRec.box.currentUser = {username: 'probeqa', name: 'Probe QA Test', sbAccessToken: token};
+  assert.strictEqual(bootRec.box.bootCaregiverPortal(), 'recovery');
+  assert.ok(!bootRec.calls.some(function(c){return c.url === 'restore' || c.url === 'home';}), 'recovery boot does not enter home');
+  assert.strictEqual(bootRec.nodes.recoveryForm.style.display, '');
+  assert.strictEqual(bootRec.nodes.recoveryDone.style.display, 'none');
+  assert.strictEqual(bootRec.box.window.__sbRecovery.access_token, token);
+
+  const bootHold = harness({
+    storage: {cg_session: probeSession, evercare_sb_session: JSON.stringify({access_token: token})}
+  });
+  bootHold.box.sessionStorage.setItem('cghome1b_pw_saved', 'recovery');
+  bootHold.box.restoreCgSession = function(){bootHold.calls.push({url: 'restore'}); return true;};
+  bootHold.box.afterLogin = function(){bootHold.calls.push({url: 'home'});};
+  bootHold.box.currentUser = {username: 'probeqa', name: 'Probe QA Test', sbAccessToken: token};
+  assert.strictEqual(bootHold.box.bootCaregiverPortal(), 'saved');
+  assert.strictEqual(bootHold.nodes.recoveryDone.style.display, 'block');
+  assert.strictEqual(bootHold.nodes.recoveryDoneTitle.textContent, 'Password saved');
+  assert.strictEqual(bootHold.nodes.recoveryOpenPortal.textContent, 'Open Caregiver');
+  assert.strictEqual(bootHold.box.localStorage.getItem('cg_session'), null);
+  assert.strictEqual(bootHold.box.currentUser, null);
+  assert.ok(!bootHold.calls.some(function(c){return c.url === 'restore' || c.url === 'home';}), 'saved hold does not enter home');
+
+  const bootHome = harness({});
+  bootHome.box.currentUser = {username: 'probeqa', name: 'Probe QA Test', sbAccessToken: token};
+  bootHome.box.restoreCgSession = function(){return true;};
+  bootHome.box.afterLogin = function(){bootHome.calls.push({url: 'home'});};
+  assert.strictEqual(bootHome.box.bootCaregiverPortal(), 'home');
+  assert.ok(bootHome.calls.some(function(c){return c.url === 'home';}));
 
   console.log('caregiver-sb-reset checks ok');
 })().catch(function(err){

@@ -95,6 +95,12 @@ const src = [
   extractFn(html, 'async function postAideAction(primary,alias,payload)'),
   extractFn(html, 'async function completeAideSetupSupabase(currentPassword,newPassword,email)'),
   extractFn(html, 'function paintCaregiverOpenLink(id)'),
+  extractFn(html, 'function passwordSavedHoldKey()'),
+  extractFn(html, 'function passwordSavedHold()'),
+  extractFn(html, 'function markPasswordSavedHold(which)'),
+  extractFn(html, 'function clearPasswordSavedHold()'),
+  extractFn(html, 'function activatePortalScreen(id)'),
+  extractFn(html, 'function dropRecoveredPortalSession()'),
   extractFn(html, 'function showAideSetupSaved()'),
   extractFn(html, 'async function submitAideSetup()')
 ].join('\n');
@@ -119,7 +125,12 @@ function harness(opts){
     setup_confirm: {value: opts.confirmPassword || 'lasting-pw'},
     setup_email: {value: opts.email || 'aide.one@example.com'},
     aideSetupErr: {textContent: '', style: {display: 'none'}},
-    aideSetupBtn: {textContent: 'Save & Continue →', disabled: false}
+    aideSetupBtn: {textContent: 'Save & Continue →', disabled: false},
+    aideSetupForm: {style: {display: ''}},
+    aideSetupDone: {style: {display: 'none'}},
+    aideSetupDoneTitle: {textContent: 'Password saved'},
+    aideSetupScreen: {classList: {add: function(){}, remove: function(){}}},
+    aideSetupOpenCaregiver: {textContent: 'Open Caregiver', href: './', removeAttribute: function(){}}
   };
   const box = {
     SHEETS_URL: sheetsUrl,
@@ -130,7 +141,10 @@ function harness(opts){
     sessionStorage: storage(),
     window: {_cgFreshLogin: true, _aideSetupCurrentPassword: 'temp-pw'},
     currentUser: opts.currentUser,
-    document: {getElementById: function(id){return nodes[id] || null;}},
+    document: {
+      getElementById: function(id){return nodes[id] || null;},
+      querySelectorAll: function(){return [];}
+    },
     fetch: function(url, init){
       const rec = {url: String(url), init: init || {}};
       calls.push(rec);
@@ -211,7 +225,15 @@ function harness(opts){
   assert.deepStrictEqual(lasting.sheets, [], 'token setup does not post Sheets');
   assert.ok(!lasting.calls.some(function(c){return c.url === sheetsUrl;}));
   assert.deepStrictEqual(lasting.toasts, ['Account setup complete.']);
-  assert.strictEqual(lasting.box.currentUser.mustChangePassword, false);
+  assert.deepStrictEqual(lasting.homes, [], 'setup success does not enter home');
+  assert.strictEqual(lasting.box.currentUser, null, 'setup success drops the local session');
+  assert.strictEqual(lasting.box.localStorage.getItem('evercare_sb_session'), null);
+  assert.strictEqual(lasting.box.sessionStorage.getItem('evercare_sb_session'), null);
+  assert.strictEqual(lasting.box.sessionStorage.getItem('cghome1b_pw_saved'), 'setup');
+  assert.strictEqual(lasting.nodes.aideSetupForm.style.display, 'none');
+  assert.strictEqual(lasting.nodes.aideSetupDone.style.display, 'block');
+  assert.strictEqual(lasting.nodes.aideSetupDoneTitle.textContent, 'Password saved');
+  assert.strictEqual(lasting.nodes.aideSetupOpenCaregiver.textContent, 'Open Caregiver');
 
   const missing = harness({
     currentUser: {
