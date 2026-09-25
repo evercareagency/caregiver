@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-cgisbadge2">
 <meta name="caregiver-build" content="2026-09-25-cgquizlet1">
 <meta name="caregiver-build" content="2026-09-25-loginkb1">
 <meta name="caregiver-build" content="2026-09-25-cgisbadge1">
@@ -25,6 +26,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-cgisbadge2 v=cgisbadge2 — Friday GO 2026-09-25. My Inservices and the due badge share one fresh read. sbMyInserviceTopics and sbHydrateInserviceCompletions call sbEnsureCaregiverJwt, then sbRest with the aide session JWT (sbUserHeaders Bearer, not the anon key). A 401/403 refreshes once via sbRefreshCaregiverJwt and retries that read once; a second failure stays soft (empty assignment, phone completion cache) and the next Home or Inservices open tries again. dueInserviceCount is assigned topic ids that are in the static INSERVICES catalog, or that carry a topic_title, minus completed_*. Those titled non-catalog rows paint as Due cards so the badge matches the list. Home open (showCaregiverHome and the existing login schedule), Inservices open (renderISList paints #isNavBadge and #isNotifBanner from that same fetch), pageshow and visibilitychange while logged in, and submitInservice success all re-fetch. No login-only assigned cache. No Clear-assignment client event exists; the next refresh reads the office set. v=cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgquizlet1 v=cgquizlet1 — Friday GO 2026-09-25. Aide take-quiz (#isOptions) shows every choice with its index letter: 0→A, 1→B, and on through F when a question has six choices. Example: “B. medical emergency”. A letter already stored on the choice text is not repeated. answerQ still stores the numeric index, and Submit Inservice still posts that index list. v=loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-loginkb1 v=loginkb1 — Friday GO 2026-09-25. Phone Sign In: focusing username or password sizes #authScreen to the visual viewport and scrolls that field and #loginBtn above the keyboard. The form stays a scrollport so Forgot password can move into view. No window.scrollTo. Desktop width does not take this path. doLogin and the Auth soft path are unchanged. v=cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgisbadge1 v=cgisbadge1 — Friday GO 2026-09-25. Bottom-nav Inservices shows a red due-count badge on the books icon. The count is the same assigned-incomplete set as the home #isNotifBanner (dueInserviceCount). Count > 0 keeps that banner and shows the badge; 0 hides both. The badge is decorative (pointer-events none) and the Inservices tab stays the control. Phone and desktop use this same bottom nav. v=cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -6527,6 +6529,7 @@ function showCaregiverHome(){
   if(typeof renderTSHome==='function')renderTSHome();
   try{window.scrollTo(0,0);}catch(e){}
   if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
+  if(typeof checkISNotif==='function')checkISNotif();
 }
 
 function backToTSHome(){
@@ -6554,54 +6557,86 @@ function saveISData(data){store.set('is_'+currentUser.username,data);}
 
 function sbInserviceTopicSet(raw){
   const set=new Set();
-  function addId(v){
+  const titles={};
+  function addId(v,title){
     const s=String(v==null?'':v).trim();
     if(!s||s==='null'||s==='undefined')return;
     set.add(s);
+    const name=title==null?'':String(title).trim();
+    if(name&&name!=='null'&&name!=='undefined')titles[s]=name;
   }
   function walk(v){
     if(v==null)return;
     if(Array.isArray(v)){v.forEach(walk);return;}
     if(typeof v==='object'){
-      if(v.topic_id!=null)addId(v.topic_id);
-      else if(v.topicId!=null)addId(v.topicId);
-      if(Array.isArray(v.topic_ids))v.topic_ids.forEach(addId);
-      else if(Array.isArray(v.topicIds))v.topicIds.forEach(addId);
+      const title=v.topic_title!=null?v.topic_title:(v.topicTitle!=null?v.topicTitle:(v.title!=null?v.title:''));
+      if(v.topic_id!=null)addId(v.topic_id,title);
+      else if(v.topicId!=null)addId(v.topicId,title);
+      if(Array.isArray(v.topic_ids))v.topic_ids.forEach(function(id){addId(id,'');});
+      else if(Array.isArray(v.topicIds))v.topicIds.forEach(function(id){addId(id,'');});
       return;
     }
-    addId(v);
+    addId(v,'');
   }
   walk(raw);
+  set.titles=titles;
   return set;
 }
 // GHOST-INSERVICE-TOPIC-ASSIGNMENT-CONTRACT-v1 §4. Aide JWT.
 // my_inservice_topics() returns topic_id, updated_at, topic_title.
 // NULL aide_usernames = ALL, {} = nobody, non-empty = SELECTED. Ace scopes the rows. Empty array assigns nothing.
 async function sbMyInserviceTopics(){
+  if(typeof evercareSbEnabled==='function'&&evercareSbEnabled()&&typeof sbEnsureCaregiverJwt==='function'){
+    try{await sbEnsureCaregiverJwt();}catch(e){}
+  }
   if(typeof sbDataEnabled!=='function'||!sbDataEnabled())return new Set();
-  try{
+  async function pull(){
     const got=await sbRest('rpc/my_inservice_topics',{method:'POST',body:{}});
     return sbInserviceTopicSet(got);
+  }
+  try{
+    return await pull();
   }catch(e){
+    const status=e&&e.pack&&e.pack.status;
+    const auth=status===401||status===403||(typeof cgIsAuthErr==='function'&&cgIsAuthErr(e));
+    if(auth&&typeof sbRefreshCaregiverJwt==='function'){
+      let ok=false;
+      try{ok=await sbRefreshCaregiverJwt();}catch(e2){ok=false;}
+      if(ok){
+        try{return await pull();}catch(e3){return new Set();}
+      }
+    }
     return new Set();
   }
 }
 
 async function sbHydrateInserviceCompletions(){
+  if(typeof evercareSbEnabled==='function'&&evercareSbEnabled()&&typeof sbEnsureCaregiverJwt==='function'){
+    try{await sbEnsureCaregiverJwt();}catch(e){}
+  }
   if(typeof sbDataEnabled!=='function'||!sbDataEnabled()||!currentUser||!currentUser.username){
     return typeof getISData==='function'?getISData():{};
   }
   const username=String(currentUser.username).trim();
   if(!username)return getISData();
+  const q='inservice_results?select='+encodeURIComponent('topic_id,completed,submitted_at,status,username')
+    +'&username=eq.'+encodeURIComponent(username)
+    +'&order=submitted_at.desc';
+  async function pullRows(){
+    const got=await sbRest(q);
+    return Array.isArray(got)?got:(got?[got]:[]);
+  }
   let rows=[];
   try{
-    const q='inservice_results?select='+encodeURIComponent('topic_id,completed,submitted_at,status,username')
-      +'&username=eq.'+encodeURIComponent(username)
-      +'&order=submitted_at.desc';
-    const got=await sbRest(q);
-    rows=Array.isArray(got)?got:(got?[got]:[]);
+    rows=await pullRows();
   }catch(e){
-    return getISData();
+    const status=e&&e.pack&&e.pack.status;
+    const auth=status===401||status===403||(typeof cgIsAuthErr==='function'&&cgIsAuthErr(e));
+    if(!(auth&&typeof sbRefreshCaregiverJwt==='function'))return getISData();
+    let ok=false;
+    try{ok=await sbRefreshCaregiverJwt();}catch(e2){ok=false;}
+    if(!ok)return getISData();
+    try{rows=await pullRows();}catch(e3){return getISData();}
   }
   const isData=getISData()||{};
   const seen={};
@@ -6624,21 +6659,32 @@ async function sbHydrateInserviceCompletions(){
   if(changed&&typeof saveISData==='function')saveISData(isData);
   return isData;
 }
-// Home #isNotifBanner and the Inservices nav badge share this count (v=cgisbadge1).
-// A topic is due when it is in the assignment set and has no completion — the same rule the banner used.
+// Home #isNotifBanner and the Inservices nav badge share this count (v=cgisbadge2).
+// Due = assigned id in the INSERVICES catalog, or a non-catalog id that has a topic_title, with no completed_* key.
 function dueInserviceCount(assigned,isData){
   let n=0;
   const data=isData||{};
   if(!assigned||typeof assigned.forEach!=='function')return 0;
+  const catalog=new Set();
+  if(typeof INSERVICES!=='undefined'&&INSERVICES&&typeof INSERVICES.forEach==='function'){
+    INSERVICES.forEach(function(is){
+      if(is&&is.id!=null)catalog.add(String(is.id));
+    });
+  }
+  const titles=assigned.titles||{};
   assigned.forEach(function(id){
-    if(!data['completed_'+id])n++;
+    if(!data['completed_'+id]){
+      const key=String(id);
+      const title=titles[key]==null?'':String(titles[key]).trim();
+      if(catalog.has(key)||(title&&title!=='null'&&title!=='undefined'))n++;
+    }
   });
   return n;
 }
 function paintISDueChrome(dueCount){
   const n=dueCount>0?dueCount:0;
   const banner=document.getElementById('isNotifBanner');
-  if(banner){
+  if(banner&&banner.style){
     if(!n){banner.style.display='none';}
     else{
       banner.innerHTML='&#128218; <strong>You have an inservice due this month!</strong> Tap here to complete it.';
@@ -6690,6 +6736,35 @@ async function renderISList(){
       (completed?'<p style="font-size:0.7rem;color:var(--muted);margin-top:6px">Completed: '+escapeHtml(formatCertDate(isData['completedAt_'+is.id]||isData['completed_'+is.id]))+'</p>':'')+
       '</div>';
   }).join('');
+  const seenCatalog={};
+  INSERVICES.forEach(function(is){if(is&&is.id!=null)seenCatalog[String(is.id)]=1;});
+  const topicTitles=assigned&&assigned.titles||{};
+  let extra='';
+  if(assigned&&typeof assigned.forEach==='function'){
+    assigned.forEach(function(id){
+      const key=String(id);
+      if(seenCatalog[key])return;
+      const rawTitle=topicTitles[key];
+      const title=rawTitle==null?'':String(rawTitle).trim();
+      if(!title||title==='null'||title==='undefined')return;
+      const completed=isData['completed_'+key];
+      extra+='<div class="card" data-orphan-topic="'+escapeHtml(key)+'" style="margin-bottom:10px;border:'+(completed?'1px solid var(--border)':'2px solid var(--teal)')+'">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'+
+        '<div><p style="font-weight:600;color:var(--navy);font-size:0.88rem">'+escapeHtml(title)+'</p>'+
+        '<p style="font-size:0.7rem;color:var(--muted);margin-top:2px">Assigned topic</p></div>'+
+        '<div style="flex-shrink:0">'+
+        (completed?'<span style="background:#e8f8f0;color:var(--success);padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700">Completed</span>':
+         '<span style="background:#e8f8f0;color:var(--teal-dark);padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700">Assigned</span>')+
+        '</div></div>'+
+        (completed?'':'<div style="margin-top:8px;background:var(--teal);color:white;padding:4px 10px;border-radius:4px;font-size:0.68rem;font-weight:700;display:inline-block">DUE THIS MONTH</div>')+
+        (completed?'<p style="font-size:0.7rem;color:var(--muted);margin-top:6px">Completed: '+escapeHtml(formatCertDate(isData['completedAt_'+key]||isData['completed_'+key]))+'</p>':'')+
+        '</div>';
+    });
+  }
+  if(extra)el.innerHTML+=extra;
+  if(typeof paintISDueChrome==='function'&&typeof dueInserviceCount==='function'){
+    paintISDueChrome(dueInserviceCount(assigned,isData));
+  }
 }
 
 function startIS(id){
@@ -7091,9 +7166,19 @@ window.addEventListener('online',function(){
   }catch(e){}
 });
 window.addEventListener('offline',function(){try{window._cgQueuePhase='offline';cgPaintOfflineQueue();}catch(e){}});
-window.addEventListener('pageshow',()=>{enforceCgSessionTimeout();});
+function cgRefreshInserviceDueOnShow(){
+  if(!currentUser||!currentUser.username)return;
+  if(typeof checkISNotif!=='function')return;
+  checkISNotif();
+}
+window.addEventListener('pageshow',()=>{
+  enforceCgSessionTimeout();
+  cgRefreshInserviceDueOnShow();
+});
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible')enforceCgSessionTimeout();
+  if(document.visibilityState!=='visible')return;
+  enforceCgSessionTimeout();
+  cgRefreshInserviceDueOnShow();
 });
 window.addEventListener('resize',()=>{
   Object.keys(sigPads).forEach(id=>{
