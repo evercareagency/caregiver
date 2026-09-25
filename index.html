@@ -29,7 +29,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
-<!-- caregiver-build: 2026-09-25-coveraide1 v=coveraide1 — Friday GO 2026-09-25. Home Call off (#callOffHomeBtn) and More open #callOffScreen. The aide picks an upcoming client or saved shift, may add a reason, and taps Submit. Confirmation says Submitted with status Open, then lists only that aide's call-offs (local key evercare_coveraide1_ plus username). Open-shift source is exactly aide or office. This portal records source aide. GHOST-COVERAIDE1-CONTRACT-v1: POST /rest/v1/rpc/aide_record_call_off and POST /rest/v1/rpc/aide_list_my_call_offs only when AIDE_CALL_OFF_RPC_CALLABLE is true. Ace has not pinged CALLABLE and has not published those params, so the flag stays false and the body helpers throw. This portal does not call the office record path. A phone submit stays on this phone until that line is live. No PTO. v=cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-25-coveraide1 v=coveraide1 — Friday GO 2026-09-25. Home Call off (#callOffHomeBtn) and More open #callOffScreen. The aide picks an upcoming client or saved shift, may add a reason, and taps Submit. Confirmation says Submitted with status Open, then lists only that aide's call-offs (local key evercare_coveraide1_ plus username). Open-shift source is exactly aide or office. This portal records source aide. GHOST-COVERAIDE1-CONTRACT-v1 is CALLABLE. Submit POSTs /rest/v1/rpc/aide_record_call_off {p_client_id, p_shift_start, p_shift_end, p_reason:null when blank}. The list POSTs /rest/v1/rpc/aide_list_my_call_offs {p_include_resolved:false}. Source is exactly aide or office. This portal records aide. It does not call the office record path. A shift whose end has already passed is not sent. No PTO. v=cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsiglock1 v=cgsiglock1 — Friday GO 2026-09-25. Client and Caregiver/HHA pads lock after Confirm and when a saved or confirmed signature is hydrated. A locked canvas is pointer-events:none with touch-action:auto, so a phone scroll does not paint ink. The hint stays Signed ✓. Confirm is hidden while locked. Redo clears the lock and the strokes and shows Confirm again. Day flags are aideSigLocked and clientSigLocked (Save Day sets both; a saved day with ink and no flag still hydrates locked). Header flags are headerAideSigLocked and headerClientSigLocked. Lock: commitSigDialog confirm, saveDayData, paintSigLock. Unlock: commitSigDialog redo, clearSig, clearHeaderSigPads (UI only). Hydrate: readSigLocked, applySigDataUrl, refreshSigFromStore, restoreHdrSigs, loadSavedWeek. A tiny rebuilt pad still keeps a stored signature image (v=cgsigs1). v=cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigs1 v=cgsigs1 — Friday GO 2026-09-25. Save Day PDF paints every saved day's HHA and Client scribble on that row, and fills the top CLIENT SIGNATURE and CAREGIVER/HHA SIGNATURE boxes from the latest day that has both (date, then day index). A blank rebuilt pad no longer erases a stored signature image. v=cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgisbadge2 v=cgisbadge2 — Friday GO 2026-09-25. My Inservices and the due badge share one fresh read. sbMyInserviceTopics and sbHydrateInserviceCompletions call sbEnsureCaregiverJwt, then sbRest with the aide session JWT (sbUserHeaders Bearer, not the anon key). A 401/403 refreshes once via sbRefreshCaregiverJwt and retries that read once; a second failure stays soft (empty assignment, phone completion cache) and the next Home or Inservices open tries again. dueInserviceCount is assigned topic ids that are in the static INSERVICES catalog, or that carry a topic_title, minus completed_*. Those titled non-catalog rows paint as Due cards so the badge matches the list. Home open (showCaregiverHome and the existing login schedule), Inservices open (renderISList paints #isNavBadge and #isNotifBanner from that same fetch), pageshow and visibilitychange while logged in, and submitInservice success all re-fetch. No login-only assigned cache. No Clear-assignment client event exists; the next refresh reads the office set. v=cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -6887,13 +6887,12 @@ function openTS(id){
   if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
 }
 
-// v=coveraide1 Call off. GHOST-COVERAIDE1-CONTRACT-v1.
-// TODO(GHOST-COVERAIDE1-CONTRACT-v1): Ace has not pinged CALLABLE.
-// aide_record_call_off and aide_list_my_call_offs params are not published.
-// Open-shift source is exactly aide or office. This portal records aide.
-// The office record path stays on Admin. Leave the flag false.
-// A submit stays on this phone for that aide until the flag is true.
-var AIDE_CALL_OFF_RPC_CALLABLE=false;
+// v=coveraide1 Call off. GHOST-COVERAIDE1-CONTRACT-v1 CALLABLE.
+// POST rpc/aide_record_call_off {p_client_id, p_shift_start, p_shift_end, p_reason}.
+// POST rpc/aide_list_my_call_offs {p_include_resolved:false}.
+// cover_open_shifts.source is exactly aide or office. This portal records aide.
+// The office record path stays on Admin. A past shift_end is not sent.
+
 var callOffPickKey='';
 var callOffShiftCache=[];
 var callOffBusy=false;
@@ -7019,6 +7018,8 @@ function callOffValidate(shift, date, start, end, reason, nowMs){
   if(day<today)return 'That date has already passed.';
   if(!/^\d{2}:\d{2}$/.test(tin)||!/^\d{2}:\d{2}$/.test(tout))return 'Enter a start and end time.';
   if(tout<=tin)return 'End time must be after the start time.';
+  const endMs=new Date(day+'T'+tout).getTime();
+  if(!isFinite(endMs)||endMs<=now)return 'That shift has already ended.';
   const startMs=new Date(day+'T'+tin).getTime();
   if(!isFinite(startMs)||startMs<=now)return 'That shift has already started. Pick an upcoming one.';
   if(callOffCleanReason(reason).length>240)return 'Keep the reason short.';
@@ -7097,47 +7098,106 @@ function callOffWriteList(list){
   if(!currentUser||!currentUser.username)return;
   try{store.set(callOffStoreKey(), callOffRowsForAide(list, currentUser.username));}catch(e){}
 }
+function callOffPartsFromIso(iso){
+  const d=new Date(iso);
+  if(!isFinite(d.getTime()))return {date:'', hm:''};
+  const hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return {date:callOffYmd(d), hm:hm};
+}
 function aideCallOffRpcBody(record){
-  // TODO(GHOST-COVERAIDE1-CONTRACT-v1): Ace has not published aide_record_call_off params.
-  // Do not guess a body. The office record path stays on Admin.
-  throw new Error('aide_record_call_off is not callable yet.');
+  const id=String(record&&record.clientId||'').trim();
+  if(!id)throw new Error('Pick a client the office assigned to you.');
+  const start=String(record&&record.startsAt||'');
+  const end=String(record&&record.endsAt||'');
+  if(!start||!end)throw new Error('Enter a start and end time.');
+  const reason=callOffCleanReason(record&&record.reason);
+  return {
+    p_client_id:id,
+    p_shift_start:start,
+    p_shift_end:end,
+    p_reason:reason?reason:null
+  };
 }
 function aideListCallOffsBody(){
-  // TODO(GHOST-COVERAIDE1-CONTRACT-v1): Ace has not published aide_list_my_call_offs params.
-  throw new Error('aide_list_my_call_offs is not callable yet.');
+  return {p_include_resolved:false};
 }
-function aideCallOffFromRpc(data, record){
+function aideUnwrapRpc(data){
   let node=data;
   if(typeof node==='string'){
     try{node=JSON.parse(node);}catch(e){node=null;}
   }
   if(Array.isArray(node))node=node[0]||null;
   if(node&&node.data&&typeof node.data==='object'&&!Array.isArray(node.data))node=node.data;
-  if(!node||typeof node!=='object')return {ok:false, error:'The office did not take this call-off.'};
-  if(node.success===false||node.ok===false){
-    return {ok:false, error:String(node.error||node.message||'The office did not take this call-off.')};
-  }
-  const status=node.status!=null&&String(node.status)!==''?String(node.status):'open';
-  const id=(node.open_shift_id||node.id||(record&&record.id)||'');
-  const sent=node&&typeof node.source==='string'?node.source.trim():'';
-  const source=sent==='aide'||sent==='office'?sent:'aide';
-  return {ok:true, status:status, id:String(id), source:source};
+  return node&&typeof node==='object'?node:null;
+}
+function callOffRpcError(node, fallback){
+  const msg=node&&(node.error||node.message||node.hint);
+  if(msg&&typeof msg==='object')return String(msg.message||fallback||'The office did not take this call-off.');
+  return String(msg||fallback||'The office did not take this call-off.');
+}
+function aideCallOffRowFromList(item, fallback){
+  if(!item||typeof item!=='object')return null;
+  const client=item.client&&typeof item.client==='object'?item.client:null;
+  const startIso=item.shift_start||(fallback&&fallback.startsAt)||'';
+  const endIso=item.shift_end||(fallback&&fallback.endsAt)||'';
+  const start=callOffPartsFromIso(startIso);
+  const end=callOffPartsFromIso(endIso);
+  const name=item.client_name||(client&&client.name)||(fallback&&fallback.clientName)||'Client';
+  const clientId=item.client_id||(client&&client.id)||(fallback&&fallback.clientId)||'';
+  const reasonRaw=item.reason!=null?item.reason:(fallback&&fallback.reason);
+  const sent=typeof item.source==='string'?item.source.trim():'';
+  const source=sent==='aide'||sent==='office'?sent:(fallback&&fallback.source==='aide'?'aide':'office');
+  const who=currentUser&&currentUser.username?String(currentUser.username):(fallback&&fallback.aideUsername)||'';
+  return {
+    id:String(item.open_shift_id||(fallback&&fallback.id)||''),
+    clientId:String(clientId||''),
+    clientName:String(name||'Client'),
+    date:start.date||(fallback&&fallback.date)||'',
+    start:start.hm||(fallback&&fallback.start)||'',
+    end:end.hm||(fallback&&fallback.end)||'',
+    startsAt:startIso,
+    endsAt:endIso,
+    reason:callOffCleanReason(reasonRaw),
+    status:item.status!=null&&String(item.status)!==''?String(item.status):'open',
+    submittedAt:item.created_at||item.submitted_at||(fallback&&fallback.submittedAt)||'',
+    aideUsername:String(who||''),
+    source:source,
+    submittedByAideId:item.submitted_by_aide_id?String(item.submitted_by_aide_id):'',
+    scheduleExceptionId:item.schedule_exception_id?String(item.schedule_exception_id):'',
+    urgencyWithin48h:item.urgency_within_48h===true,
+    idempotent:item.idempotent===true,
+    reachedOffice:true
+  };
+}
+function aideCallOffFromRpc(data, record){
+  const node=aideUnwrapRpc(data);
+  if(!node)return {ok:false, error:'The office did not take this call-off.'};
+  if(node.success===false||node.ok===false)return {ok:false, error:callOffRpcError(node)};
+  const row=aideCallOffRowFromList(node, record);
+  if(!row||!row.id)return {ok:false, error:'The office did not take this call-off.'};
+  const sent=typeof node.source==='string'?node.source.trim():'';
+  if(sent!=='aide'&&sent!=='office')row.source='aide';
+  return {ok:true, record:row};
+}
+function aideCallOffsFromRpc(data){
+  const node=aideUnwrapRpc(data);
+  if(!node)return {ok:false, error:'The office did not return your call-offs.'};
+  if(node.success===false)return {ok:false, error:callOffRpcError(node, 'The office did not return your call-offs.')};
+  if(!Array.isArray(node.call_offs))return {ok:false, error:'The office did not return your call-offs.'};
+  const rows=node.call_offs.map(function(item){return aideCallOffRowFromList(item);}).filter(Boolean);
+  return {ok:true, count:typeof node.count==='number'?node.count:rows.length, rows:rows};
 }
 async function aidePostCallOff(record){
-  // TODO(GHOST-COVERAIDE1-CONTRACT-v1): POST /rest/v1/rpc/aide_record_call_off
-  // only after Ace pings CALLABLE and the locked params replace aideCallOffRpcBody.
   if(typeof sbRest!=='function')return {ok:false, error:'Sign in again.'};
   const body=aideCallOffRpcBody(record);
   const got=await sbRest('rpc/aide_record_call_off',{method:'POST',body:body});
   return aideCallOffFromRpc(got, record);
 }
 async function aideListMyCallOffs(){
-  // TODO(GHOST-COVERAIDE1-CONTRACT-v1): POST /rest/v1/rpc/aide_list_my_call_offs
-  // only after Ace pings CALLABLE and the locked params replace aideListCallOffsBody.
   if(typeof sbRest!=='function')return {ok:false, error:'Sign in again.'};
   const body=aideListCallOffsBody();
   const got=await sbRest('rpc/aide_list_my_call_offs',{method:'POST',body:body});
-  return {ok:true, data:got};
+  return aideCallOffsFromRpc(got);
 }
 function callOffShowErr(msg){
   const err=document.getElementById('callOffErr');
@@ -7250,7 +7310,8 @@ function callOffPaintList(){
     return String(b.submittedAt||'').localeCompare(String(a.submittedAt||''));
   });
   if(note){
-    note.textContent=rows.length
+    const live=rows.some(function(r){return r&&r.reachedOffice;});
+    note.textContent=rows.length&&!live
       ?'Submitted on this phone. Each one stays Open until the office line is connected.'
       :'';
   }
@@ -7295,9 +7356,11 @@ function callOffPaintConfirm(record){
     detail.textContent=bits.join(' · ');
   }
   if(note){
-    note.textContent=record.reachedOffice
-      ?'The office has this as an open shift.'
-      :'Saved on this phone for you. The office Coverage list does not have it until the call-off line is connected.';
+    note.textContent=record.idempotent
+      ?'The office already has this open shift.'
+      :(record.reachedOffice
+        ?'The office has this as an open shift.'
+        :'Saved on this phone for you. The office Coverage list does not have it until the call-off line is connected.');
   }
   try{box.scrollIntoView({block:'start'});}catch(e){}
 }
@@ -7333,8 +7396,14 @@ async function openCallOff(){
   try{if(typeof loadMyClients==='function')await loadMyClients();}catch(e){}
   if(!document.getElementById('callOffScreen')||!document.getElementById('callOffScreen').classList.contains('active'))return;
   callOffPaintChoices();
-  if(AIDE_CALL_OFF_RPC_CALLABLE){
-    try{await aideListMyCallOffs();}catch(e){}
+  if(typeof sbToken==='function'&&sbToken()){
+    try{
+      const listed=await aideListMyCallOffs();
+      if(listed&&listed.ok&&Array.isArray(listed.rows))callOffWriteList(listed.rows);
+      else if(listed&&listed.error)callOffShowErr(listed.error);
+    }catch(e){
+      callOffShowErr((e&&e.message)||'The office did not return your call-offs.');
+    }
   }
   callOffPaintList();
 }
@@ -7357,30 +7426,39 @@ async function submitAideCallOff(){
   if(btn){btn.disabled=true;btn.textContent='Submitting...';}
   try{
     const record=built.record;
-    if(AIDE_CALL_OFF_RPC_CALLABLE){
-      let posted=null;
-      try{posted=await aidePostCallOff(record);}
-      catch(e){
-        callOffShowErr((e&&e.message)||'The office did not take this call-off.');
-        return;
-      }
-      if(!posted||!posted.ok){
-        callOffShowErr((posted&&posted.error)||'The office did not take this call-off.');
-        return;
-      }
-      record.status=posted.status||'open';
-      if(posted.id)record.id=posted.id;
-      record.source=posted.source==='office'?'office':'aide';
-      record.reachedOffice=true;
+    let posted=null;
+    try{posted=await aidePostCallOff(record);}
+    catch(e){
+      callOffShowErr((e&&e.message)||'The office did not take this call-off.');
+      return;
     }
-    callOffWriteList(rows.concat([record]));
+    if(!posted||!posted.ok||!posted.record){
+      callOffShowErr((posted&&posted.error)||'The office did not take this call-off.');
+      return;
+    }
+    const saved=posted.record;
+    let next=rows.filter(function(r){return r&&r.id!==saved.id;}).concat([saved]);
+    try{
+      const listed=await aideListMyCallOffs();
+      if(listed&&listed.ok&&Array.isArray(listed.rows)){
+        next=listed.rows.map(function(r){
+          if(!r||r.id!==saved.id)return r;
+          if((!r.clientName||r.clientName==='Client')&&saved.clientName)r.clientName=saved.clientName;
+          if(!r.reason&&saved.reason)r.reason=saved.reason;
+          if(!r.date&&saved.date){r.date=saved.date;r.start=saved.start;r.end=saved.end;}
+          return r;
+        });
+        if(saved.id&&!next.some(function(r){return r&&r.id===saved.id;}))next.unshift(saved);
+      }
+    }catch(e){}
+    callOffWriteList(next);
     callOffShowErr('');
     callOffPickKey='';
     const reasonEl=document.getElementById('callOffReason');
     if(reasonEl)reasonEl.value='';
     callOffPaintChoices();
     callOffPaintList();
-    callOffPaintConfirm(record);
+    callOffPaintConfirm(saved);
   }finally{
     callOffBusy=false;
     if(btn){btn.disabled=false;btn.textContent='Submit';}
