@@ -73,8 +73,8 @@ assert.ok(screen.includes('Your call-offs'), 'list is this aide');
 assert.ok(!/PTO|time off|time-off|vacation/i.test(screen), 'call off is not a time-off product');
 
 const more = html.slice(html.indexOf('id="moreScreen"'), html.indexOf('id="bottomNav"'));
-assert.ok(more.includes('id="callOffMoreBtn"'), 'more entry');
-assert.ok(more.includes("Back up this week's draft"), 'backup stays on more');
+assert.ok(!more.includes('id="callOffMoreBtn"') && !more.includes('>Call off</button>'), 'account does not duplicate call off');
+assert.ok(!more.includes("Back up this week's draft"), 'account does not duplicate backup');
 assert.ok(more.includes('>Log out</button>'), 'logout stays');
 
 const nav = html.slice(html.indexOf('id="bottomNav"'), html.indexOf('id="deleteDraftModal"'));
