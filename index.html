@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-25-aidechat1">
 <meta name="caregiver-build" content="2026-09-25-cgsigfit1">
 <meta name="caregiver-build" content="2026-09-25-cgsigs2">
 <meta name="caregiver-build" content="2026-09-25-cguser1">
@@ -36,6 +37,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-25-aidechat1 v=aidechat1 — Saturday GO 2026-09-26. Aide Messages is one thread with the office (#messagesScreen from #aideChatHomeBtn). Compose plus history. Bubbles are labeled You, Office, and Remi. Shift status, call-off, and pay questions fill the composer; the aide still taps Send. This screen does not decide a call-off. Any office or call-off phone shown is exactly (216) 377-5991 and a tappable tel:+12163775991 link. No other number is shown. GHOST-AIDECHAT1-CONTRACT-v1 is LIVE on Supabase. POST /rest/v1/rpc/aide_get_or_create_office_thread {}. POST /rest/v1/rpc/aide_list_office_messages {p_limit, p_before}. POST /rest/v1/rpc/aide_send_office_message {p_body, p_escalate_kind call_off or pay_question; shift status omits p_escalate_kind}. POST /rest/v1/rpc/aide_mark_office_messages_read {p_before} when the aide opens Messages; p_before is the newest message time, or omitted when the thread has no time. aide_chat_remi_context(p_on_date) stays Admin-side; this screen does not call it. Aide JWT. A missing function (HTTP 404, PGRST202, 42883, or Could not find the function) uses the phone stub evercare_aidechat1_ plus username and does not invent an Office or Remi reply. A missing mark-read does not invent a reply either. No SMS. No email. No /exec. No Auth reseal. Bottom nav stays Home, Timesheet, Inservices, More. v=cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigfit1 v=cgsigfit1 — Friday GO 2026-09-25. Phone-pad scribbles are scaled and thinned into the timesheet boxes. Top CLIENT and CAREGIVER/HHA images and each day-row HHA and Client image stay the real strokes and sit inside the cell instead of filling it into a blob. TS_SIG_FIT is the inset (day 84×7.8pt, top 136×11.2pt) on the measured blank-letter cells. sbThinSigPixels peels only the outer pixels of a fat stroke and keeps the ridge, so the scribble is not replaced with a line or dashes. Capture hides the overlay images and sbStampTimesheetSigs paints that fitted ink once. Pad lock and Redo Are you sure? unlock stay v=cgsigs2. Saved PDF is one US Letter page and print of the open timesheet is one page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on that page. v=cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigs2 v=cgsigs2 — Friday GO 2026-09-25. Folds cgsiglock into the signature PDF tip. Audit of LIVE: Save Day PDF already paints every saved day's HHA and Client scribble on that row (v=cgsigs1), and the top CLIENT and CAREGIVER/HHA boxes from the latest day with both. Pads already lock after Confirm and Save Day (pointer-events:none, touch-action:auto) so a phone scroll does not draw (v=cgsiglock1). Saved PDF is one US Letter page and print of the open timesheet is one page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on that page. Residual: Redo on a locked pad asks "Are you sure?" and the pad stays locked until Yes, redo. Go back leaves the lock. v=cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cguser1 v=cguser1 — Friday GO 2026-09-25. Sign In pre-fills the last username used on this device after Logout and on a cold open of Sign In. The key is cg_last_username (username only). The password field is cleared and the password is never written to storage. Sign Up and Forgot password stay blank. No Auth password reseal. After Forgot/recover Save password and Finish-account, Password saved and Open Caregiver still do not auto-login (v=cghome1b). v=cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -315,6 +317,39 @@ body.has-bottom-nav footer{margin-bottom:76px;}
 #callOffScreen input[type="date"],#callOffScreen input[type="time"],#callOffScreen textarea{min-height:52px;font-size:1rem;padding:12px;}
 #callOffScreen textarea{min-height:96px;}
 #callOffWhen[hidden],#callOffConfirm[hidden],#callOffErr[hidden]{display:none !important;}
+/* Messages — one office thread (v=aidechat1). Phone-first, above the bottom nav. */
+.aidechat-home p{font-size:1rem;color:var(--navy);line-height:1.5;margin-bottom:12px;}
+#messagesScreen.active{display:flex !important;flex-direction:column;position:fixed;inset:0;z-index:40;height:100dvh;min-height:0;max-height:100dvh;overflow:hidden;background:var(--off);}
+#messagesScreen .hdr{flex:0 0 auto;}
+.aidechat-refresh{margin-left:auto;min-height:44px;padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.18);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;}
+.aidechat-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;width:100%;max-width:600px;margin:0 auto;padding:0 12px calc(88px + env(safe-area-inset-bottom));}
+body.aidechat-kb #messagesScreen .aidechat-body{padding-bottom:8px;}
+body.aidechat-kb #bottomNav{display:none !important;}
+.aidechat-rule{font-size:0.92rem;color:var(--navy);line-height:1.45;margin:10px 0 0;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:10px;}
+.aidechat-thread{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 2px 8px;}
+.aidechat-empty{font-size:1rem;color:var(--muted);line-height:1.5;margin:12px 4px;}
+.aidechat-row{display:flex;flex-direction:column;max-width:88%;margin:0 0 14px;}
+.aidechat-row-aide{margin-left:auto;align-items:flex-end;}
+.aidechat-row-office,.aidechat-row-remi{margin-right:auto;align-items:flex-start;}
+.aidechat-label{font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;}
+.aidechat-label-aide{color:var(--teal-dark);}
+.aidechat-label-office{color:var(--navy);}
+.aidechat-label-remi{color:#6b3fa0;}
+.aidechat-bubble{border-radius:16px;padding:12px 14px;font-size:1rem;line-height:1.45;overflow-wrap:anywhere;}
+.aidechat-bubble-aide{background:var(--teal);color:#fff;border-bottom-right-radius:6px;}
+.aidechat-bubble-office{background:#fff;color:var(--navy);border:1.5px solid var(--border);border-bottom-left-radius:6px;}
+.aidechat-bubble-remi{background:#f4eefe;color:#2a1848;border:1.5px solid #c9b3e6;border-bottom-left-radius:6px;}
+a.aidechat-phone{display:inline-block;min-height:44px;line-height:44px;padding:0 4px;color:var(--teal-dark);font-weight:800;text-decoration:underline;text-transform:none;}
+.aidechat-earlier{display:block;width:100%;min-height:44px;margin:0 0 12px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:700;}
+.aidechat-time{font-size:0.75rem;color:var(--muted);margin-top:4px;}
+.aidechat-compose{flex:0 0 auto;background:var(--off);border-top:1px solid var(--border);padding:8px 0 10px;}
+.aidechat-prompts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+.aidechat-prompt{min-height:44px;padding:8px 12px;border-radius:999px;border:1.5px solid var(--navy);background:#fff;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.92rem;font-weight:700;cursor:pointer;touch-action:manipulation;}
+.aidechat-sendrow{display:flex;gap:8px;align-items:flex-end;}
+#aideChatInput{min-height:52px;max-height:120px;font-size:1rem;flex:1;margin:0;}
+#aideChatSend{min-height:52px;min-width:88px;padding:12px 16px;flex:0 0 auto;}
+#aideChatSend:disabled{background:#8aa4a4;color:#fff;cursor:not-allowed;}
+.aidechat-note{font-size:0.85rem;color:var(--muted);line-height:1.4;margin-top:8px;min-height:1.2em;}
 /* Offscreen paper overlay for the soft-flag Storage PDF. Not a print screen. */
 .ts-pdf-sheet{position:relative;width:8.5in;height:11in;background:#fff;overflow:hidden;color:#111;font-family:Times,'Times New Roman',serif;box-sizing:border-box;}
 .ts-pdf-sheet .ts-blank{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:0;border:0;}
@@ -615,6 +650,11 @@ else setupEverCarePWA();
         <p>Cannot work an upcoming shift? Tell the office here. It is listed as an open shift.</p>
         <button class="btn btn-navy btn-full" type="button" id="callOffHomeBtn" onclick="openCallOff()">Call off</button>
       </div>
+      <div class="card aidechat-home" id="aideChatHomeCard">
+        <div class="card-title"><span class="ico">&#128172;</span> Messages</div>
+        <p>One thread with the office. Ask about a shift, a call-off, or pay.</p>
+        <button class="btn btn-navy btn-full" type="button" id="aideChatHomeBtn" onclick="openAideMessages()">Messages</button>
+      </div>
       <div class="card" style="background:var(--teal-light);border-color:var(--teal)">
         <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a card below to continue a <strong>draft</strong> or a week the office <strong>sent back</strong>. The two most recent <strong>submitted</strong> weeks stay listed. <strong>+ Start Another Timesheet</strong> always starts a <strong>new blank week and client</strong> — it does not reopen a submitted week.</p>
       </div>
@@ -631,7 +671,7 @@ else setupEverCarePWA();
       </div>
       <div class="notice">
         <ul>
-          <li>Notify office at <strong>(216) 377-5991</strong> for any significant change — hospitalization, falls, hours change, etc.</li>
+          <li>Notify office at <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a> for any significant change — hospitalization, falls, hours change, etc.</li>
           <li><strong>Timesheets due by 5:00 PM every Monday</strong>, no exceptions.</li>
           <li>Sandata clock in/out must match this timesheet. Full legal signatures only.</li>
           <li>Your supervisor indicates approval of hours. You will not be paid for unauthorized hours/shifts.</li>
@@ -670,7 +710,7 @@ else setupEverCarePWA();
         <div class="tv" id="cg_total">0:00</div>
       </div>
       <div class="notice-call">
-        <strong>NOTIFY EVERCARE HOME AGENCY AT (216) 377-5991</strong> OF ANY SIGNIFICANT CHANGE IN CONDITION — HOSPITALIZATION, FALLS, HOURS CHANGE, ETC.
+        <strong>NOTIFY EVERCARE HOME AGENCY AT <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a></strong> OF ANY SIGNIFICANT CHANGE IN CONDITION — HOSPITALIZATION, FALLS, HOURS CHANGE, ETC.
       </div>
       <div class="notice-sandata">
         Don't forget to clock in and out on Sandata — make sure your Sandata times match this timesheet.
@@ -707,7 +747,7 @@ else setupEverCarePWA();
       <div class="success-wrap">
         <div class="sico">✅</div>
         <h2>Timesheet Submitted!</h2>
-        <p>Your timesheet has been sent to the office and is locked. Call <strong>(216) 377-5991</strong> with any corrections needed.</p>
+        <p>Your timesheet has been sent to the office and is locked. Call <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a> with any corrections needed.</p>
         <button class="btn btn-teal" onclick="cgNewWeek()">Start New Week</button>
       </div>
     </div>
@@ -755,7 +795,7 @@ else setupEverCarePWA();
   <div class="modal">
     <div class="mico">🚨</div>
     <h3>Important Notice</h3>
-    <p><strong>All hospitalizations, falls, and hours changes must be reported to the office immediately.</strong><br><br>📞 <strong style="font-size:1.1rem">(216) 377-5991</strong></p>
+    <p><strong>All hospitalizations, falls, and hours changes must be reported to the office immediately.</strong><br><br>📞 <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a></p>
     <div class="modal-btns"><button class="mbtn mbtn-confirm" onclick="ackImportantNotice()">I Understand</button></div>
   </div>
 </div>
@@ -957,7 +997,7 @@ else setupEverCarePWA();
       <div class="card-title"><span class="ico">&#128222;</span> Upcoming shift</div>
       <p class="calloff-lead">Pick the client or shift you cannot work. A reason is optional.</p>
       <div id="callOffChoices" class="calloff-choices"></div>
-      <p id="callOffEmptyPick" class="calloff-meta" hidden>No upcoming clients yet. They show here after the office list loads. Call <strong>(216) 377-5991</strong> if you need the office now.</p>
+      <p id="callOffEmptyPick" class="calloff-meta" hidden>No upcoming clients yet. They show here after the office list loads. Call <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a> if you need the office now.</p>
       <div id="callOffWhen" hidden>
         <div class="field"><label for="callOffDate">Shift date</label><input type="date" id="callOffDate" autocomplete="off"></div>
         <div class="field"><label for="callOffStart">Start time</label><input type="time" id="callOffStart" autocomplete="off"></div>
@@ -981,6 +1021,32 @@ else setupEverCarePWA();
     </div>
   </div>
 </div>
+<!-- MESSAGES v=aidechat1 -->
+<div class="screen" id="messagesScreen" data-aidechat="v=aidechat1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Messages</h2><p id="aideChatAideName">Office</p></div>
+    <button class="aidechat-refresh" type="button" id="aideChatRefresh" onclick="aideChatRefresh()">Refresh</button>
+  </div>
+  <div class="aidechat-body">
+    <p class="aidechat-rule" id="aideChatRule">A call-off question in this thread does not decide the call-off. The office decides.</p>
+    <div id="aideChatThread" class="aidechat-thread" role="log" aria-live="polite" aria-relevant="additions"></div>
+    <form class="aidechat-compose" id="aideChatCompose" onsubmit="submitAideMessage(event);return false;">
+      <div class="aidechat-prompts" role="group" aria-label="Common questions">
+        <button class="aidechat-prompt" type="button" data-aidechat-prompt="status" onclick="aideChatUsePrompt('status')">Shift status</button>
+        <button class="aidechat-prompt" type="button" data-aidechat-prompt="calloff" onclick="aideChatUsePrompt('calloff')">Call-off question</button>
+        <button class="aidechat-prompt" type="button" data-aidechat-prompt="pay" onclick="aideChatUsePrompt('pay')">Pay question</button>
+      </div>
+      <div class="aidechat-sendrow">
+        <label class="sr-only" for="aideChatInput" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Message the office</label>
+        <textarea id="aideChatInput" rows="2" maxlength="1000" placeholder="Message the office" enterkeyhint="send"></textarea>
+        <button class="btn btn-teal" type="submit" id="aideChatSend">Send</button>
+      </div>
+      <p id="aideChatNote" class="aidechat-note" role="status"></p>
+    </form>
+  </div>
+</div>
 <!-- MORE -->
 <div class="screen" id="moreScreen">
   <div class="hdr">
@@ -999,7 +1065,7 @@ else setupEverCarePWA();
     </div>
     <div class="notice">
       <ul>
-        <li>Office: <strong>(216) 377-5991</strong></li>
+        <li>Office: <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a></li>
         <li>Clients are listed on <strong>Home</strong>. Open a week from <strong>Timesheet</strong>.</li>
       </ul>
     </div>
@@ -1037,7 +1103,7 @@ else setupEverCarePWA();
   </div>
 </div>
 
-<footer>5510 Pearl Rd Ste 200, Cleveland, OH 44129 &nbsp;|&nbsp; (216) 377-5991 &nbsp;|&nbsp; ECA Aide Portal</footer>
+<footer>5510 Pearl Rd Ste 200, Cleveland, OH 44129 &nbsp;|&nbsp; <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a> &nbsp;|&nbsp; ECA Aide Portal</footer>
 <div id="tsPrintRoot" aria-hidden="true"></div>
 
 <script>
@@ -1401,7 +1467,8 @@ const PORTAL_NAV_SCREENS={
   isQuizScreen:'inservices',
   isSigScreen:'inservices',
   isSuccessScreen:'inservices',
-  moreScreen:'more'
+  moreScreen:'more',
+  messagesScreen:'home'
 };
 function syncPortalChrome(screenId){
   const nav=document.getElementById('bottomNav');
@@ -7822,6 +7889,577 @@ async function submitAideCallOff(){
     }else{
       callOffSetSubmitBtn(btn, false);
     }
+  }
+}
+
+// v=aidechat1 GHOST-AIDECHAT1-CONTRACT-v1 LIVE.
+// PostgREST hints: aide_get_or_create_office_thread()
+// aide_list_office_messages(p_before, p_limit)
+// aide_send_office_message(p_body, p_escalate_kind)
+// aide_mark_office_messages_read(p_before)
+// POST rpc/aide_get_or_create_office_thread {}
+// POST rpc/aide_list_office_messages {p_limit, p_before?} — p_before is the oldest created_at, or id when there is no time.
+// POST rpc/aide_send_office_message {p_body, p_escalate_kind?: "call_off" | "pay_question"}.
+// The argument name is p_escalate_kind. Values are exactly those two strings. Shift status omits the key.
+// POST rpc/aide_mark_office_messages_read {p_before?} once when Messages opens. p_before is the newest created_at. Omit it when no message has a time.
+// aide_chat_remi_context(p_on_date) is Admin-side. This portal does not call it.
+// Message fields: id, body|message|text|content, sender|role|from|author (aide|office|remi), created_at|createdAt|sent_at.
+// Envelope: {success|ok, data: Message[] | {messages|thread|rows|message, replies}}.
+// Missing function (HTTP 404, PGRST202, 42883, Could not find the function): phone stub.
+// Stub key evercare_aidechat1_<username>. The stub does not invent Office or Remi text.
+// A missing mark-read leaves the thread as loaded and does not invent a reply.
+// Office and call-off phones render as exactly (216) 377-5991 tel:+12163775991. No other number.
+// No SMS. No email. No Auth.
+var aideChatBusy=false;
+var aideChatMode='stub';
+var aideChatPollTimer=0;
+var aideChatEscalateKind='';
+var aideChatRows=[];
+var aideChatBefore='';
+var aideChatHasEarlier=false;
+var aideChatMarkTried=false;
+var aideChatMarkedOpen=false;
+var AIDECHAT_PAGE=50;
+var AIDECHAT_OFFICE_DIGITS='2163775991';
+var AIDECHAT_ANY_PHONE_RE=/(?<![\d])(?:\+?1[\s.\-]*)?\(?\d{3}\)?[\s.\-]*\d{3}[\s.\-]*\d{4}(?!\d)/g;
+function aideChatStoreKey(){
+  const u=currentUser&&currentUser.username?String(currentUser.username):'session';
+  return 'evercare_aidechat1_'+u;
+}
+function aideChatReadLocal(){
+  let raw=null;
+  try{raw=store.get(aideChatStoreKey());}catch(e){raw=[];}
+  const list=Array.isArray(raw)?raw:[];
+  return list.map(aideChatNormalizeRow).filter(Boolean);
+}
+function aideChatWriteLocal(rows){
+  try{store.set(aideChatStoreKey(), rows||[]);}catch(e){}
+}
+function aideChatStubNote(){
+  return 'Saved on this phone. The office thread is not connected yet.';
+}
+function aideChatAceNote(){
+  const base='One thread with the office. Replies from the office and from Remi show here.';
+  if(aideChatMarkedOpen)return base+' Marked read.';
+  return base;
+}
+function aideChatMarkBody(rows){
+  let best='';
+  let bestMs=-Infinity;
+  (rows||[]).forEach(function(r){
+    const t=r&&r.createdAt?String(r.createdAt):'';
+    if(!t)return;
+    const ms=new Date(t).getTime();
+    if(!isFinite(ms)||ms<bestMs)return;
+    bestMs=ms;
+    best=t;
+  });
+  if(!best)return {};
+  return {p_before:best};
+}
+function aideChatRpcMissing(err){
+  const pack=err&&err.pack;
+  const status=pack&&Number(pack.status);
+  const data=pack&&pack.data;
+  const code=data&&data.code?String(data.code):'';
+  const msg=String((err&&err.message)||'');
+  const detail=String((data&&(data.message||data.hint||data.details))||'');
+  const blob=code+' '+msg+' '+detail;
+  if(code==='PGRST202'||code==='42883')return true;
+  if(/Could not find the function/i.test(blob))return true;
+  if(/PGRST202/i.test(blob))return true;
+  if(status===404&&/function|schema cache|not found/i.test(blob))return true;
+  return false;
+}
+function aideChatCanCallAce(){
+  return typeof evercareSbEnabled==='function'&&evercareSbEnabled()&&typeof sbDataEnabled==='function'&&sbDataEnabled()&&typeof sbRest==='function';
+}
+function aideChatSenderRaw(row){
+  if(!row||typeof row!=='object')return '';
+  if(row.sender!=null&&row.sender!=='')return row.sender;
+  if(row.role!=null&&row.role!=='')return row.role;
+  if(row.from!=null&&row.from!=='')return row.from;
+  if(row.author!=null&&row.author!=='')return row.author;
+  if(row.sender_role!=null&&row.sender_role!=='')return row.sender_role;
+  return '';
+}
+function aideChatSender(raw){
+  const s=String(raw==null?'':raw).trim().toLowerCase().replace(/[\s-]+/g,'_');
+  if(s==='aide'||s==='me'||s==='caregiver'||s==='user'||s==='self')return 'aide';
+  if(s==='remi'||s==='copilot')return 'remi';
+  if(s==='office'||s==='admin'||s==='staff'||s==='scheduler')return 'office';
+  if(!s)return 'office';
+  return 'office';
+}
+function aideChatText(row){
+  if(!row||typeof row!=='object')return '';
+  const v=row.body!=null?row.body:(row.message!=null&&typeof row.message!=='object'?row.message:(row.text!=null?row.text:(row.content!=null?row.content:'')));
+  return String(v==null?'':v).replace(/\u0000/g,'').trim();
+}
+function aideChatWhen(row){
+  if(!row||typeof row!=='object')return '';
+  return String(row.created_at||row.createdAt||row.sent_at||row.sentAt||row.at||'');
+}
+function aideChatLabel(sender){
+  if(sender==='aide')return 'You';
+  if(sender==='remi')return 'Remi';
+  return 'Office';
+}
+function aideChatNormalizeRow(row){
+  if(!row||typeof row!=='object')return null;
+  const body=aideChatText(row);
+  if(!body)return null;
+  const sender=aideChatSender(aideChatSenderRaw(row));
+  return {
+    id:String(row.id||row.message_id||''),
+    body:body.slice(0,2000),
+    sender:sender,
+    createdAt:aideChatWhen(row),
+    label:aideChatLabel(sender)
+  };
+}
+function aideChatIsEnvelope(node){
+  if(!node||typeof node!=='object'||Array.isArray(node))return false;
+  if(aideChatText(node))return false;
+  return node.success!=null||node.ok!=null||node.data!=null||node.messages!=null||node.thread!=null;
+}
+function aideChatFailMsg(node){
+  const msg=node&&(node.error||node.message||node.hint);
+  if(msg&&typeof msg==='object')return String(msg.message||'The office thread did not load.');
+  if(typeof msg==='string'&&msg)return msg;
+  return 'The office thread did not load.';
+}
+function aideChatWalk(node, depth){
+  if((depth||0)>8)return {list:[]};
+  const d=(depth||0)+1;
+  if(node==null||node==='')return {list:[]};
+  if(typeof node==='string'){
+    const t=node.trim();
+    if(!t)return {list:[]};
+    if(t.charAt(0)==='{'||t.charAt(0)==='['){
+      try{return aideChatWalk(JSON.parse(t), d);}catch(e){return {list:[{body:t, sender:'office'}]};}
+    }
+    return {list:[{body:t, sender:'office'}]};
+  }
+  if(Array.isArray(node)){
+    if(node.length===1&&aideChatIsEnvelope(node[0]))return aideChatWalk(node[0], d);
+    const list=[];
+    for(let i=0;i<node.length;i++){
+      const part=aideChatWalk(node[i], d);
+      if(part.error)return part;
+      (part.list||[]).forEach(function(r){list.push(r);});
+    }
+    return {list:list};
+  }
+  if(typeof node!=='object')return {list:[]};
+  if(node.success===false||node.ok===false)return {error:aideChatFailMsg(node)};
+  const replies=Array.isArray(node.replies)?node.replies:[];
+  let child=null;
+  if(Object.prototype.hasOwnProperty.call(node,'data'))child=node.data;
+  else if(node.messages!=null)child=node.messages;
+  else if(node.thread!=null)child=node.thread;
+  else if(node.rows!=null)child=node.rows;
+  else if(node.message&&typeof node.message==='object')child=node.message;
+  if(child!=null&&(aideChatIsEnvelope(node)||Array.isArray(child)||(node.message&&typeof node.message==='object'&&child===node.message))){
+    const inner=aideChatWalk(child, d);
+    if(inner.error)return inner;
+    const extra=aideChatWalk(replies, d);
+    if(extra.error)return extra;
+    return {list:(inner.list||[]).concat(extra.list||[])};
+  }
+  if(aideChatText(node)){
+    const extra=aideChatWalk(replies, d);
+    if(extra.error)return extra;
+    return {list:[node].concat(extra.list||[])};
+  }
+  if(replies.length)return aideChatWalk(replies, d);
+  return {list:[]};
+}
+function aideChatDedupe(rows){
+  const seen={};
+  const out=[];
+  (rows||[]).forEach(function(r){
+    if(!r)return;
+    const key=(r.id||'')+'|'+r.sender+'|'+r.createdAt+'|'+r.body;
+    if(seen[key])return;
+    seen[key]=1;
+    out.push(r);
+  });
+  return out;
+}
+function aideChatRowsFromRpc(data){
+  const walked=aideChatWalk(data, 0);
+  if(walked.error)return {ok:false, error:walked.error};
+  const rows=aideChatDedupe((walked.list||[]).map(aideChatNormalizeRow).filter(Boolean));
+  rows.sort(function(a,b){return String(a.createdAt).localeCompare(String(b.createdAt));});
+  return {ok:true, rows:rows};
+}
+function aideChatEscape(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function aideChatPhoneDigits(raw){
+  let d=String(raw||'').replace(/\D/g,'');
+  if(d.length===11&&d.charAt(0)==='1')d=d.slice(1);
+  return d;
+}
+function aideChatPhoneLink(){
+  return '<a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a>';
+}
+function aideChatLockPhones(escaped){
+  AIDECHAT_ANY_PHONE_RE.lastIndex=0;
+  return String(escaped||'').replace(AIDECHAT_ANY_PHONE_RE, function(m){
+    if(aideChatPhoneDigits(m)===AIDECHAT_OFFICE_DIGITS)return aideChatPhoneLink();
+    return '';
+  });
+}
+function aideChatListBody(before){
+  const body={p_limit:AIDECHAT_PAGE};
+  const cursor=String(before||'').trim();
+  if(cursor)body.p_before=cursor;
+  return body;
+}
+function aideChatSendBody(text, kind){
+  const body={p_body:String(text||'')};
+  if(kind==='call_off'||kind==='pay_question')body.p_escalate_kind=kind;
+  return body;
+}
+function aideChatRememberPage(rows){
+  aideChatRows=(rows||[]).slice();
+  aideChatHasEarlier=aideChatRows.length>=AIDECHAT_PAGE;
+  const oldest=aideChatRows[0];
+  aideChatBefore=oldest?(oldest.createdAt||oldest.id||''):'';
+}
+function aideChatEnsureSent(rows, text){
+  const list=(rows||[]).slice();
+  const has=list.some(function(r){return r&&r.sender==='aide'&&r.body===text;});
+  if(!has){
+    const row=aideChatNormalizeRow({id:'', body:text, sender:'aide', created_at:new Date().toISOString()});
+    if(row)list.push(row);
+  }
+  list.sort(function(a,b){return String(a.createdAt).localeCompare(String(b.createdAt));});
+  return list;
+}
+function aideChatBodyHtml(sender, body){
+  const safe=aideChatEscape(body).replace(/\n/g,'<br>');
+  if(sender==='office'||sender==='remi')return aideChatLockPhones(safe);
+  return safe;
+}
+function aideChatFormatWhen(iso){
+  const d=new Date(iso);
+  if(!isFinite(d.getTime()))return '';
+  try{
+    return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(d);
+  }catch(e){return '';}
+}
+function aideChatPromptText(kind){
+  if(kind==='status')return 'What is the status of my upcoming shift?';
+  if(kind==='calloff')return 'I need to ask about calling off an upcoming shift.';
+  if(kind==='pay')return 'I have a question about my pay.';
+  return '';
+}
+function aideChatStubAppend(text){
+  const rows=aideChatReadLocal();
+  rows.push({
+    id:'local-'+Date.now(),
+    body:String(text||'').trim(),
+    sender:'aide',
+    createdAt:new Date().toISOString(),
+    label:'You'
+  });
+  aideChatWriteLocal(rows);
+  return rows;
+}
+function aideChatSetNote(text){
+  const note=document.getElementById('aideChatNote');
+  if(note)note.textContent=text||'';
+}
+function aideChatSetSendDisabled(on){
+  const btn=document.getElementById('aideChatSend');
+  if(!btn)return;
+  btn.disabled=!!on;
+  btn.textContent=on?'Sending':'Send';
+}
+function aideChatPaint(rows, note, stick){
+  const thread=document.getElementById('aideChatThread');
+  aideChatSetNote(note);
+  if(!thread)return;
+  thread.innerHTML='';
+  const list=rows||[];
+  if(aideChatHasEarlier&&aideChatBefore){
+    const more=document.createElement('button');
+    more.type='button';
+    more.id='aideChatEarlier';
+    more.className='aidechat-earlier';
+    more.textContent='Earlier messages';
+    more.onclick=function(){aideChatLoadEarlier();};
+    thread.appendChild(more);
+  }
+  if(!list.length){
+    const empty=document.createElement('p');
+    empty.className='aidechat-empty';
+    empty.id='aideChatEmpty';
+    empty.textContent='No messages yet. Ask the office about a shift, a call-off, or pay.';
+    thread.appendChild(empty);
+    return;
+  }
+  list.forEach(function(row){
+    const item=document.createElement('article');
+    item.className='aidechat-row aidechat-row-'+row.sender;
+    item.setAttribute('data-sender', row.sender);
+    const lab=document.createElement('div');
+    lab.className='aidechat-label aidechat-label-'+row.sender;
+    lab.textContent=row.label||aideChatLabel(row.sender);
+    const bubble=document.createElement('div');
+    bubble.className='aidechat-bubble aidechat-bubble-'+row.sender;
+    bubble.innerHTML=aideChatBodyHtml(row.sender, row.body);
+    item.appendChild(lab);
+    item.appendChild(bubble);
+    if(row.createdAt){
+      const time=document.createElement('time');
+      time.className='aidechat-time';
+      time.dateTime=row.createdAt;
+      time.textContent=aideChatFormatWhen(row.createdAt);
+      item.appendChild(time);
+    }
+    thread.appendChild(item);
+  });
+  if(stick===false)return;
+  aideChatScrollThread();
+}
+function aideChatScrollThread(){
+  const thread=document.getElementById('aideChatThread');
+  if(!thread)return;
+  const go=function(){
+    thread.scrollTop=thread.scrollHeight;
+    const last=thread.lastElementChild;
+    if(last&&last.scrollIntoView)last.scrollIntoView(false);
+  };
+  go();
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(go);
+}
+async function aideChatDeliver(text, kind){
+  const clean=String(text||'').trim();
+  if(!clean)return {mode:aideChatMode, rows:aideChatReadLocal(), note:''};
+  if(!aideChatCanCallAce()){
+    aideChatMode='stub';
+    return {mode:'stub', rows:aideChatStubAppend(clean), note:aideChatStubNote()};
+  }
+  try{
+    await sbRest('rpc/aide_get_or_create_office_thread',{method:'POST',body:{}});
+    const got=await sbRest('rpc/aide_send_office_message',{method:'POST',body:aideChatSendBody(clean, kind)});
+    let parsed=aideChatRowsFromRpc(got);
+    if(!parsed.ok)return {mode:'ace', rows:null, note:parsed.error||'The office did not take that message.'};
+    try{
+      const again=await sbRest('rpc/aide_list_office_messages',{method:'POST',body:aideChatListBody()});
+      const fresh=aideChatRowsFromRpc(again);
+      if(fresh.ok)parsed=fresh;
+    }catch(e2){
+      if(!aideChatRpcMissing(e2))throw e2;
+    }
+    aideChatMode='ace';
+    const rows=aideChatEnsureSent(parsed.rows, clean);
+    aideChatRememberPage(rows);
+    return {mode:'ace', rows:rows, note:aideChatAceNote()};
+  }catch(err){
+    if(aideChatRpcMissing(err)){
+      aideChatMode='stub';
+      return {mode:'stub', rows:aideChatStubAppend(clean), note:aideChatStubNote()};
+    }
+    throw err;
+  }
+}
+async function aideChatRefresh(){
+  if(!aideChatCanCallAce()){
+    aideChatMode='stub';
+    aideChatHasEarlier=false;
+    aideChatPaint(aideChatReadLocal(), aideChatStubNote());
+    return;
+  }
+  try{
+    const created=await sbRest('rpc/aide_get_or_create_office_thread',{method:'POST',body:{}});
+    const got=await sbRest('rpc/aide_list_office_messages',{method:'POST',body:aideChatListBody()});
+    let parsed=aideChatRowsFromRpc(got);
+    if(parsed.ok&&!parsed.rows.length){
+      const fromCreate=aideChatRowsFromRpc(created);
+      if(fromCreate.ok&&fromCreate.rows.length)parsed=fromCreate;
+    }
+    if(!parsed.ok){
+      aideChatSetNote(parsed.error||'The office thread did not load.');
+      return;
+    }
+    aideChatMode='ace';
+    aideChatRememberPage(parsed.rows);
+    aideChatPaint(parsed.rows, aideChatAceNote());
+    await aideChatMarkRead(parsed.rows);
+  }catch(err){
+    if(aideChatRpcMissing(err)){
+      aideChatMode='stub';
+      aideChatHasEarlier=false;
+      aideChatPaint(aideChatReadLocal(), aideChatStubNote());
+      return;
+    }
+    aideChatSetNote('The office thread did not load. Try Refresh.');
+  }
+}
+async function aideChatLoadEarlier(){
+  if(aideChatMode!=='ace'||aideChatBusy||!aideChatBefore)return;
+  const cursor=aideChatBefore;
+  aideChatBusy=true;
+  try{
+    const got=await sbRest('rpc/aide_list_office_messages',{method:'POST',body:aideChatListBody(cursor)});
+    const parsed=aideChatRowsFromRpc(got);
+    if(!parsed.ok){
+      aideChatSetNote(parsed.error||'Earlier messages did not load.');
+      return;
+    }
+    if(!parsed.rows.length){
+      aideChatHasEarlier=false;
+      aideChatPaint(aideChatRows, aideChatAceNote(), false);
+      return;
+    }
+    const merged=aideChatDedupe(parsed.rows.concat(aideChatRows));
+    merged.sort(function(a,b){return String(a.createdAt).localeCompare(String(b.createdAt));});
+    aideChatHasEarlier=parsed.rows.length>=AIDECHAT_PAGE;
+    aideChatRows=merged;
+    const oldest=merged[0];
+    aideChatBefore=oldest?(oldest.createdAt||oldest.id||''):'';
+    aideChatPaint(merged, aideChatAceNote(), false);
+  }catch(err){
+    if(aideChatRpcMissing(err)){
+      aideChatHasEarlier=false;
+      aideChatPaint(aideChatRows, aideChatAceNote(), false);
+      return;
+    }
+    aideChatSetNote('Earlier messages did not load.');
+  }finally{
+    aideChatBusy=false;
+  }
+}
+async function aideChatMarkRead(rows){
+  if(aideChatMarkTried||aideChatMode!=='ace'||!aideChatCanCallAce())return;
+  aideChatMarkTried=true;
+  try{
+    await sbRest('rpc/aide_mark_office_messages_read',{method:'POST',body:aideChatMarkBody(rows)});
+    aideChatMarkedOpen=true;
+    const screen=document.getElementById('messagesScreen');
+    if(screen&&screen.classList.contains('active')&&aideChatMode==='ace'){
+      aideChatSetNote(aideChatAceNote());
+      const sub=document.getElementById('aideChatAideName');
+      if(sub)sub.textContent='Office · Marked read';
+    }
+  }catch(err){
+    if(aideChatRpcMissing(err))return;
+    aideChatMarkTried=false;
+  }
+}
+function aideChatStopPoll(){
+  if(aideChatPollTimer){
+    clearInterval(aideChatPollTimer);
+    aideChatPollTimer=0;
+  }
+}
+function aideChatArmPoll(){
+  aideChatStopPoll();
+  if(typeof setInterval!=='function')return;
+  aideChatPollTimer=setInterval(function(){
+    const screen=document.getElementById('messagesScreen');
+    if(!screen||!screen.classList.contains('active')){aideChatStopPoll();return;}
+    if(aideChatMode!=='ace'||aideChatBusy)return;
+    aideChatRefresh().catch(function(){});
+  }, 15000);
+}
+function aideChatKbApply(){
+  const screen=document.getElementById('messagesScreen');
+  if(!screen||!screen.classList.contains('active'))return;
+  const compose=document.getElementById('aideChatCompose');
+  const thread=document.getElementById('aideChatThread');
+  if(!document.body.classList.contains('aidechat-kb')){
+    if(compose)compose.style.transform='';
+    if(thread)thread.style.paddingBottom='';
+    return;
+  }
+  const vv=window.visualViewport;
+  if(!vv)return;
+  const overlap=Math.max(0, (window.innerHeight||0)-vv.height-(vv.offsetTop||0));
+  const px=Math.round(overlap);
+  if(compose)compose.style.transform=px?('translateY(-'+px+'px)'):'';
+  if(thread)thread.style.paddingBottom=px?(px+8)+'px':'';
+}
+function aideChatOnFocus(){
+  if(typeof loginKbIsPhone==='function'&&!loginKbIsPhone())return;
+  document.body.classList.add('aidechat-kb');
+  aideChatKbApply();
+}
+function aideChatOnBlur(){
+  setTimeout(function(){
+    const input=document.getElementById('aideChatInput');
+    if(input&&document.activeElement===input)return;
+    document.body.classList.remove('aidechat-kb');
+    aideChatKbApply();
+  }, 80);
+}
+function aideChatBindKb(){
+  if(aideChatBindKb.done)return;
+  aideChatBindKb.done=true;
+  const input=document.getElementById('aideChatInput');
+  if(input){
+    input.addEventListener('focus', aideChatOnFocus);
+    input.addEventListener('blur', aideChatOnBlur);
+    input.addEventListener('input', function(){
+      if(!String(input.value||'').trim())aideChatEscalateKind='';
+    });
+  }
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', aideChatKbApply);
+    window.visualViewport.addEventListener('scroll', aideChatKbApply);
+  }
+}
+function aideChatUsePrompt(kind){
+  const input=document.getElementById('aideChatInput');
+  const text=aideChatPromptText(kind);
+  if(!input||!text)return;
+  input.value=text;
+  aideChatEscalateKind=kind==='calloff'?'call_off':(kind==='pay'?'pay_question':'');
+  try{input.focus();}catch(e){}
+}
+function openAideMessages(){
+  if(!currentUser){showScreen('authScreen');return;}
+  if(typeof requireAideSetup==='function'&&!requireAideSetup())return;
+  const sub=document.getElementById('aideChatAideName');
+  if(sub)sub.textContent='Office';
+  showScreen('messagesScreen');
+  aideChatBindKb();
+  aideChatMarkTried=false;
+  aideChatMarkedOpen=false;
+  const opening=aideChatRefresh().catch(function(){});
+  aideChatArmPoll();
+  return opening;
+}
+async function submitAideMessage(ev){
+  if(ev&&ev.preventDefault)ev.preventDefault();
+  if(aideChatBusy)return;
+  const input=document.getElementById('aideChatInput');
+  const text=String(input&&input.value||'').replace(/\s+/g,' ').trim();
+  if(!text)return;
+  if(text.length>1000){
+    aideChatSetNote('Keep the message under 1000 characters.');
+    return;
+  }
+  const kind=aideChatEscalateKind;
+  aideChatBusy=true;
+  aideChatSetSendDisabled(true);
+  try{
+    const result=await aideChatDeliver(text, kind);
+    if(result&&result.rows){
+      aideChatEscalateKind='';
+      if(input)input.value='';
+      aideChatPaint(result.rows, result.note);
+    }else if(result&&result.note)aideChatSetNote(result.note);
+  }catch(err){
+    aideChatSetNote('The message did not send. Try again.');
+  }finally{
+    aideChatBusy=false;
+    aideChatSetSendDisabled(false);
   }
 }
 

@@ -25,7 +25,7 @@ function extractFn(src, sig){
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-25-cgsigfit1">', 'first meta is cgsigfit1');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-25-cgsigfit1">') > 0, 'cgsigfit1 meta stays after the newest tip');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-25-cgsigs2">') > 0, 'cgsigs2 meta stays');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-25-cgsigfit1 v=cgsigfit1 —'), 'cgsigfit1 comment');
 assert.ok(html.includes('v=cgsigfit1'), 'cgsigfit1 probe');
