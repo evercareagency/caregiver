@@ -15,8 +15,12 @@ assert.ok(html.includes('<!-- caregiver-build: 2026-09-25-aidechat1 v=aidechat1 
 assert.ok(html.includes('v=aidechat1'), 'aidechat1 probe');
 assert.ok(html.includes('data-aidechat="v=aidechat1"'), 'screen marker');
 assert.ok(html.includes('GHOST-AIDECHAT1-CONTRACT-v1'), 'expected ace contract');
-assert.ok(html.includes('rpc/get_my_thread_messages'), 'list rpc');
-assert.ok(html.includes('rpc/send_aide_message'), 'send rpc');
+assert.ok(html.includes('rpc/aide_get_or_create_office_thread'), 'thread rpc');
+assert.ok(html.includes('rpc/aide_list_office_messages'), 'list rpc');
+assert.ok(html.includes('rpc/aide_send_office_message'), 'send rpc');
+assert.ok(html.includes('p_escalate_kind'), 'escalate field');
+assert.ok(html.includes('p_before'), 'older-page cursor');
+assert.ok(!html.includes('rpc/get_my_thread_messages') && !html.includes('rpc/send_aide_message'), 'old message rpc names are gone');
 assert.ok(html.includes('p_body'), 'send body field');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-25-cgsigfit1">') > 0, 'cgsigfit1 meta stays');
 assert.ok(html.includes('v=cgsigfit1') && html.includes('v=cgsigs2') && html.includes('v=coveraide2'), 'prior markers stay');
@@ -53,8 +57,11 @@ const end = html.indexOf('function showCaregiverHome()', start);
 assert.ok(start > 0 && end > start, 'aide chat script block');
 const src = html.slice(start, end);
 assert.ok(!/sms:|mailto:|send_broadcast|set_password|auth\/v1/i.test(src), 'adapter does not send sms, email, or reseal auth');
-assert.ok(src.includes("sbRest('rpc/send_aide_message'") && src.includes("sbRest('rpc/get_my_thread_messages'"), 'posts both expected rpcs');
-assert.ok(src.includes('p_body:clean'), 'send posts p_body');
+assert.ok(src.includes("sbRest('rpc/aide_get_or_create_office_thread'"), 'opens the office thread');
+assert.ok(src.includes("sbRest('rpc/aide_list_office_messages'"), 'lists office messages');
+assert.ok(src.includes("sbRest('rpc/aide_send_office_message'"), 'sends on the office thread');
+assert.ok(src.includes('p_escalate_kind'), 'send can escalate');
+assert.ok(!src.includes('get_my_thread_messages') && !src.includes('send_aide_message'), 'adapter does not call the old rpcs');
 assert.ok(!/approved/i.test(src), 'adapter copy does not say approved');
 
 function boot(opts){
@@ -135,15 +142,22 @@ const box = boot({sb:false});
 const linked = vm.runInContext('aideChatBodyHtml("remi", '+JSON.stringify(phone)+')', box);
 assert.ok(linked.includes('href="tel:+12163775991"'), 'remi phone is tappable');
 assert.ok(linked.includes('class="aidechat-phone"'), 'phone link class');
-assert.ok(linked.includes('(216) 377-5991'), 'phone text stays');
+assert.ok(linked.includes('>(216) 377-5991</a>'), 'visible phone is exactly the office number');
 assert.ok(!/sms:|mailto:/i.test(linked), 'phone link is a call, not sms or email');
-const office = vm.runInContext('aideChatBodyHtml("office", '+JSON.stringify(phone)+')', box);
-assert.ok(!office.includes('<a'), 'office phone stays plain text');
-assert.ok(office.includes('(216) 377-5991'), 'office text still shows the number');
-const escaped = vm.runInContext('aideChatBodyHtml("remi", "<script>alert(1)</script> (216) 377-5991")', box);
+const office = vm.runInContext('aideChatBodyHtml("office", "Call 216-377-5991 or (440) 555-0199.")', box);
+assert.ok(office.includes('href="tel:+12163775991"'), 'office phone is tappable');
+assert.ok(office.includes('>(216) 377-5991</a>'), 'office phone text is the locked format');
+assert.ok(!office.includes('216-377-5991'), 'dashed office number is not shown');
+assert.ok(!/440|555-0199|5550199/.test(office), 'no other number is shown');
+assert.strictEqual((office.match(/tel:\+12163775991/g)||[]).length, 1, 'one office link');
+const escaped = vm.runInContext('aideChatBodyHtml("remi", "<script>alert(1)</script> 216.377.5991")', box);
 assert.ok(!escaped.includes('<script>'), 'remi html is escaped');
 assert.ok(escaped.includes('&lt;script&gt;'), 'script is escaped');
-assert.ok(escaped.includes('href="tel:+12163775991"'), 'phone still links after escape');
+assert.ok(escaped.includes('>(216) 377-5991</a>'), 'dotted office number becomes the locked text');
+assert.ok(!escaped.includes('216.377.5991'), 'dotted form is not shown');
+const callOff = html.slice(html.indexOf('id="callOffScreen"'), html.indexOf('id="messagesScreen"'));
+assert.ok(callOff.includes('href="tel:+12163775991">(216) 377-5991</a>'), 'call-off phone is the locked tappable number');
+assert.ok(!/440|555-01/.test(callOff), 'call-off screen has no other number');
 
 assert.strictEqual(vm.runInContext('aideChatSender("Remi")', box), 'remi');
 assert.strictEqual(vm.runInContext('aideChatSender("office")', box), 'office');
@@ -198,15 +212,17 @@ assert.strictEqual(hidden.ok, false, 'failed envelope does not paint');
 
   const missing = boot({missing:true});
   const missed = await vm.runInContext('aideChatDeliver("What is the status of my upcoming shift?")', missing);
-  assert.strictEqual(missing.calls[0].q, 'rpc/send_aide_message');
-  assert.strictEqual(JSON.stringify(missing.calls[0].body), JSON.stringify({p_body:'What is the status of my upcoming shift?'}));
+  assert.strictEqual(missing.calls[0].q, 'rpc/aide_get_or_create_office_thread');
+  assert.strictEqual(JSON.stringify(missing.calls[0].body), '{}');
+  assert.strictEqual(missing.calls.length, 1, 'a missing thread rpc does not send');
   assert.strictEqual(missed.mode, 'stub');
   assert.strictEqual(missed.rows.length, 1);
   assert.strictEqual(missed.rows[0].sender, 'aide');
 
   const live = boot({
     sbRest: async function(q, req){
-      if(q==='rpc/send_aide_message'){
+      if(q==='rpc/aide_get_or_create_office_thread')return {success:true, data:{id:'t1'}};
+      if(q==='rpc/aide_send_office_message'){
         return {success:true, data:{
           message:{id:'a1', body:req.body.p_body, sender:'aide', created_at:'2026-09-25T15:00:00Z'},
           replies:[{id:'r1', body:'Remi: the office decides a call-off. Call (216) 377-5991.', sender:'remi', created_at:'2026-09-25T15:00:02Z'}]
@@ -219,16 +235,26 @@ assert.strictEqual(hidden.ok, false, 'failed envelope does not paint');
       ]};
     }
   });
-  const sent = await vm.runInContext('aideChatDeliver("I have a question about my pay.")', live);
-  assert.strictEqual(live.calls[0].q, 'rpc/send_aide_message');
-  assert.strictEqual(JSON.stringify(live.calls[0].body), JSON.stringify({p_body:'I have a question about my pay.'}));
-  assert.strictEqual(live.calls[1].q, 'rpc/get_my_thread_messages');
-  assert.strictEqual(JSON.stringify(live.calls[1].body), '{}');
+  const sent = await vm.runInContext('aideChatDeliver("I have a question about my pay.", "pay_question")', live);
+  assert.strictEqual(live.calls[0].q, 'rpc/aide_get_or_create_office_thread');
+  assert.strictEqual(JSON.stringify(live.calls[0].body), '{}');
+  assert.strictEqual(live.calls[1].q, 'rpc/aide_send_office_message');
+  assert.strictEqual(JSON.stringify(live.calls[1].body), JSON.stringify({p_body:'I have a question about my pay.', p_escalate_kind:'pay_question'}));
+  assert.strictEqual(live.calls[2].q, 'rpc/aide_list_office_messages');
+  assert.strictEqual(JSON.stringify(live.calls[2].body), JSON.stringify({p_limit:50}));
   assert.strictEqual(sent.mode, 'ace');
   assert.strictEqual(JSON.stringify(sent.rows.map(function(r){return r.sender;})), JSON.stringify(['aide','office','remi']));
   assert.strictEqual(JSON.stringify(sent.rows.map(function(r){return r.label;})), JSON.stringify(['You','Office','Remi']));
   const remiHtml = vm.runInContext('aideChatBodyHtml("remi", '+JSON.stringify(sent.rows[2].body)+')', live);
   assert.ok(remiHtml.includes('href="tel:+12163775991"'), 'live remi reply phone is tappable');
+  assert.ok(remiHtml.includes('>(216) 377-5991</a>'), 'live remi phone text is locked');
+  const statusBody = vm.runInContext('aideChatSendBody("What is the status of my upcoming shift?", "")', live);
+  const callBody = vm.runInContext('aideChatSendBody("I need to ask about calling off an upcoming shift.", "call_off")', live);
+  const junkBody = vm.runInContext('aideChatSendBody("hello", "sms")', live);
+  assert.strictEqual(JSON.stringify(statusBody), JSON.stringify({p_body:'What is the status of my upcoming shift?'}));
+  assert.strictEqual(JSON.stringify(callBody), JSON.stringify({p_body:'I need to ask about calling off an upcoming shift.', p_escalate_kind:'call_off'}));
+  assert.strictEqual(JSON.stringify(junkBody), JSON.stringify({p_body:'hello'}));
+  assert.strictEqual(JSON.stringify(vm.runInContext('aideChatListBody("2026-09-25T14:00:00Z")', live)), JSON.stringify({p_limit:50, p_before:'2026-09-25T14:00:00Z'}));
 
   const boom = boot({fail:true});
   let threw = false;
@@ -342,8 +368,9 @@ async function runBrowser(){
     const thread = [
       {id:'a1', body:'What is the status of my upcoming shift?', sender:'aide', created_at:'2026-09-25T14:00:00Z'},
       {id:'o1', body:'Office: your Friday shift is still on the schedule.', sender:'office', created_at:'2026-09-25T14:05:00Z'},
-      {id:'r1', body:'Remi: a call-off is not decided in this chat. Call the office at (216) 377-5991.', sender:'remi', created_at:'2026-09-25T14:06:00Z'}
+      {id:'r1', body:'Remi: a call-off is not decided in this chat. Call the office at 216-377-5991.', sender:'remi', created_at:'2026-09-25T14:06:00Z'}
     ];
+    let lastSend = null;
     page.on('request', function(req){
       const url = req.url();
       if(!/supabase\.co/.test(url)){req.continue().catch(function(){});return;}
@@ -351,15 +378,20 @@ async function runBrowser(){
         req.respond({status:204, headers:cors, body:''}).catch(function(){});
         return;
       }
-      if(/get_my_thread_messages/.test(url)){
+      if(/aide_get_or_create_office_thread/.test(url)){
+        req.respond({status:200, headers:cors, body:JSON.stringify({success:true, data:{id:'t1'}})}).catch(function(){});
+        return;
+      }
+      if(/aide_list_office_messages/.test(url)){
         req.respond({status:200, headers:cors, body:JSON.stringify({success:true, data:thread.slice()})}).catch(function(){});
         return;
       }
-      if(/send_aide_message/.test(url)){
-        let sent = '';
-        try{sent = JSON.parse(req.postData()||'{}').p_body||'';}catch(e){}
-        const aide = {id:'a2', body:sent, sender:'aide', created_at:'2026-09-25T14:10:00Z'};
-        const remi = {id:'r2', body:'Remi: for a pay question call (216) 377-5991.', sender:'remi', created_at:'2026-09-25T14:10:02Z'};
+      if(/aide_send_office_message/.test(url)){
+        let sentBody = {};
+        try{sentBody = JSON.parse(req.postData()||'{}');}catch(e){}
+        lastSend = sentBody;
+        const aide = {id:'a2', body:sentBody.p_body||'', sender:'aide', created_at:'2026-09-25T14:10:00Z'};
+        const remi = {id:'r2', body:'Remi: for a pay question call 216.377.5991.', sender:'remi', created_at:'2026-09-25T14:10:02Z'};
         thread.push(aide, remi);
         req.respond({
           status:200,
@@ -397,6 +429,8 @@ async function runBrowser(){
     assert.deepStrictEqual(liveView.labels, ['You','Office','Remi']);
     assert.strictEqual(liveView.href, 'tel:+12163775991');
     assert.strictEqual(liveView.phoneText, '(216) 377-5991');
+    const locked = await page.$eval('#aideChatThread', function(el){return el.innerText;});
+    assert.ok(!/216-377-5991|440|555-/.test(locked), 'thread shows no other number');
     assert.ok(/does not decide the call-off/.test(liveView.rule));
     await page.screenshot({path:path.join(shotDir, 'aidechat1-thread-phone.png')});
     await page.click('[data-aidechat-prompt="pay"]');
@@ -413,6 +447,8 @@ async function runBrowser(){
       if(input)input.blur();
     });
     await page.screenshot({path:path.join(shotDir, 'aidechat1-pay-reply.png')});
+    assert.strictEqual(lastSend && lastSend.p_escalate_kind, 'pay_question');
+    assert.ok(lastSend && /pay/.test(lastSend.p_body||''));
   }finally{
     await browser.close();
     server.close();
