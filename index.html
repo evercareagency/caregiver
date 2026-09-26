@@ -7899,7 +7899,8 @@ async function submitAideCallOff(){
 // aide_mark_office_messages_read(p_before)
 // POST rpc/aide_get_or_create_office_thread {}
 // POST rpc/aide_list_office_messages {p_limit, p_before?} — p_before is the oldest created_at, or id when there is no time.
-// POST rpc/aide_send_office_message {p_body, p_escalate_kind?: call_off|pay_question} — shift status omits p_escalate_kind.
+// POST rpc/aide_send_office_message {p_body, p_escalate_kind?: "call_off" | "pay_question"}.
+// The argument name is p_escalate_kind. Values are exactly those two strings. Shift status omits the key.
 // POST rpc/aide_mark_office_messages_read {p_before?} once when Messages opens. p_before is the newest created_at. Omit it when no message has a time.
 // aide_chat_remi_context(p_on_date) is Admin-side. This portal does not call it.
 // Message fields: id, body|message|text|content, sender|role|from|author (aide|office|remi), created_at|createdAt|sent_at.

@@ -264,10 +264,17 @@ assert.strictEqual(hidden.ok, false, 'failed envelope does not paint');
   assert.ok(remiHtml.includes('>(216) 377-5991</a>'), 'live remi phone text is locked');
   const statusBody = vm.runInContext('aideChatSendBody("What is the status of my upcoming shift?", "")', live);
   const callBody = vm.runInContext('aideChatSendBody("I need to ask about calling off an upcoming shift.", "call_off")', live);
+  const paySpell = vm.runInContext('aideChatSendBody("I have a question about my pay.", "pay")', live);
+  const payCamel = vm.runInContext('aideChatSendBody("I have a question about my pay.", "payQuestion")', live);
+  const callSpell = vm.runInContext('aideChatSendBody("I need to ask about calling off an upcoming shift.", "calloff")', live);
   const junkBody = vm.runInContext('aideChatSendBody("hello", "sms")', live);
   assert.strictEqual(JSON.stringify(statusBody), JSON.stringify({p_body:'What is the status of my upcoming shift?'}));
   assert.strictEqual(JSON.stringify(callBody), JSON.stringify({p_body:'I need to ask about calling off an upcoming shift.', p_escalate_kind:'call_off'}));
+  assert.strictEqual(JSON.stringify(paySpell), JSON.stringify({p_body:'I have a question about my pay.'}), 'pay is not an escalate spelling');
+  assert.strictEqual(JSON.stringify(payCamel), JSON.stringify({p_body:'I have a question about my pay.'}), 'payQuestion is not an escalate spelling');
+  assert.strictEqual(JSON.stringify(callSpell), JSON.stringify({p_body:'I need to ask about calling off an upcoming shift.'}), 'calloff is not an escalate spelling');
   assert.strictEqual(JSON.stringify(junkBody), JSON.stringify({p_body:'hello'}));
+  assert.deepStrictEqual(Object.keys(callBody), ['p_body', 'p_escalate_kind']);
   assert.strictEqual(JSON.stringify(vm.runInContext('aideChatListBody("2026-09-25T14:00:00Z")', live)), JSON.stringify({p_limit:50, p_before:'2026-09-25T14:00:00Z'}));
   assert.ok(!live.calls.some(function(c){return c.q==='rpc/aide_mark_office_messages_read';}), 'send does not mark read');
   assert.ok(!live.calls.some(function(c){return c.q==='rpc/aide_chat_remi_context';}), 'send does not look up remi context');
@@ -482,8 +489,13 @@ async function runBrowser(){
         let sentBody = {};
         try{sentBody = JSON.parse(req.postData()||'{}');}catch(e){}
         lastSend = sentBody;
-        const aide = {id:'a2', body:sentBody.p_body||'', sender:'aide', created_at:'2026-09-25T14:10:00Z'};
-        const remi = {id:'r2', body:'Remi: for a pay question call 216.377.5991.', sender:'remi', created_at:'2026-09-25T14:10:02Z'};
+        const stamp = String(20 + thread.length).padStart(2, '0');
+        const aide = {id:'a'+stamp, body:sentBody.p_body||'', sender:'aide', created_at:'2026-09-25T14:'+stamp+':00Z'};
+        const kind = sentBody.p_escalate_kind || '';
+        const remiText = kind==='call_off'
+          ? 'Remi: this chat does not decide the call-off. Call 216-377-5991 or (440) 555-0199.'
+          : 'Remi: for a pay question call 216.377.5991.';
+        const remi = {id:'r'+stamp, body:remiText, sender:'remi', created_at:'2026-09-25T14:'+stamp+':02Z'};
         thread.push(aide, remi);
         req.respond({
           status:200,
@@ -551,7 +563,42 @@ async function runBrowser(){
     });
     await page.screenshot({path:path.join(shotDir, 'aidechat1-pay-reply.png')});
     assert.strictEqual(lastSend && lastSend.p_escalate_kind, 'pay_question');
+    assert.deepStrictEqual(Object.keys(lastSend||{}).sort(), ['p_body', 'p_escalate_kind']);
     assert.ok(lastSend && /pay/.test(lastSend.p_body||''));
+    const payPhone = await page.$eval('#aideChatThread [data-sender="remi"] .aidechat-phone', function(el){
+      return {href:el.getAttribute('href'), text:el.textContent};
+    });
+    assert.strictEqual(payPhone.href, 'tel:+12163775991');
+    assert.strictEqual(payPhone.text, '(216) 377-5991');
+    await page.click('[data-aidechat-prompt="calloff"]');
+    await page.click('#aideChatSend');
+    await page.waitForFunction(function(){
+      const text = document.getElementById('aideChatThread').innerText;
+      return /calling off/.test(text) && /does not decide the call-off/.test(text);
+    }, {timeout:8000});
+    await page.evaluate(function(){
+      const thread=document.getElementById('aideChatThread');
+      if(thread)thread.scrollTop=thread.scrollHeight;
+      const input=document.getElementById('aideChatInput');
+      if(input)input.blur();
+    });
+    const callPhone = await page.evaluate(function(){
+      const rows = document.querySelectorAll('#aideChatThread [data-sender="remi"]');
+      const last = rows[rows.length-1];
+      const phone = last ? last.querySelector('.aidechat-phone') : null;
+      const text = last ? last.innerText : '';
+      return {
+        href: phone ? phone.getAttribute('href') : '',
+        text: phone ? phone.textContent : '',
+        other: /440|555-/.test(text)
+      };
+    });
+    assert.strictEqual(callPhone.href, 'tel:+12163775991');
+    assert.strictEqual(callPhone.text, '(216) 377-5991');
+    assert.strictEqual(callPhone.other, false, 'call-off reply drops any other number');
+    assert.strictEqual(lastSend && lastSend.p_escalate_kind, 'call_off');
+    assert.deepStrictEqual(Object.keys(lastSend||{}).sort(), ['p_body', 'p_escalate_kind']);
+    await page.screenshot({path:path.join(shotDir, 'aidechat1-calloff-phone.png')});
   }finally{
     await browser.close();
     server.close();
