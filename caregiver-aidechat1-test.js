@@ -18,6 +18,8 @@ assert.ok(html.includes('GHOST-AIDECHAT1-CONTRACT-v1'), 'expected ace contract')
 assert.ok(html.includes('rpc/aide_get_or_create_office_thread'), 'thread rpc');
 assert.ok(html.includes('rpc/aide_list_office_messages'), 'list rpc');
 assert.ok(html.includes('rpc/aide_send_office_message'), 'send rpc');
+assert.ok(html.includes('rpc/aide_mark_office_messages_read'), 'mark-read rpc');
+assert.ok(html.includes('aide_chat_remi_context(p_on_date) stays Admin-side'), 'remi context stays admin');
 assert.ok(html.includes('p_escalate_kind'), 'escalate field');
 assert.ok(html.includes('p_before'), 'older-page cursor');
 assert.ok(!html.includes('rpc/get_my_thread_messages') && !html.includes('rpc/send_aide_message'), 'old message rpc names are gone');
@@ -60,6 +62,8 @@ assert.ok(!/sms:|mailto:|send_broadcast|set_password|auth\/v1/i.test(src), 'adap
 assert.ok(src.includes("sbRest('rpc/aide_get_or_create_office_thread'"), 'opens the office thread');
 assert.ok(src.includes("sbRest('rpc/aide_list_office_messages'"), 'lists office messages');
 assert.ok(src.includes("sbRest('rpc/aide_send_office_message'"), 'sends on the office thread');
+assert.ok(src.includes("sbRest('rpc/aide_mark_office_messages_read'"), 'marks read when the thread opens');
+assert.ok(!/sbRest\('rpc\/aide_chat_remi_context'/.test(src), 'portal does not call remi context');
 assert.ok(src.includes('p_escalate_kind'), 'send can escalate');
 assert.ok(!src.includes('get_my_thread_messages') && !src.includes('send_aide_message'), 'adapter does not call the old rpcs');
 assert.ok(!/approved/i.test(src), 'adapter copy does not say approved');
@@ -70,8 +74,9 @@ function boot(opts){
   const calls = [];
   const note = {textContent:''};
   const thread = {innerHTML:'', scrollTop:0, appendChild:function(){}};
-  const input = {value:opts.input||'', focus:function(){}};
+  const input = {value:opts.input||'', focus:function(){}, addEventListener:function(){}};
   const sendBtn = {disabled:false, textContent:'Send'};
+  const aideName = {textContent:''};
   const ctx = {
     currentUser: opts.user === null ? null : {username:'ada', name:'Ada Cole', sbAccessToken: opts.token === false ? '' : 'jwt'},
     aideChatBusy:false,
@@ -105,8 +110,16 @@ function boot(opts){
         if(id==='aideChatInput')return input;
         if(id==='aideChatSend')return sendBtn;
         if(id==='messagesScreen')return {classList:{contains:function(){return true;}}};
-        if(id==='aideChatAideName')return {textContent:''};
+        if(id==='aideChatAideName')return aideName;
         return null;
+      },
+      createElement:function(){
+        return {
+          className:'', textContent:'', innerHTML:'', id:'', dateTime:'', type:'',
+          onclick:null,
+          setAttribute:function(){},
+          appendChild:function(){}
+        };
       },
       body:{classList:{contains:function(){return false;}, add:function(){}, remove:function(){}}},
       activeElement:null
@@ -134,6 +147,7 @@ function boot(opts){
   ctx.mem = mem;
   ctx.note = note;
   ctx.input = input;
+  ctx.aideName = aideName;
   return ctx;
 }
 
@@ -255,6 +269,68 @@ assert.strictEqual(hidden.ok, false, 'failed envelope does not paint');
   assert.strictEqual(JSON.stringify(callBody), JSON.stringify({p_body:'I need to ask about calling off an upcoming shift.', p_escalate_kind:'call_off'}));
   assert.strictEqual(JSON.stringify(junkBody), JSON.stringify({p_body:'hello'}));
   assert.strictEqual(JSON.stringify(vm.runInContext('aideChatListBody("2026-09-25T14:00:00Z")', live)), JSON.stringify({p_limit:50, p_before:'2026-09-25T14:00:00Z'}));
+  assert.ok(!live.calls.some(function(c){return c.q==='rpc/aide_mark_office_messages_read';}), 'send does not mark read');
+  assert.ok(!live.calls.some(function(c){return c.q==='rpc/aide_chat_remi_context';}), 'send does not look up remi context');
+
+  const opened = boot({
+    sbRest: async function(q){
+      if(q==='rpc/aide_get_or_create_office_thread')return {success:true, data:{id:'t1'}};
+      if(q==='rpc/aide_mark_office_messages_read')return {success:true};
+      if(q==='rpc/aide_list_office_messages')return {success:true, data:[
+        {id:'a1', body:'Status?', sender:'aide', created_at:'2026-09-25T14:00:00Z'},
+        {id:'r1', body:'Call (216) 377-5991.', sender:'remi', created_at:'2026-09-25T14:06:00Z'}
+      ]};
+      throw new Error('unexpected '+q);
+    }
+  });
+  await vm.runInContext('aideChatRefresh()', opened);
+  const marked = opened.calls.filter(function(c){return c.q==='rpc/aide_mark_office_messages_read';});
+  assert.strictEqual(marked.length, 1, 'open marks read once');
+  assert.strictEqual(JSON.stringify(marked[0].body), JSON.stringify({p_before:'2026-09-25T14:06:00Z'}));
+  assert.ok(/Marked read/.test(opened.note.textContent), 'mark-read is visible on the thread');
+  assert.strictEqual(opened.aideName.textContent, 'Office · Marked read');
+  assert.ok(!opened.calls.some(function(c){return c.q==='rpc/aide_chat_remi_context';}));
+  await vm.runInContext('aideChatRefresh()', opened);
+  assert.strictEqual(opened.calls.filter(function(c){return c.q==='rpc/aide_mark_office_messages_read';}).length, 1, 'poll refresh does not mark again');
+  await vm.runInContext('openAideMessages()', opened);
+  assert.strictEqual(opened.calls.filter(function(c){return c.q==='rpc/aide_mark_office_messages_read';}).length, 2, 'opening Messages marks read again');
+
+  const stubOpen = boot({sb:false});
+  await vm.runInContext('aideChatRefresh()', stubOpen);
+  assert.strictEqual(stubOpen.calls.length, 0, 'stub open does not mark read');
+
+  const missOpen = boot({missing:true});
+  await vm.runInContext('aideChatRefresh()', missOpen);
+  assert.ok(!missOpen.calls.some(function(c){return c.q==='rpc/aide_mark_office_messages_read';}), 'missing thread does not mark read');
+  assert.ok(!/Office|Remi/.test(missOpen.note.textContent));
+
+  const markMissing = boot({
+    sbRest: async function(q){
+      if(q==='rpc/aide_mark_office_messages_read'){
+        const err = new Error('Could not find the function public.aide_mark_office_messages_read in the schema cache');
+        err.pack = {status:404, data:{code:'PGRST202', message:err.message}};
+        throw err;
+      }
+      if(q==='rpc/aide_get_or_create_office_thread')return {id:'t1'};
+      return {success:true, data:[{id:'a1', body:'Status?', sender:'aide', created_at:'2026-09-25T14:00:00Z'}]};
+    }
+  });
+  await vm.runInContext('aideChatRefresh()', markMissing);
+  assert.ok(!/Marked read/.test(markMissing.note.textContent), 'missing mark-read stays quiet');
+  const kept = vm.runInContext('aideChatRows', markMissing);
+  assert.strictEqual(kept.length, 1);
+  assert.strictEqual(kept[0].sender, 'aide', 'missing mark-read does not invent a reply');
+
+  const emptyOpen = boot({
+    sbRest: async function(q){
+      if(q==='rpc/aide_mark_office_messages_read')return {ok:true};
+      return {success:true, data:[]};
+    }
+  });
+  await vm.runInContext('aideChatRefresh()', emptyOpen);
+  const emptyMark = emptyOpen.calls.filter(function(c){return c.q==='rpc/aide_mark_office_messages_read';});
+  assert.strictEqual(JSON.stringify(emptyMark[0].body), '{}', 'a thread with no times omits p_before');
+  assert.strictEqual(JSON.stringify(vm.runInContext('aideChatMarkBody([{createdAt:""}])', emptyOpen)), '{}');
 
   const boom = boot({fail:true});
   let threw = false;
@@ -371,6 +447,9 @@ async function runBrowser(){
       {id:'r1', body:'Remi: a call-off is not decided in this chat. Call the office at 216-377-5991.', sender:'remi', created_at:'2026-09-25T14:06:00Z'}
     ];
     let lastSend = null;
+    let lastMark = null;
+    let markCount = 0;
+    let remiContextHits = 0;
     page.on('request', function(req){
       const url = req.url();
       if(!/supabase\.co/.test(url)){req.continue().catch(function(){});return;}
@@ -384,6 +463,19 @@ async function runBrowser(){
       }
       if(/aide_list_office_messages/.test(url)){
         req.respond({status:200, headers:cors, body:JSON.stringify({success:true, data:thread.slice()})}).catch(function(){});
+        return;
+      }
+      if(/aide_mark_office_messages_read/.test(url)){
+        let markBody = {};
+        try{markBody = JSON.parse(req.postData()||'{}');}catch(e){}
+        lastMark = markBody;
+        markCount += 1;
+        req.respond({status:200, headers:cors, body:JSON.stringify({success:true})}).catch(function(){});
+        return;
+      }
+      if(/aide_chat_remi_context/.test(url)){
+        remiContextHits += 1;
+        req.respond({status:200, headers:cors, body:'[]'}).catch(function(){});
         return;
       }
       if(/aide_send_office_message/.test(url)){
@@ -417,13 +509,18 @@ async function runBrowser(){
     await page.waitForSelector('#aideChatHomeBtn', {timeout:8000});
     await page.click('#aideChatHomeBtn');
     await page.waitForSelector('#aideChatThread [data-sender="remi"] .aidechat-phone', {timeout:8000});
+    await page.waitForFunction(function(){
+      return /Marked read/.test(document.getElementById('aideChatNote').textContent);
+    }, {timeout:8000});
     const liveView = await page.evaluate(function(){
       const phone = document.querySelector('#aideChatThread [data-sender="remi"] .aidechat-phone');
       return {
         labels: Array.prototype.map.call(document.querySelectorAll('.aidechat-label'), function(el){return el.textContent;}),
         href: phone ? phone.getAttribute('href') : '',
         phoneText: phone ? phone.textContent : '',
-        rule: document.getElementById('aideChatRule').textContent
+        rule: document.getElementById('aideChatRule').textContent,
+        note: document.getElementById('aideChatNote').textContent,
+        name: document.getElementById('aideChatAideName').textContent
       };
     });
     assert.deepStrictEqual(liveView.labels, ['You','Office','Remi']);
@@ -432,7 +529,13 @@ async function runBrowser(){
     const locked = await page.$eval('#aideChatThread', function(el){return el.innerText;});
     assert.ok(!/216-377-5991|440|555-/.test(locked), 'thread shows no other number');
     assert.ok(/does not decide the call-off/.test(liveView.rule));
+    assert.ok(/Marked read/.test(liveView.note), 'opening the thread shows mark-read');
+    assert.strictEqual(liveView.name, 'Office · Marked read');
+    assert.strictEqual(remiContextHits, 0, 'opening the thread does not call remi context');
+    assert.strictEqual(markCount, 1, 'opening Messages marks read once');
+    assert.strictEqual(lastMark && lastMark.p_before, '2026-09-25T14:06:00Z');
     await page.screenshot({path:path.join(shotDir, 'aidechat1-thread-phone.png')});
+    await page.screenshot({path:path.join(shotDir, 'aidechat1-mark-read-phone.png')});
     await page.click('[data-aidechat-prompt="pay"]');
     await page.click('#aideChatSend');
     await page.waitForFunction(function(){
