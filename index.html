@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-27-vapid1">
 <meta name="caregiver-build" content="2026-09-27-clienthrs1d">
 <meta name="caregiver-build" content="2026-09-25-aidechat1">
 <meta name="caregiver-build" content="2026-09-25-cgsigfit1">
@@ -38,6 +39,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-27-vapid1 v=vapid1 — Sunday GO 2026-09-27. Ace set get_vapid_public_key to configured true with a non-empty vapidPublicKey. GHOST-VAPID1-CONTRACT-v1 is CALLABLE. Account Allow notifications and the Remi reminders and office chat push switches POST /rest/v1/rpc/get_vapid_public_key {} before PushManager.subscribe. When configured is true and vapidPublicKey is non-empty, subscribe uses that public key as applicationServerKey through urlB64ToUint8Array, then POSTs /rest/v1/rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}. When configured is false, null, or the key is empty, PushManager stays off, a later note shows, and the reminder choices still save. If configured flips false later, that same soft path runs and the page does not throw. Not now, or both switches off, still POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {}. Only the public key is used on this page. No Quo. No SMS sender. No Auth. v=clienthrs1d roster prefs, Messages, schedule-send, chat display names, and Remi-never-full-page stay. v=aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-clienthrs1d v=clienthrs1d — Sunday GO 2026-09-27. Account (#moreScreen #clienthrsPushCard) turns on Remi reminders and office chat push. GHOST-CLIENTHRS1D-CONTRACT-v1 is CALLABLE. POST /rest/v1/rpc/aide_get_notification_prefs {}. POST /rest/v1/rpc/aide_save_notification_prefs {p_remi_reminders, p_office_chat_push, p_timesheet_location_permission allowed or denied or never_asked}. The browser reports timesheet location (granted is allowed, denied is denied, otherwise never_asked). Before PushManager.subscribe the page POSTs /rest/v1/rpc/get_vapid_public_key {}. If configured is false, PushManager stays off and a later note shows; the prefs still save. Allow with configured true subscribes and POSTs /rest/v1/rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}. Not now, or both switches off, POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {} so a null endpoint revokes this aide. aide_list_office_messages display_name and display_names label Remi and office bubbles. The aide’s own bubbles stay You. A push tap opens this same Messages thread (#messages, #caregiver/messages, or ?open=messages). Remi stays in that thread and is never a full page. No Quo. No SMS sender. No Auth. v=aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-aidechat1 v=aidechat1 — Saturday GO 2026-09-26. Aide Messages is one thread with the office (#messagesScreen from #aideChatHomeBtn). Compose plus history. Bubbles are labeled You, Office, and Remi. Shift status, call-off, and pay questions fill the composer; the aide still taps Send. This screen does not decide a call-off. Any office or call-off phone shown is exactly (216) 377-5991 and a tappable tel:+12163775991 link. No other number is shown. GHOST-AIDECHAT1-CONTRACT-v1 is LIVE on Supabase. POST /rest/v1/rpc/aide_get_or_create_office_thread {}. POST /rest/v1/rpc/aide_list_office_messages {p_limit, p_before}. POST /rest/v1/rpc/aide_send_office_message {p_body, p_escalate_kind call_off or pay_question; shift status omits p_escalate_kind}. POST /rest/v1/rpc/aide_mark_office_messages_read {p_before} when the aide opens Messages; p_before is the newest message time, or omitted when the thread has no time. aide_chat_remi_context(p_on_date) stays Admin-side; this screen does not call it. Aide JWT. A missing function (HTTP 404, PGRST202, 42883, or Could not find the function) uses the phone stub evercare_aidechat1_ plus username and does not invent an Office or Remi reply. A missing mark-read does not invent a reply either. No SMS. No email. No /exec. No Auth reseal. Bottom nav stays Home, Timesheet, Inservices, More. v=cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigfit1 v=cgsigfit1 — Friday GO 2026-09-25. Phone-pad scribbles are scaled and thinned into the timesheet boxes. Top CLIENT and CAREGIVER/HHA images and each day-row HHA and Client image stay the real strokes and sit inside the cell instead of filling it into a blob. TS_SIG_FIT is the inset (day 84×7.8pt, top 136×11.2pt) on the measured blank-letter cells. sbThinSigPixels peels only the outer pixels of a fat stroke and keeps the ridge, so the scribble is not replaced with a line or dashes. Capture hides the overlay images and sbStampTimesheetSigs paints that fitted ink once. Pad lock and Redo Are you sure? unlock stay v=cgsigs2. Saved PDF is one US Letter page and print of the open timesheet is one page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on that page. v=cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -343,7 +345,7 @@ body.aidechat-kb #bottomNav{display:none !important;}
 .aidechat-bubble-aide{background:var(--teal);color:#fff;border-bottom-right-radius:6px;}
 .aidechat-bubble-office{background:#fff;color:var(--navy);border:1.5px solid var(--border);border-bottom-left-radius:6px;}
 .aidechat-bubble-remi{background:var(--teal-light);color:var(--navy);border:none;border-bottom-left-radius:4px;}
-/* Account push opt-in (v=clienthrs1d). Phone-first card. Remi is not a page. */
+/* Account push opt-in (v=clienthrs1d, v=vapid1). Phone-first card. Remi is not a page. */
 #clienthrsPushCard{background:#f5f8fc;border-radius:14px;padding:20px 18px 12px;}
 .clienthrs-bell{width:48px;height:48px;border-radius:14px;background:#e8f4f4;color:#2a7f7f;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;}
 .clienthrs-title{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#1a2744;margin:0 0 8px;line-height:1.25;}
@@ -1072,7 +1074,7 @@ else setupEverCarePWA();
     <div class="hdr-text"><h2>ECA Aide Portal</h2><p id="more_aide_name">More</p></div>
   </div>
   <div class="wrap">
-    <div class="card" id="clienthrsPushCard" data-clienthrs="v=clienthrs1d">
+    <div class="card" id="clienthrsPushCard" data-clienthrs="v=clienthrs1d" data-vapid="v=vapid1">
       <div class="clienthrs-bell" aria-hidden="true">&#128276;</div>
       <h3 class="clienthrs-title">Turn on Remi reminders</h3>
       <p class="clienthrs-sub">Get a ping on your phone when Remi has a message — timesheet reminders, schedule notes, and office chat. No SMS needed.</p>
@@ -8575,11 +8577,14 @@ function showCaregiverHome(){
 }
 
 // v=clienthrs1d GHOST-CLIENTHRS1D-CONTRACT-v1 CALLABLE.
+// v=vapid1 GHOST-VAPID1-CONTRACT-v1 CALLABLE. Ace get_vapid_public_key returns configured true and vapidPublicKey.
 // POST rpc/aide_get_notification_prefs {}
 // POST rpc/aide_save_notification_prefs {p_remi_reminders?, p_office_chat_push?, p_timesheet_location_permission?}
 // p_timesheet_location_permission is allowed, denied, or never_asked.
 // POST rpc/get_vapid_public_key {} before PushManager.subscribe.
-// configured false: do not call PushManager.subscribe. Prefs still save. Show the later note.
+// configured true and a non-empty vapidPublicKey: applicationServerKey is urlB64ToUint8Array(vapidPublicKey), then aide_upsert_web_push_subscription.
+// configured false, null, or an empty key: do not call PushManager.subscribe. Prefs still save. Show the later note. Do not throw.
+// If configured flips false later, that same soft path runs.
 // POST rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}
 // POST rpc/aide_revoke_web_push_subscription {} revokes every active subscription for this aide.
 // Deep link #messages, #caregiver/messages, or ?open=messages opens #messagesScreen.

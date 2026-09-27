@@ -14,7 +14,8 @@ const sw = fs.readFileSync(path.join(__dirname, 'caregiver-push-sw.js'), 'utf8')
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-27-clienthrs1d">', 'first meta is clienthrs1d');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-27-vapid1">', 'newest tip meta is vapid1');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-27-clienthrs1d">') > 0, 'clienthrs1d meta stays');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-27-clienthrs1d v=clienthrs1d —'), 'clienthrs1d comment');
 assert.ok(html.includes('v=clienthrs1d'), 'clienthrs1d probe');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-25-aidechat1">') > 0, 'aidechat1 meta stays');
