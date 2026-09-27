@@ -10,7 +10,8 @@ const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-25-aidechat1">', 'first meta is aidechat1');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-27-clienthrs1d">', 'newest tip meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-25-aidechat1">') > 0, 'aidechat1 meta stays after the newest tip');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-25-aidechat1 v=aidechat1 —'), 'aidechat1 comment');
 assert.ok(html.includes('v=aidechat1'), 'aidechat1 probe');
 assert.ok(html.includes('data-aidechat="v=aidechat1"'), 'screen marker');

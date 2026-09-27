@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-27-clienthrs1d">
 <meta name="caregiver-build" content="2026-09-25-aidechat1">
 <meta name="caregiver-build" content="2026-09-25-cgsigfit1">
 <meta name="caregiver-build" content="2026-09-25-cgsigs2">
@@ -37,6 +38,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-27-clienthrs1d v=clienthrs1d — Sunday GO 2026-09-27. Account (#moreScreen #clienthrsPushCard) turns on Remi reminders and office chat push. GHOST-CLIENTHRS1D-CONTRACT-v1 is CALLABLE. POST /rest/v1/rpc/aide_get_notification_prefs {}. POST /rest/v1/rpc/aide_save_notification_prefs {p_remi_reminders, p_office_chat_push, p_timesheet_location_permission allowed or denied or never_asked}. The browser reports timesheet location (granted is allowed, denied is denied, otherwise never_asked). Before PushManager.subscribe the page POSTs /rest/v1/rpc/get_vapid_public_key {}. If configured is false, PushManager stays off and a later note shows; the prefs still save. Allow with configured true subscribes and POSTs /rest/v1/rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}. Not now, or both switches off, POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {} so a null endpoint revokes this aide. aide_list_office_messages display_name and display_names label Remi and office bubbles. The aide’s own bubbles stay You. A push tap opens this same Messages thread (#messages, #caregiver/messages, or ?open=messages). Remi stays in that thread and is never a full page. No Quo. No SMS sender. No Auth. v=aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-aidechat1 v=aidechat1 — Saturday GO 2026-09-26. Aide Messages is one thread with the office (#messagesScreen from #aideChatHomeBtn). Compose plus history. Bubbles are labeled You, Office, and Remi. Shift status, call-off, and pay questions fill the composer; the aide still taps Send. This screen does not decide a call-off. Any office or call-off phone shown is exactly (216) 377-5991 and a tappable tel:+12163775991 link. No other number is shown. GHOST-AIDECHAT1-CONTRACT-v1 is LIVE on Supabase. POST /rest/v1/rpc/aide_get_or_create_office_thread {}. POST /rest/v1/rpc/aide_list_office_messages {p_limit, p_before}. POST /rest/v1/rpc/aide_send_office_message {p_body, p_escalate_kind call_off or pay_question; shift status omits p_escalate_kind}. POST /rest/v1/rpc/aide_mark_office_messages_read {p_before} when the aide opens Messages; p_before is the newest message time, or omitted when the thread has no time. aide_chat_remi_context(p_on_date) stays Admin-side; this screen does not call it. Aide JWT. A missing function (HTTP 404, PGRST202, 42883, or Could not find the function) uses the phone stub evercare_aidechat1_ plus username and does not invent an Office or Remi reply. A missing mark-read does not invent a reply either. No SMS. No email. No /exec. No Auth reseal. Bottom nav stays Home, Timesheet, Inservices, More. v=cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigfit1 v=cgsigfit1 — Friday GO 2026-09-25. Phone-pad scribbles are scaled and thinned into the timesheet boxes. Top CLIENT and CAREGIVER/HHA images and each day-row HHA and Client image stay the real strokes and sit inside the cell instead of filling it into a blob. TS_SIG_FIT is the inset (day 84×7.8pt, top 136×11.2pt) on the measured blank-letter cells. sbThinSigPixels peels only the outer pixels of a fat stroke and keeps the ridge, so the scribble is not replaced with a line or dashes. Capture hides the overlay images and sbStampTimesheetSigs paints that fitted ink once. Pad lock and Redo Are you sure? unlock stay v=cgsigs2. Saved PDF is one US Letter page and print of the open timesheet is one page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on that page. v=cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigs2 v=cgsigs2 — Friday GO 2026-09-25. Folds cgsiglock into the signature PDF tip. Audit of LIVE: Save Day PDF already paints every saved day's HHA and Client scribble on that row (v=cgsigs1), and the top CLIENT and CAREGIVER/HHA boxes from the latest day with both. Pads already lock after Confirm and Save Day (pointer-events:none, touch-action:auto) so a phone scroll does not draw (v=cgsiglock1). Saved PDF is one US Letter page and print of the open timesheet is one page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on that page. Residual: Redo on a locked pad asks "Are you sure?" and the pad stays locked until Yes, redo. Go back leaves the lock. v=cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -331,14 +333,30 @@ body.aidechat-kb #bottomNav{display:none !important;}
 .aidechat-row{display:flex;flex-direction:column;max-width:88%;margin:0 0 14px;}
 .aidechat-row-aide{margin-left:auto;align-items:flex-end;}
 .aidechat-row-office,.aidechat-row-remi{margin-right:auto;align-items:flex-start;}
-.aidechat-label{font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;}
-.aidechat-label-aide{color:var(--teal-dark);}
+.aidechat-label{font-size:11px;font-weight:700;letter-spacing:0;text-transform:none;margin-bottom:3px;}
+.aidechat-label-aide{color:var(--muted);}
 .aidechat-label-office{color:var(--navy);}
-.aidechat-label-remi{color:#6b3fa0;}
+.aidechat-label-office-scheduler{color:#5b4b8a;}
+.aidechat-label-office-admin{color:var(--navy);}
+.aidechat-label-remi{color:var(--teal-dark);}
 .aidechat-bubble{border-radius:16px;padding:12px 14px;font-size:1rem;line-height:1.45;overflow-wrap:anywhere;}
 .aidechat-bubble-aide{background:var(--teal);color:#fff;border-bottom-right-radius:6px;}
 .aidechat-bubble-office{background:#fff;color:var(--navy);border:1.5px solid var(--border);border-bottom-left-radius:6px;}
-.aidechat-bubble-remi{background:#f4eefe;color:#2a1848;border:1.5px solid #c9b3e6;border-bottom-left-radius:6px;}
+.aidechat-bubble-remi{background:var(--teal-light);color:var(--navy);border:none;border-bottom-left-radius:4px;}
+/* Account push opt-in (v=clienthrs1d). Phone-first card. Remi is not a page. */
+#clienthrsPushCard{background:#f5f8fc;border-radius:14px;padding:20px 18px 12px;}
+.clienthrs-bell{width:48px;height:48px;border-radius:14px;background:#e8f4f4;color:#2a7f7f;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;}
+.clienthrs-title{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#1a2744;margin:0 0 8px;line-height:1.25;}
+.clienthrs-sub{font-size:14px;color:#6b7a90;line-height:1.45;margin:0 0 18px;}
+.clienthrs-get{background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:16px;margin-bottom:14px;}
+.clienthrs-get strong{display:block;font-size:14px;margin-bottom:6px;color:#1a2744;}
+.clienthrs-get p{font-size:13px;color:#6b7a90;line-height:1.4;margin:0;}
+.clienthrs-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:0 0 8px;font-size:14px;font-weight:700;color:#1a2744;}
+.clienthrs-row input{width:22px;height:22px;accent-color:#2a7f7f;flex:0 0 auto;}
+.clienthrs-loc{font-size:13px;color:#6b7a90;line-height:1.4;margin:0 0 8px;}
+#clienthrsAllow{border-radius:12px;padding:14px;font-size:15px;font-weight:700;margin-top:8px;}
+.clienthrs-skip{display:block;width:100%;background:transparent;border:none;color:#6b7a90;font-weight:600;font-size:13px;margin-top:10px;min-height:44px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.clienthrs-note{font-size:13px;color:#1e6060;line-height:1.4;margin:8px 0 0;min-height:1.2em;}
 a.aidechat-phone{display:inline-block;min-height:44px;line-height:44px;padding:0 4px;color:var(--teal-dark);font-weight:800;text-decoration:underline;text-transform:none;}
 .aidechat-earlier{display:block;width:100%;min-height:44px;margin:0 0 12px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:700;}
 .aidechat-time{font-size:0.75rem;color:var(--muted);margin-top:4px;}
@@ -1022,7 +1040,7 @@ else setupEverCarePWA();
   </div>
 </div>
 <!-- MESSAGES v=aidechat1 -->
-<div class="screen" id="messagesScreen" data-aidechat="v=aidechat1">
+<div class="screen" id="messagesScreen" data-aidechat="v=aidechat1" data-clienthrs="v=clienthrs1d">
   <div class="hdr">
     <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
     <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
@@ -1054,6 +1072,25 @@ else setupEverCarePWA();
     <div class="hdr-text"><h2>ECA Aide Portal</h2><p id="more_aide_name">More</p></div>
   </div>
   <div class="wrap">
+    <div class="card" id="clienthrsPushCard" data-clienthrs="v=clienthrs1d">
+      <div class="clienthrs-bell" aria-hidden="true">&#128276;</div>
+      <h3 class="clienthrs-title">Turn on Remi reminders</h3>
+      <p class="clienthrs-sub">Get a ping on your phone when Remi has a message — timesheet reminders, schedule notes, and office chat. No SMS needed.</p>
+      <div class="clienthrs-get">
+        <strong>What you’ll get</strong>
+        <p>Lock-screen alerts that open caregiver Messages. You can change this anytime in Account.</p>
+      </div>
+      <label class="clienthrs-row" for="clienthrsRemi">Remi reminders
+        <input type="checkbox" id="clienthrsRemi" onchange="clienthrsOnToggle()">
+      </label>
+      <label class="clienthrs-row" for="clienthrsOffice">Office chat push
+        <input type="checkbox" id="clienthrsOffice" onchange="clienthrsOnToggle()">
+      </label>
+      <p class="clienthrs-loc" id="clienthrsLoc">Timesheet location: Not asked yet</p>
+      <button class="btn btn-teal btn-full" type="button" id="clienthrsAllow" onclick="clienthrsAllowNotifications()">Allow notifications</button>
+      <button class="clienthrs-skip" type="button" id="clienthrsNotNow" onclick="clienthrsNotNow()">Not now</button>
+      <p class="clienthrs-note" id="clienthrsPushNote" role="status"></p>
+    </div>
     <div class="card">
       <div class="card-title"><img class="portal-mark-hands card-mark" alt="" width="24" height="24"> Account</div>
       <p id="more_aide_line" style="font-size:1rem;font-weight:700;color:var(--navy)">—</p>
@@ -1506,6 +1543,7 @@ function showMoreScreen(){
   if(line)line.textContent=name;
   if(sub)sub.textContent=name;
   showScreen('moreScreen');
+  if(typeof clienthrsOpenAccount==='function')clienthrsOpenAccount();
 }
 function openTimesheetFromNav(){
   if(typeof requireSandataAck==='function'&&!requireSandataAck())return;
@@ -2283,6 +2321,7 @@ function afterLogin(opts){
   window._cgPendingBackupRestore=true;
   loadCaregiverScreen();
   if(!isSandataAcked())openModal('sandataModal');
+  if(typeof clienthrsMaybeOpenMessages==='function')clienthrsMaybeOpenMessages();
 }
 
 async function requestLocationOnceAfterLogin(){
@@ -2335,6 +2374,7 @@ async function retryLocationForSubmit(){
 function saveLocationStatus(status){
   if(!currentUser)return;
   store.set(`loc_${currentUser.username}`,status);
+  if(typeof clienthrsReportLocationFromStatus==='function')clienthrsReportLocationFromStatus(status);
   // Default cut does not dual-write location to /exec during Save Day or submit.
   if(evercareSbEnabled())return;
   fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save_location_status',username:currentUser.username,status})}).catch(()=>{});
@@ -7919,6 +7959,7 @@ var aideChatBefore='';
 var aideChatHasEarlier=false;
 var aideChatMarkTried=false;
 var aideChatMarkedOpen=false;
+var aideChatDisplayNames={remi:'',scheduler:'',admin:''};
 var AIDECHAT_PAGE=50;
 var AIDECHAT_OFFICE_DIGITS='2163775991';
 var AIDECHAT_ANY_PHONE_RE=/(?<![\d])(?:\+?1[\s.\-]*)?\(?\d{3}\)?[\s.\-]*\d{3}[\s.\-]*\d{4}(?!\d)/g;
@@ -7981,7 +8022,54 @@ function aideChatSenderRaw(row){
   if(row.from!=null&&row.from!=='')return row.from;
   if(row.author!=null&&row.author!=='')return row.author;
   if(row.sender_role!=null&&row.sender_role!=='')return row.sender_role;
+  if(row.from_role!=null&&row.from_role!=='')return row.from_role;
   return '';
+}
+function aideChatRoleToken(row){
+  if(!row||typeof row!=='object')return '';
+  const parts=[row.sender_role,row.from_role,row.role,row.sender,row.from,row.author];
+  for(let i=0;i<parts.length;i++){
+    const s=String(parts[i]==null?'':parts[i]).trim().toLowerCase().replace(/[\s-]+/g,'_');
+    if(s==='scheduler')return 'scheduler';
+    if(s==='admin'||s==='manager')return 'admin';
+    if(s==='remi'||s==='copilot')return 'remi';
+    if(s==='aide'||s==='me'||s==='caregiver'||s==='user'||s==='self')return 'aide';
+  }
+  return '';
+}
+function aideChatCaptureDisplayNames(node, depth){
+  if((depth||0)>6||node==null)return;
+  if(typeof node==='string'){
+    const t=node.trim();
+    if(t.charAt(0)==='{'||t.charAt(0)==='['){
+      try{aideChatCaptureDisplayNames(JSON.parse(t), (depth||0)+1);}catch(e){}
+    }
+    return;
+  }
+  if(Array.isArray(node)){
+    for(let i=0;i<node.length;i++)aideChatCaptureDisplayNames(node[i], (depth||0)+1);
+    return;
+  }
+  if(typeof node!=='object')return;
+  const names=node.display_names||node.displayNames;
+  if(names&&typeof names==='object'&&!Array.isArray(names)){
+    ['remi','scheduler','admin'].forEach(function(k){
+      const v=names[k];
+      if(v!=null&&String(v).trim())aideChatDisplayNames[k]=String(v).trim();
+    });
+  }
+  if(node.data!=null)aideChatCaptureDisplayNames(node.data, (depth||0)+1);
+}
+function aideChatLabelFor(row){
+  const sender=row&&row.sender;
+  if(sender==='aide')return 'You';
+  const direct=String(row&&row.displayName||'').trim();
+  if(direct)return direct;
+  if(sender==='remi')return aideChatDisplayNames.remi||'Remi';
+  const role=row&&row.officeRole;
+  if(role==='scheduler'&&aideChatDisplayNames.scheduler)return aideChatDisplayNames.scheduler;
+  if(role==='admin'&&aideChatDisplayNames.admin)return aideChatDisplayNames.admin;
+  return 'Office';
 }
 function aideChatSender(raw){
   const s=String(raw==null?'':raw).trim().toLowerCase().replace(/[\s-]+/g,'_');
@@ -8010,13 +8098,19 @@ function aideChatNormalizeRow(row){
   const body=aideChatText(row);
   if(!body)return null;
   const sender=aideChatSender(aideChatSenderRaw(row));
-  return {
+  const role=aideChatRoleToken(row);
+  const officeRole=sender==='office'?(role==='scheduler'||role==='admin'?role:''):(role==='scheduler'||role==='admin'?role:'');
+  const named=String(row.display_name!=null?row.display_name:(row.displayName!=null?row.displayName:'')).trim();
+  const normalized={
     id:String(row.id||row.message_id||''),
     body:body.slice(0,2000),
     sender:sender,
     createdAt:aideChatWhen(row),
-    label:aideChatLabel(sender)
+    officeRole:officeRole,
+    displayName:sender==='aide'?'':named
   };
+  normalized.label=aideChatLabelFor(normalized);
+  return normalized;
 }
 function aideChatIsEnvelope(node){
   if(!node||typeof node!=='object'||Array.isArray(node))return false;
@@ -8088,6 +8182,7 @@ function aideChatDedupe(rows){
   return out;
 }
 function aideChatRowsFromRpc(data){
+  aideChatCaptureDisplayNames(data, 0);
   const walked=aideChatWalk(data, 0);
   if(walked.error)return {ok:false, error:walked.error};
   const rows=aideChatDedupe((walked.list||[]).map(aideChatNormalizeRow).filter(Boolean));
@@ -8207,8 +8302,10 @@ function aideChatPaint(rows, note, stick){
     item.className='aidechat-row aidechat-row-'+row.sender;
     item.setAttribute('data-sender', row.sender);
     const lab=document.createElement('div');
-    lab.className='aidechat-label aidechat-label-'+row.sender;
-    lab.textContent=row.label||aideChatLabel(row.sender);
+    let labClass='aidechat-label aidechat-label-'+row.sender;
+    if(row.sender==='office'&&row.officeRole)labClass+=' aidechat-label-office-'+row.officeRole;
+    lab.className=labClass;
+    lab.textContent=row.sender==='aide'?'You':(row.label||aideChatLabel(row.sender));
     const bubble=document.createElement('div');
     bubble.className='aidechat-bubble aidechat-bubble-'+row.sender;
     bubble.innerHTML=aideChatBodyHtml(row.sender, row.body);
@@ -8476,6 +8573,397 @@ function showCaregiverHome(){
   if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
   if(typeof checkISNotif==='function')checkISNotif();
 }
+
+// v=clienthrs1d GHOST-CLIENTHRS1D-CONTRACT-v1 CALLABLE.
+// POST rpc/aide_get_notification_prefs {}
+// POST rpc/aide_save_notification_prefs {p_remi_reminders?, p_office_chat_push?, p_timesheet_location_permission?}
+// p_timesheet_location_permission is allowed, denied, or never_asked.
+// POST rpc/get_vapid_public_key {} before PushManager.subscribe.
+// configured false: do not call PushManager.subscribe. Prefs still save. Show the later note.
+// POST rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}
+// POST rpc/aide_revoke_web_push_subscription {} revokes every active subscription for this aide.
+// Deep link #messages, #caregiver/messages, or ?open=messages opens #messagesScreen.
+// Remi is a bubble in that thread. There is no Remi page.
+// No Quo. No SMS sender. No Auth.
+var clienthrsPrefs={remi_reminders:false,office_chat_push:false,timesheet_location_permission:'never_asked',has_active_subscription:false};
+var clienthrsBusy=false;
+var clienthrsToggleQuiet=false;
+var CLIENTHRS_SW='./caregiver-push-sw.js';
+var CLIENTHRS_OPEN_KEY='clienthrs1d_open_messages';
+var CLIENTHRS_LATER_NOTE='Push alerts turn on later. Your reminder choices are saved.';
+function clienthrsStoreKey(){
+  const u=currentUser&&currentUser.username?String(currentUser.username):'session';
+  return 'evercare_clienthrs1d_'+u;
+}
+function clienthrsReadLocal(){
+  let raw=null;
+  try{raw=store.get(clienthrsStoreKey());}catch(e){raw=null;}
+  if(!raw||typeof raw!=='object')return null;
+  return clienthrsPrefsFrom(raw);
+}
+function clienthrsWriteLocal(prefs){
+  try{store.set(clienthrsStoreKey(), prefs||clienthrsPrefs);}catch(e){}
+}
+function clienthrsLocToken(v){
+  const s=String(v==null?'':v).trim().toLowerCase();
+  if(s==='allowed'||s==='granted')return 'allowed';
+  if(s==='denied')return 'denied';
+  return 'never_asked';
+}
+function clienthrsPrefsFrom(data){
+  let node=data;
+  if(typeof node==='string'){
+    try{node=JSON.parse(node);}catch(e){node={};}
+  }
+  if(Array.isArray(node))node=node[0]||{};
+  if(node&&node.data&&typeof node.data==='object'&&!Array.isArray(node.data)){
+    node=Object.assign({}, node, node.data);
+  }
+  node=node||{};
+  const loc=node.timesheet_location_permission!=null?clienthrsLocToken(node.timesheet_location_permission):'never_asked';
+  return {
+    remi_reminders:node.remi_reminders===true||node.remi_reminders==='true',
+    office_chat_push:node.office_chat_push===true||node.office_chat_push==='true',
+    timesheet_location_permission:loc,
+    has_active_subscription:node.has_active_subscription===true||node.has_active_subscription==='true'
+  };
+}
+function clienthrsVapidFrom(data){
+  let node=data;
+  if(typeof node==='string'){
+    try{node=JSON.parse(node);}catch(e){node={};}
+  }
+  if(Array.isArray(node))node=node[0]||{};
+  if(node&&node.data&&typeof node.data==='object'&&!Array.isArray(node.data)){
+    node=Object.assign({}, node, node.data);
+  }
+  node=node||{};
+  const key=String(node.vapidPublicKey||node.vapid_public_key||node.public_key||'').trim();
+  const configured=node.configured===true||node.configured==='true';
+  return {configured:configured&&!!key, key:configured?key:'', note:String(node.note||'')};
+}
+function clienthrsCanCall(){
+  return typeof aideChatCanCallAce==='function'&&aideChatCanCallAce();
+}
+function clienthrsSetNote(text){
+  const note=document.getElementById('clienthrsPushNote');
+  if(note)note.textContent=text||'';
+}
+function clienthrsLocWord(loc){
+  if(loc==='allowed')return 'Allowed';
+  if(loc==='denied')return 'Denied';
+  return 'Not asked yet';
+}
+function clienthrsPaint(){
+  const remi=document.getElementById('clienthrsRemi');
+  const office=document.getElementById('clienthrsOffice');
+  clienthrsToggleQuiet=true;
+  if(remi)remi.checked=!!clienthrsPrefs.remi_reminders;
+  if(office)office.checked=!!clienthrsPrefs.office_chat_push;
+  clienthrsToggleQuiet=false;
+  const loc=document.getElementById('clienthrsLoc');
+  if(loc)loc.textContent='Timesheet location: '+clienthrsLocWord(clienthrsPrefs.timesheet_location_permission);
+}
+function clienthrsSetBusy(on){
+  clienthrsBusy=!!on;
+  ['clienthrsAllow','clienthrsNotNow','clienthrsRemi','clienthrsOffice'].forEach(function(id){
+    const el=document.getElementById(id);
+    if(el)el.disabled=!!on;
+  });
+}
+async function clienthrsReadLocation(){
+  try{
+    if(navigator.permissions&&navigator.permissions.query){
+      const st=await navigator.permissions.query({name:'geolocation'});
+      if(st&&st.state==='granted')return 'allowed';
+      if(st&&st.state==='denied')return 'denied';
+      return 'never_asked';
+    }
+  }catch(e){}
+  let saved='';
+  try{
+    const key=currentUser&&currentUser.username?('loc_'+currentUser.username):'';
+    saved=key?store.get(key):'';
+  }catch(e2){saved='';}
+  return clienthrsLocToken(saved);
+}
+async function clienthrsSavePrefs(opts){
+  opts=opts||{};
+  const prev=clienthrsReadLocal()||clienthrsPrefs;
+  const next={
+    remi_reminders:opts.remi==null?!!prev.remi_reminders:!!opts.remi,
+    office_chat_push:opts.office==null?!!prev.office_chat_push:!!opts.office,
+    timesheet_location_permission:opts.location?clienthrsLocToken(opts.location):(prev.timesheet_location_permission||'never_asked'),
+    has_active_subscription:!!prev.has_active_subscription
+  };
+  if(opts.hasActive!=null)next.has_active_subscription=!!opts.hasActive;
+  clienthrsPrefs=next;
+  clienthrsWriteLocal(next);
+  clienthrsPaint();
+  if(!clienthrsCanCall())return {ok:true, local:true, prefs:next};
+  const body={};
+  if(opts.remi!=null)body.p_remi_reminders=!!opts.remi;
+  if(opts.office!=null)body.p_office_chat_push=!!opts.office;
+  if(opts.location)body.p_timesheet_location_permission=clienthrsLocToken(opts.location);
+  if(!Object.keys(body).length)return {ok:true, prefs:next};
+  const got=await sbRest('rpc/aide_save_notification_prefs',{method:'POST',body:body});
+  clienthrsApplyAck(got);
+  return {ok:true, prefs:clienthrsPrefs};
+}
+function clienthrsUnwrap(data){
+  let node=data;
+  if(typeof node==='string'){
+    try{node=JSON.parse(node);}catch(e){return {};}
+  }
+  if(Array.isArray(node))node=node[0]||{};
+  if(node&&node.data&&typeof node.data==='object'&&!Array.isArray(node.data)){
+    node=Object.assign({}, node, node.data);
+  }
+  return node&&typeof node==='object'?node:{};
+}
+function clienthrsApplyAck(got){
+  const node=clienthrsUnwrap(got);
+  if(node.remi_reminders!=null)clienthrsPrefs.remi_reminders=node.remi_reminders===true||node.remi_reminders==='true';
+  if(node.office_chat_push!=null)clienthrsPrefs.office_chat_push=node.office_chat_push===true||node.office_chat_push==='true';
+  if(node.timesheet_location_permission!=null)clienthrsPrefs.timesheet_location_permission=clienthrsLocToken(node.timesheet_location_permission);
+  if(node.has_active_subscription!=null)clienthrsPrefs.has_active_subscription=node.has_active_subscription===true||node.has_active_subscription==='true';
+  clienthrsWriteLocal(clienthrsPrefs);
+  clienthrsPaint();
+}
+async function clienthrsGetVapid(){
+  if(!clienthrsCanCall())return {configured:false, key:'', note:''};
+  try{
+    const got=await sbRest('rpc/get_vapid_public_key',{method:'POST',body:{}});
+    return clienthrsVapidFrom(got);
+  }catch(err){
+    if(typeof aideChatRpcMissing==='function'&&aideChatRpcMissing(err))return {configured:false, key:'', missing:true};
+    return {configured:false, key:'', error:true};
+  }
+}
+function clienthrsUrlBase64ToUint8Array(base64String){
+  const raw64=String(base64String||'').trim();
+  const padding='='.repeat((4-raw64.length%4)%4);
+  const base64=(raw64+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  const out=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+  return out;
+}
+function clienthrsSubRecord(sub){
+  const json=sub&&typeof sub.toJSON==='function'?sub.toJSON():{};
+  const keys=json.keys||{};
+  return {
+    endpoint:String(json.endpoint||(sub&&sub.endpoint)||''),
+    p256dh:String(keys.p256dh||''),
+    auth:String(keys.auth||'')
+  };
+}
+async function clienthrsSubscribeIfConfigured(opts){
+  const show=!(opts&&opts.quiet);
+  const vapid=await clienthrsGetVapid();
+  if(!vapid.configured){
+    if(show)clienthrsSetNote(CLIENTHRS_LATER_NOTE);
+    return {subscribed:false, later:true};
+  }
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)){
+    if(show)clienthrsSetNote('This phone cannot take lock-screen alerts yet. Your reminder choices are saved.');
+    return {subscribed:false, unsupported:true};
+  }
+  let perm='granted';
+  if(typeof Notification!=='undefined'){
+    perm=Notification.permission||'default';
+    if(perm!=='granted'){
+      if(opts&&opts.quiet)return {subscribed:false, quiet:true};
+      if(perm==='denied'||typeof Notification.requestPermission!=='function'){
+        if(show)clienthrsSetNote('Notifications are blocked in this browser. Your reminder choices are saved.');
+        return {subscribed:false, blocked:true};
+      }
+      perm=await Notification.requestPermission();
+      if(perm!=='granted'){
+        if(show)clienthrsSetNote('Notifications are blocked in this browser. Your reminder choices are saved.');
+        return {subscribed:false, blocked:true};
+      }
+    }
+  }
+  const reg=await navigator.serviceWorker.register(CLIENTHRS_SW,{scope:'./'});
+  const ready=navigator.serviceWorker.ready?await navigator.serviceWorker.ready:reg;
+  const manager=(ready&&ready.pushManager)||(reg&&reg.pushManager);
+  if(!manager||typeof manager.subscribe!=='function'){
+    if(show)clienthrsSetNote('This phone cannot take lock-screen alerts yet. Your reminder choices are saved.');
+    return {subscribed:false, unsupported:true};
+  }
+  const sub=await manager.subscribe({
+    userVisibleOnly:true,
+    applicationServerKey:clienthrsUrlBase64ToUint8Array(vapid.key)
+  });
+  const rec=clienthrsSubRecord(sub);
+  if(!rec.endpoint||!rec.p256dh||!rec.auth){
+    if(show)clienthrsSetNote('The phone did not finish the alert setup. Your reminder choices are saved.');
+    return {subscribed:false};
+  }
+  const saved=await sbRest('rpc/aide_upsert_web_push_subscription',{method:'POST',body:{
+    p_endpoint:rec.endpoint,
+    p_p256dh:rec.p256dh,
+    p_auth:rec.auth,
+    p_user_agent:(navigator.userAgent||'').slice(0,400)
+  }});
+  const parsed=clienthrsPrefsFrom(saved);
+  clienthrsPrefs.has_active_subscription=parsed.has_active_subscription!==false;
+  if(saved&&typeof saved==='object'&&saved.has_active_subscription===false)clienthrsPrefs.has_active_subscription=false;
+  else clienthrsPrefs.has_active_subscription=true;
+  clienthrsWriteLocal(clienthrsPrefs);
+  if(show)clienthrsSetNote('Lock-screen alerts are on. A tap opens Messages.');
+  return {subscribed:true, endpoint:rec.endpoint};
+}
+async function clienthrsRevoke(endpoint){
+  try{
+    if('serviceWorker' in navigator){
+      const reg=navigator.serviceWorker.getRegistration?await navigator.serviceWorker.getRegistration():null;
+      const manager=reg&&reg.pushManager;
+      if(manager&&manager.getSubscription){
+        const sub=await manager.getSubscription();
+        if(sub&&sub.unsubscribe)await sub.unsubscribe();
+      }
+    }
+  }catch(e){}
+  clienthrsPrefs.has_active_subscription=false;
+  clienthrsWriteLocal(clienthrsPrefs);
+  if(!clienthrsCanCall())return {ok:true, local:true};
+  const body={};
+  if(endpoint)body.p_endpoint=String(endpoint);
+  const got=await sbRest('rpc/aide_revoke_web_push_subscription',{method:'POST',body:body});
+  return {ok:true, result:got};
+}
+function clienthrsReportLocationFromStatus(status){
+  const loc=clienthrsLocToken(status);
+  if(loc!=='allowed'&&loc!=='denied')return;
+  clienthrsSavePrefs({location:loc}).catch(function(){});
+}
+async function clienthrsOpenAccount(){
+  const local=clienthrsReadLocal();
+  if(local)clienthrsPrefs=local;
+  const loc=await clienthrsReadLocation();
+  clienthrsPrefs.timesheet_location_permission=loc;
+  clienthrsPaint();
+  if(clienthrsCanCall()){
+    try{
+      const got=await sbRest('rpc/aide_get_notification_prefs',{method:'POST',body:{}});
+      const parsed=clienthrsPrefsFrom(got);
+      parsed.timesheet_location_permission=loc;
+      clienthrsPrefs=parsed;
+      clienthrsWriteLocal(parsed);
+      clienthrsPaint();
+    }catch(err){
+      if(!(typeof aideChatRpcMissing==='function'&&aideChatRpcMissing(err))){
+        clienthrsSetNote('Reminder settings did not load. You can still choose here.');
+      }
+    }
+    try{
+      await clienthrsSavePrefs({location:loc});
+    }catch(e){}
+  }else{
+    clienthrsWriteLocal(clienthrsPrefs);
+  }
+  if(clienthrsPrefs.remi_reminders||clienthrsPrefs.office_chat_push){
+    try{await clienthrsSubscribeIfConfigured({quiet:true});}catch(e){}
+  }
+}
+async function clienthrsAllowNotifications(){
+  if(clienthrsBusy)return;
+  clienthrsSetBusy(true);
+  try{
+    const loc=await clienthrsReadLocation();
+    await clienthrsSavePrefs({remi:true, office:true, location:loc});
+    await clienthrsSubscribeIfConfigured();
+  }catch(err){
+    clienthrsSetNote('Your reminder choices are saved. Lock-screen alerts did not start.');
+  }finally{
+    clienthrsSetBusy(false);
+  }
+}
+async function clienthrsNotNow(){
+  if(clienthrsBusy)return;
+  clienthrsSetBusy(true);
+  try{
+    const loc=await clienthrsReadLocation();
+    await clienthrsSavePrefs({remi:false, office:false, location:loc, hasActive:false});
+    await clienthrsRevoke();
+    clienthrsSetNote('Not now. You can turn this on later in Account.');
+  }catch(err){
+    clienthrsSetNote('Not now. You can turn this on later in Account.');
+  }finally{
+    clienthrsSetBusy(false);
+  }
+}
+async function clienthrsOnToggle(){
+  if(clienthrsToggleQuiet||clienthrsBusy)return;
+  const remiEl=document.getElementById('clienthrsRemi');
+  const officeEl=document.getElementById('clienthrsOffice');
+  const remi=!!(remiEl&&remiEl.checked);
+  const office=!!(officeEl&&officeEl.checked);
+  clienthrsSetBusy(true);
+  try{
+    const loc=await clienthrsReadLocation();
+    await clienthrsSavePrefs({remi:remi, office:office, location:loc});
+    if(remi||office)await clienthrsSubscribeIfConfigured();
+    else{
+      await clienthrsRevoke();
+      clienthrsSetNote('Reminders are off. You can turn them on later in Account.');
+    }
+  }catch(err){
+    clienthrsSetNote('Your reminder choices are saved.');
+  }finally{
+    clienthrsSetBusy(false);
+  }
+}
+function clienthrsHashIsMessages(hash){
+  const h=String(hash==null?(location.hash||''):hash).replace(/^#/,'').replace(/^\/+/,'').toLowerCase();
+  return h==='messages'||h==='caregiver/messages';
+}
+function clienthrsSearchIsMessages(search){
+  const q=String(search==null?(location.search||''):search);
+  return /[?&]open=messages(?:&|$)/i.test(q);
+}
+function clienthrsRememberMessages(){
+  try{sessionStorage.setItem(CLIENTHRS_OPEN_KEY,'1');}catch(e){}
+}
+function clienthrsForgetMessages(){
+  try{sessionStorage.removeItem(CLIENTHRS_OPEN_KEY);}catch(e){}
+}
+function clienthrsWantsMessages(){
+  if(clienthrsHashIsMessages())return true;
+  if(clienthrsSearchIsMessages())return true;
+  try{if(sessionStorage.getItem(CLIENTHRS_OPEN_KEY)==='1')return true;}catch(e){}
+  return false;
+}
+function clienthrsMaybeOpenMessages(){
+  if(!clienthrsWantsMessages())return false;
+  if(!currentUser||(typeof aideSetupRequired==='function'&&aideSetupRequired())){
+    clienthrsRememberMessages();
+    return false;
+  }
+  clienthrsForgetMessages();
+  try{
+    if(clienthrsHashIsMessages()&&history.replaceState){
+      history.replaceState(null,'',location.pathname+(location.search||''));
+    }
+  }catch(e){}
+  ['sandataModal','alertModal'].forEach(function(id){
+    const el=document.getElementById(id);
+    if(el&&el.classList&&el.classList.contains('show')&&typeof closeModal==='function'){
+      try{closeModal(id);}catch(e2){}
+    }
+  });
+  if(typeof openAideMessages==='function')openAideMessages();
+  return true;
+}
+function clienthrsOnPushMessage(ev){
+  const data=ev&&ev.data;
+  if(!data||data.type!=='clienthrs-open-messages')return;
+  clienthrsRememberMessages();
+  clienthrsMaybeOpenMessages();
+}
+// end v=clienthrs1d
 
 function backToTSHome(){
   // Save current client name and week to ts meta
@@ -9115,6 +9603,14 @@ function bootCaregiverPortal(){
   return 'auth';
 }
 window.addEventListener('load',()=>{ bootCaregiverPortal(); });
+window.addEventListener('hashchange',function(){
+  if(typeof clienthrsMaybeOpenMessages==='function')clienthrsMaybeOpenMessages();
+});
+if(navigator.serviceWorker&&navigator.serviceWorker.addEventListener){
+  navigator.serviceWorker.addEventListener('message',function(ev){
+    if(typeof clienthrsOnPushMessage==='function')clienthrsOnPushMessage(ev);
+  });
+}
 window.addEventListener('online',function(){
   try{
     const ops=cgReadQueue();
