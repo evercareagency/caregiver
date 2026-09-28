@@ -173,7 +173,7 @@ async function runBrowser(){
     const tabs = await page.$$eval('#bottomNav button', function(btns){
       return btns.map(function(b){return b.textContent.replace(/[^A-Za-z]/g,'');});
     });
-    assert.deepStrictEqual(tabs, ['Home','Timesheet','Inservices','More']);
+    assert.deepStrictEqual(tabs, ['Home','Timesheet','Messages','Inservices','More']);
     const homeOn = await page.$eval('#bottomNav button[data-nav="home"]', function(el){return el.classList.contains('active');});
     assert.strictEqual(homeOn, true);
     assert.strictEqual(await page.$eval('#hdr_name', function(el){return el.textContent;}), 'Portal Aide');

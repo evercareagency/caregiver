@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-27-care-msg-tab1">
 <meta name="caregiver-build" content="2026-09-27-vapid1">
 <meta name="caregiver-build" content="2026-09-27-clienthrs1d">
 <meta name="caregiver-build" content="2026-09-25-aidechat1">
@@ -39,6 +40,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-27-care-msg-tab1 v=care-msg-tab1 — Sunday 2026-09-27. MERGE HOLD. Do not claim LIVE. GHOST-CARE-MSG-TAB1-CONTRACT-v1. Caregiver bottom nav is five tabs in this order: Home, Timesheet, Messages, Inservices, More. The Messages tab calls openAideMessages() and opens #messagesScreen, the same screen the old Home card opened. Deep links #messages, #caregiver/messages, and ?open=messages stay valid. Home no longer shows #aideChatHomeCard. #callOffHomeCard stays. #msgNavBadge uses the same red .bn-badge as #isNavBadge (background #ff3b30). It shows when aide_list_office_messages returns office or Remi messages that still lack read_by_aide_at, or an equivalent unread field already on that list, and the count is greater than 0. It hides at 0. The badge is decorative (pointer-events none) and the Messages tab stays the control. The count refreshes on Home open, the login schedule (scheduleHomeBackgroundLoads), pageshow, and visibilitychange. After aide_mark_office_messages_read succeeds on Messages open, the badge clears. A missing list RPC hides the badge and does not invent a count. No new Ace RPC. No SQL. No Admin. No Auth reseal. No Quo. No SMS. v=vapid1, clienthrs1d, aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-vapid1 v=vapid1 — Sunday GO 2026-09-27. Ace set get_vapid_public_key to configured true with a non-empty vapidPublicKey. GHOST-VAPID1-CONTRACT-v1 is CALLABLE. Account Allow notifications and the Remi reminders and office chat push switches POST /rest/v1/rpc/get_vapid_public_key {} before PushManager.subscribe. When configured is true and vapidPublicKey is non-empty, subscribe uses that public key as applicationServerKey through urlB64ToUint8Array, then POSTs /rest/v1/rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}. When configured is false, null, or the key is empty, PushManager stays off, a later note shows, and the reminder choices still save. If configured flips false later, that same soft path runs and the page does not throw. Not now, or both switches off, still POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {}. Only the public key is used on this page. No Quo. No SMS sender. No Auth. v=clienthrs1d roster prefs, Messages, schedule-send, chat display names, and Remi-never-full-page stay. v=aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-clienthrs1d v=clienthrs1d — Sunday GO 2026-09-27. Account (#moreScreen #clienthrsPushCard) turns on Remi reminders and office chat push. GHOST-CLIENTHRS1D-CONTRACT-v1 is CALLABLE. POST /rest/v1/rpc/aide_get_notification_prefs {}. POST /rest/v1/rpc/aide_save_notification_prefs {p_remi_reminders, p_office_chat_push, p_timesheet_location_permission allowed or denied or never_asked}. The browser reports timesheet location (granted is allowed, denied is denied, otherwise never_asked). Before PushManager.subscribe the page POSTs /rest/v1/rpc/get_vapid_public_key {}. If configured is false, PushManager stays off and a later note shows; the prefs still save. Allow with configured true subscribes and POSTs /rest/v1/rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}. Not now, or both switches off, POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {} so a null endpoint revokes this aide. aide_list_office_messages display_name and display_names label Remi and office bubbles. The aide’s own bubbles stay You. A push tap opens this same Messages thread (#messages, #caregiver/messages, or ?open=messages). Remi stays in that thread and is never a full page. No Quo. No SMS sender. No Auth. v=aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-aidechat1 v=aidechat1 — Saturday GO 2026-09-26. Aide Messages is one thread with the office (#messagesScreen from #aideChatHomeBtn). Compose plus history. Bubbles are labeled You, Office, and Remi. Shift status, call-off, and pay questions fill the composer; the aide still taps Send. This screen does not decide a call-off. Any office or call-off phone shown is exactly (216) 377-5991 and a tappable tel:+12163775991 link. No other number is shown. GHOST-AIDECHAT1-CONTRACT-v1 is LIVE on Supabase. POST /rest/v1/rpc/aide_get_or_create_office_thread {}. POST /rest/v1/rpc/aide_list_office_messages {p_limit, p_before}. POST /rest/v1/rpc/aide_send_office_message {p_body, p_escalate_kind call_off or pay_question; shift status omits p_escalate_kind}. POST /rest/v1/rpc/aide_mark_office_messages_read {p_before} when the aide opens Messages; p_before is the newest message time, or omitted when the thread has no time. aide_chat_remi_context(p_on_date) stays Admin-side; this screen does not call it. Aide JWT. A missing function (HTTP 404, PGRST202, 42883, or Could not find the function) uses the phone stub evercare_aidechat1_ plus username and does not invent an Office or Remi reply. A missing mark-read does not invent a reply either. No SMS. No email. No /exec. No Auth reseal. Bottom nav stays Home, Timesheet, Inservices, More. v=cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -286,7 +288,8 @@ canvas.sigpad.sig-locked{cursor:default;box-shadow:inset 0 0 0 2px var(--success
 .draft-del{min-height:44px;min-width:76px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--danger);background:#fff;color:var(--danger);font-weight:700;font-size:0.82rem;font-family:'DM Sans',sans-serif;cursor:pointer;flex-shrink:0;}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:flex;background:#fff;border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(26,39,68,0.08);overflow:visible;}
 .bottom-nav[hidden]{display:none !important;}
-.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;min-width:44px;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;border-radius:12px;padding:6px 2px 4px;overflow:visible;}
+.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;min-width:44px;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.66rem;font-weight:700;cursor:pointer;border-radius:12px;padding:6px 1px 4px;overflow:visible;}
+.bottom-nav button>span:last-child{white-space:nowrap;line-height:1.1;letter-spacing:-0.01em;}
 .bottom-nav button.active{color:var(--teal-dark);background:var(--teal-light);}
 .bottom-nav .bn-img{width:22px;height:22px;border-radius:6px;display:block;}
 .bottom-nav .bn-ico{font-size:1.05rem;line-height:1;}
@@ -669,11 +672,6 @@ else setupEverCarePWA();
         <div class="card-title"><span class="ico">&#128222;</span> Call off</div>
         <p>Cannot work an upcoming shift? Tell the office here. It is listed as an open shift.</p>
         <button class="btn btn-navy btn-full" type="button" id="callOffHomeBtn" onclick="openCallOff()">Call off</button>
-      </div>
-      <div class="card aidechat-home" id="aideChatHomeCard">
-        <div class="card-title"><span class="ico">&#128172;</span> Messages</div>
-        <p>One thread with the office. Ask about a shift, a call-off, or pay.</p>
-        <button class="btn btn-navy btn-full" type="button" id="aideChatHomeBtn" onclick="openAideMessages()">Messages</button>
       </div>
       <div class="card" style="background:var(--teal-light);border-color:var(--teal)">
         <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a card below to continue a <strong>draft</strong> or a week the office <strong>sent back</strong>. The two most recent <strong>submitted</strong> weeks stay listed. <strong>+ Start Another Timesheet</strong> always starts a <strong>new blank week and client</strong> — it does not reopen a submitted week.</p>
@@ -1114,6 +1112,7 @@ else setupEverCarePWA();
 <nav class="bottom-nav" id="bottomNav" aria-label="ECA Aide Portal" hidden>
   <button type="button" data-nav="home" onclick="navGo('home')"><img class="portal-mark-hands bn-img" alt=""><span>Home</span></button>
   <button type="button" data-nav="timesheet" onclick="navGo('timesheet')"><img class="portal-mark-clip bn-img" alt=""><span>Timesheet</span></button>
+  <button type="button" data-nav="messages" data-care-msg-tab="v=care-msg-tab1" onclick="navGo('messages')"><span class="bn-ico-wrap"><span class="bn-ico" aria-hidden="true">&#128172;</span><span class="bn-badge" id="msgNavBadge" hidden aria-hidden="true"></span></span><span>Messages</span></button>
   <button type="button" data-nav="inservices" onclick="navGo('inservices')"><span class="bn-ico-wrap"><span class="bn-ico" aria-hidden="true">&#128218;</span><span class="bn-badge" id="isNavBadge" hidden aria-hidden="true"></span></span><span>Inservices</span></button>
   <button type="button" data-nav="more" onclick="navGo('more')"><span class="bn-ico" aria-hidden="true">&#8943;</span><span>More</span></button>
 </nav>
@@ -1507,7 +1506,7 @@ const PORTAL_NAV_SCREENS={
   isSigScreen:'inservices',
   isSuccessScreen:'inservices',
   moreScreen:'more',
-  messagesScreen:'home'
+  messagesScreen:'messages'
 };
 function syncPortalChrome(screenId){
   const nav=document.getElementById('bottomNav');
@@ -1572,6 +1571,7 @@ function navGo(tab){
     return;
   }
   if(tab==='timesheet'){openTimesheetFromNav();return;}
+  if(tab==='messages'){if(typeof openAideMessages==='function')openAideMessages();return;}
   if(tab==='inservices'){goToInservices();return;}
   if(tab==='more'){showMoreScreen();return;}
 }
@@ -2084,6 +2084,8 @@ function caregiverLogout(){
   if(typeof unlockBodyScroll==='function')unlockBodyScroll();
   rememberSignInUsername((currentUser&&currentUser.username)||((store.get('cg_session')||'').username));
   store.del('cg_session');sbClearAuth();clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');
+  if(typeof aideChatBadgeScope==='function')aideChatBadgeScope();
+  if(typeof clearMsgNavBadge==='function')clearMsgNavBadge();
 }
 
 // SANDATA GATE + LOCATION (once after login, again on save / submit)
@@ -2420,6 +2422,7 @@ function scheduleHomeBackgroundLoads(){
       if(currentUser&&currentUser.sbAccessToken){
         sbLoadHomeLists(restoreBackups);
         checkISNotif();
+        if(typeof refreshMsgNavBadge==='function')refreshMsgNavBadge();
       }
       return;
     }
@@ -2433,6 +2436,7 @@ function scheduleHomeBackgroundLoads(){
     }
     checkForCorrection().catch(function(){});
     checkISNotif();
+    if(typeof refreshMsgNavBadge==='function')refreshMsgNavBadge();
     apiGetCached('get_clients').catch(function(){});
   };
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(function(){setTimeout(run,0);});
@@ -7946,6 +7950,7 @@ async function submitAideCallOff(){
 // POST rpc/aide_mark_office_messages_read {p_before?} once when Messages opens. p_before is the newest created_at. Omit it when no message has a time.
 // aide_chat_remi_context(p_on_date) is Admin-side. This portal does not call it.
 // Message fields: id, body|message|text|content, sender|role|from|author (aide|office|remi), created_at|createdAt|sent_at.
+// v=care-msg-tab1 unread badge reuses this list. Office and Remi rows that lack read_by_aide_at (or an equivalent unread field already on the row) count. No new RPC.
 // Envelope: {success|ok, data: Message[] | {messages|thread|rows|message, replies}}.
 // Missing function (HTTP 404, PGRST202, 42883, Could not find the function): phone stub.
 // Stub key evercare_aidechat1_<username>. The stub does not invent Office or Remi text.
@@ -7961,6 +7966,10 @@ var aideChatBefore='';
 var aideChatHasEarlier=false;
 var aideChatMarkTried=false;
 var aideChatMarkedOpen=false;
+var aideChatReadThroughMs=null;
+var aideChatLocalReadIds={};
+var aideChatBadgeUser='';
+var msgBadgeGen=0;
 var aideChatDisplayNames={remi:'',scheduler:'',admin:''};
 var AIDECHAT_PAGE=50;
 var AIDECHAT_OFFICE_DIGITS='2163775991';
@@ -8095,6 +8104,57 @@ function aideChatLabel(sender){
   if(sender==='remi')return 'Remi';
   return 'Office';
 }
+function aideChatReadByAideAt(row){
+  if(!row||typeof row!=='object')return '';
+  const keys=['read_by_aide_at','readByAideAt','aide_read_at','aideReadAt'];
+  for(let i=0;i<keys.length;i++){
+    if(!Object.prototype.hasOwnProperty.call(row, keys[i]))continue;
+    const v=row[keys[i]];
+    if(v==null)continue;
+    const s=String(v).trim();
+    if(s&&s!=='null'&&s!=='undefined')return s;
+  }
+  const alt=['read_by_aide','readByAide'];
+  for(let j=0;j<alt.length;j++){
+    if(!Object.prototype.hasOwnProperty.call(row, alt[j]))continue;
+    const v=row[alt[j]];
+    if(v==null||typeof v==='boolean')continue;
+    const s=String(v).trim();
+    if(!s||s==='true'||s==='false'||s==='null'||s==='undefined')continue;
+    if(/\d/.test(s))return s;
+  }
+  return '';
+}
+function aideChatExplicitRead(row){
+  if(!row||typeof row!=='object')return null;
+  if(Object.prototype.hasOwnProperty.call(row,'explicitRead')&&(row.explicitRead===true||row.explicitRead===false))return row.explicitRead;
+  const unreadKeys=['unread','is_unread','isUnread','unread_by_aide','unreadByAide'];
+  for(let i=0;i<unreadKeys.length;i++){
+    const k=unreadKeys[i];
+    if(!Object.prototype.hasOwnProperty.call(row, k))continue;
+    const v=row[k];
+    if(v===true||v==='true'||v==='t'||v===1||v==='1')return false;
+    if(v===false||v==='false'||v==='f'||v===0||v==='0')return true;
+  }
+  const readKeys=['is_read','isRead','read'];
+  for(let r=0;r<readKeys.length;r++){
+    const k=readKeys[r];
+    if(!Object.prototype.hasOwnProperty.call(row, k))continue;
+    const v=row[k];
+    if(typeof v==='string'&&/\d/.test(v)&&v!=='0'&&v!=='1')continue;
+    if(v===true||v==='true'||v==='t'||v===1||v==='1')return true;
+    if(v===false||v==='false'||v==='f'||v===0||v==='0')return false;
+  }
+  const boolStamp=['read_by_aide','readByAide'];
+  for(let b=0;b<boolStamp.length;b++){
+    const k=boolStamp[b];
+    if(!Object.prototype.hasOwnProperty.call(row, k))continue;
+    const v=row[k];
+    if(v===true||v==='true'||v==='t')return true;
+    if(v===false||v==='false'||v==='f')return false;
+  }
+  return null;
+}
 function aideChatNormalizeRow(row){
   if(!row||typeof row!=='object')return null;
   const body=aideChatText(row);
@@ -8109,7 +8169,9 @@ function aideChatNormalizeRow(row){
     sender:sender,
     createdAt:aideChatWhen(row),
     officeRole:officeRole,
-    displayName:sender==='aide'?'':named
+    displayName:sender==='aide'?'':named,
+    readByAideAt:aideChatReadByAideAt(row),
+    explicitRead:aideChatExplicitRead(row)
   };
   normalized.label=aideChatLabelFor(normalized);
   return normalized;
@@ -8434,12 +8496,87 @@ async function aideChatLoadEarlier(){
     aideChatBusy=false;
   }
 }
+function aideChatBadgeScope(){
+  const u=currentUser&&currentUser.username?String(currentUser.username):'';
+  if(u===aideChatBadgeUser)return;
+  aideChatBadgeUser=u;
+  aideChatReadThroughMs=null;
+  aideChatLocalReadIds={};
+}
+function aideChatMessageUnread(row){
+  if(!row)return false;
+  if(row.sender!=='office'&&row.sender!=='remi')return false;
+  if(String(row.readByAideAt||'').trim())return false;
+  if(row.explicitRead===true)return false;
+  if(row.id&&aideChatLocalReadIds[String(row.id)])return false;
+  if(aideChatReadThroughMs!=null&&row.createdAt){
+    const ms=new Date(row.createdAt).getTime();
+    if(isFinite(ms)&&ms<=aideChatReadThroughMs)return false;
+  }
+  return true;
+}
+function msgUnreadCount(rows){
+  let n=0;
+  (rows||[]).forEach(function(r){
+    if(!r)return;
+    const row=(r.sender&&r.readByAideAt!==undefined&&r.explicitRead!==undefined)?r:aideChatNormalizeRow(r);
+    if(aideChatMessageUnread(row))n++;
+  });
+  return n;
+}
+function paintMsgNavBadge(n){
+  const badge=document.getElementById('msgNavBadge');
+  if(!badge)return;
+  const count=Number(n);
+  if(!(count>0)){badge.hidden=true;badge.textContent='';return;}
+  badge.textContent=String(Math.floor(count));
+  badge.hidden=false;
+}
+function clearMsgNavBadge(){
+  msgBadgeGen++;
+  paintMsgNavBadge(0);
+}
+function aideChatRememberMarkedRead(rows){
+  aideChatBadgeScope();
+  const body=aideChatMarkBody(rows);
+  if(body&&body.p_before){
+    const ms=new Date(body.p_before).getTime();
+    if(isFinite(ms)&&(aideChatReadThroughMs==null||ms>aideChatReadThroughMs))aideChatReadThroughMs=ms;
+  }
+  (rows||[]).forEach(function(r){
+    if(r&&r.id)aideChatLocalReadIds[String(r.id)]=1;
+  });
+}
+async function refreshMsgNavBadge(){
+  const gen=++msgBadgeGen;
+  aideChatBadgeScope();
+  if(!currentUser||typeof aideChatCanCallAce!=='function'||!aideChatCanCallAce()){
+    if(gen===msgBadgeGen)paintMsgNavBadge(0);
+    return;
+  }
+  try{
+    const got=await sbRest('rpc/aide_list_office_messages',{method:'POST',body:aideChatListBody()});
+    if(gen!==msgBadgeGen||!currentUser){
+      if(gen===msgBadgeGen)paintMsgNavBadge(0);
+      return;
+    }
+    const parsed=aideChatRowsFromRpc(got);
+    if(gen!==msgBadgeGen)return;
+    if(!parsed.ok){paintMsgNavBadge(0);return;}
+    paintMsgNavBadge(msgUnreadCount(parsed.rows));
+  }catch(err){
+    if(gen!==msgBadgeGen)return;
+    paintMsgNavBadge(0);
+  }
+}
 async function aideChatMarkRead(rows){
   if(aideChatMarkTried||aideChatMode!=='ace'||!aideChatCanCallAce())return;
   aideChatMarkTried=true;
   try{
     await sbRest('rpc/aide_mark_office_messages_read',{method:'POST',body:aideChatMarkBody(rows)});
     aideChatMarkedOpen=true;
+    aideChatRememberMarkedRead(rows);
+    clearMsgNavBadge();
     const screen=document.getElementById('messagesScreen');
     if(screen&&screen.classList.contains('active')&&aideChatMode==='ace'){
       aideChatSetNote(aideChatAceNote());
@@ -8574,6 +8711,7 @@ function showCaregiverHome(){
   try{window.scrollTo(0,0);}catch(e){}
   if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
   if(typeof checkISNotif==='function')checkISNotif();
+  if(typeof refreshMsgNavBadge==='function')refreshMsgNavBadge();
 }
 
 // v=clienthrs1d GHOST-CLIENTHRS1D-CONTRACT-v1 CALLABLE.
@@ -9627,8 +9765,8 @@ window.addEventListener('online',function(){
 window.addEventListener('offline',function(){try{window._cgQueuePhase='offline';cgPaintOfflineQueue();}catch(e){}});
 function cgRefreshInserviceDueOnShow(){
   if(!currentUser||!currentUser.username)return;
-  if(typeof checkISNotif!=='function')return;
-  checkISNotif();
+  if(typeof checkISNotif==='function')checkISNotif();
+  if(typeof refreshMsgNavBadge==='function')refreshMsgNavBadge();
 }
 window.addEventListener('pageshow',()=>{
   enforceCgSessionTimeout();

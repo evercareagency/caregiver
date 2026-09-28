@@ -10,7 +10,8 @@ const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-27-vapid1">', 'newest tip meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-27-care-msg-tab1">', 'newest tip meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-27-vapid1">') > 0, 'vapid1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-27-clienthrs1d">') > 0, 'clienthrs1d meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-25-aidechat1">') > 0, 'aidechat1 meta stays after the newest tip');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-25-aidechat1 v=aidechat1 —'), 'aidechat1 comment');
@@ -31,12 +32,12 @@ assert.ok(html.includes('v=cgsigfit1') && html.includes('v=cgsigs2') && html.inc
 assert.ok(html.includes('v=cgacct1') && html.includes('v=portal1') && html.includes('v=offline1'), 'account portal offline stay');
 
 const nav = html.slice(html.indexOf('id="bottomNav"'), html.indexOf('id="deleteDraftModal"'));
-assert.ok(nav.includes('data-nav="home"') && nav.includes('data-nav="timesheet"') && nav.includes('data-nav="inservices"') && nav.includes('data-nav="more"'), 'four nav targets stay');
-assert.ok(!nav.includes('data-nav="messages"'), 'messages is not a fifth tab');
+assert.ok(nav.includes('data-nav="home"') && nav.includes('data-nav="timesheet"') && nav.includes('data-nav="messages"') && nav.includes('data-nav="inservices"') && nav.includes('data-nav="more"'), 'messages is a footer tab');
+assert.ok(nav.indexOf('data-nav="timesheet"') < nav.indexOf('data-nav="messages"') && nav.indexOf('data-nav="messages"') < nav.indexOf('data-nav="inservices"'), 'messages sits between timesheet and inservices');
 assert.ok(!nav.includes('>Call off<'), 'call off stays off the nav');
 
 const home = html.slice(html.indexOf('id="cgHomeView"'), html.indexOf('id="cgFormView"'));
-assert.ok(home.includes('id="aideChatHomeBtn"'), 'home opens messages');
+assert.ok(!home.includes('id="aideChatHomeCard"') && !home.includes('id="aideChatHomeBtn"'), 'home messages card is gone');
 assert.ok(home.includes('id="callOffHomeBtn"'), 'home call off stays');
 assert.ok(home.includes("Back up this week's draft"), 'home backup stays');
 
@@ -415,8 +416,8 @@ async function runBrowser(){
     const tabs = await page.$$eval('#bottomNav button', function(btns){
       return btns.map(function(b){return b.textContent.replace(/[^A-Za-z]/g,'');});
     });
-    assert.deepStrictEqual(tabs, ['Home','Timesheet','Inservices','More']);
-    await page.click('#aideChatHomeBtn');
+    assert.deepStrictEqual(tabs, ['Home','Timesheet','Messages','Inservices','More']);
+    await page.click('#bottomNav button[data-nav="messages"]');
     await page.waitForFunction(function(){
       return document.getElementById('messagesScreen').classList.contains('active');
     }, {timeout:4000});
@@ -520,8 +521,8 @@ async function runBrowser(){
       sessionStorage.setItem('notice_ack_portal.aide','1');
     });
     await page.reload({waitUntil:'domcontentloaded', timeout:20000});
-    await page.waitForSelector('#aideChatHomeBtn', {timeout:8000});
-    await page.click('#aideChatHomeBtn');
+    await page.waitForSelector('#bottomNav button[data-nav="messages"]', {timeout:8000});
+    await page.click('#bottomNav button[data-nav="messages"]');
     await page.waitForSelector('#aideChatThread [data-sender="remi"] .aidechat-phone', {timeout:8000});
     await page.waitForFunction(function(){
       return /Marked read/.test(document.getElementById('aideChatNote').textContent);

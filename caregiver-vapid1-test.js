@@ -19,10 +19,12 @@ const sw = fs.readFileSync(path.join(__dirname, 'caregiver-push-sw.js'), 'utf8')
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-27-vapid1">', 'first meta is vapid1');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-27-care-msg-tab1">', 'newer tip meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-27-vapid1">') > 0, 'vapid1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-27-clienthrs1d">') > 0, 'clienthrs1d meta stays');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-27-vapid1 v=vapid1 —'), 'vapid1 comment');
-assert.ok(html.indexOf('<!-- caregiver-build: 2026-09-27-vapid1 v=vapid1 —') < html.indexOf('<!-- caregiver-build: 2026-09-27-clienthrs1d v=clienthrs1d —'), 'vapid1 comment is first');
+assert.ok(html.indexOf('<!-- caregiver-build: 2026-09-27-care-msg-tab1 v=care-msg-tab1 —') < html.indexOf('<!-- caregiver-build: 2026-09-27-vapid1 v=vapid1 —'), 'care-msg-tab1 comment is first');
+assert.ok(html.indexOf('<!-- caregiver-build: 2026-09-27-vapid1 v=vapid1 —') < html.indexOf('<!-- caregiver-build: 2026-09-27-clienthrs1d v=clienthrs1d —'), 'vapid1 comment stays ahead of clienthrs1d');
 assert.ok(html.includes('v=vapid1'), 'vapid1 probe');
 assert.ok(html.includes('GHOST-VAPID1-CONTRACT-v1 is CALLABLE'), 'ace vapid contract is callable');
 assert.ok(html.includes('data-vapid="v=vapid1"'), 'card marker');
