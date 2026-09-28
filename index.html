@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-28-aide-home-addr1">
 <meta name="caregiver-build" content="2026-09-28-care-msg-safe1">
 <meta name="caregiver-build" content="2026-09-28-punch-leftovers1">
 <meta name="caregiver-build" content="2026-09-27-care-msg-tab1">
@@ -42,6 +43,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-28-aide-home-addr1 v=aide-home-addr1 ?v=aide-home-addr1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE. No new SQL. Columns home_address, home_lat, and home_lng are already on aides. After auth (and after the finish-account gate), POST /rest/v1/rpc/aide_get_home_address {}. The reply is gate_required plus any existing address and coords. If gate_required is true, or home_lat/home_lng are present and empty, show #homeAddrScreen full screen and hide #bottomNav and Home until Continue succeeds. Two looks, short labels only, no Cover or nearby why-copy: signup / first login is teal #2a7f7f with the house mark and title Where do you live?; an existing aide missing coords (one time) is navy #1a2744 with the pin mark and the same title. Fields are Street, City, State, and ZIP. Continue validates those fields, geocodes on the phone with Nominatim (not punch GPS), then POST /rest/v1/rpc/aide_save_home_address {p_home_address, p_lat, p_lng}. A saved pair enters normal Home. Punch GPS stays getGpsPosition / navigator.geolocation on Save Day and submit. Cover call-off, care-msg-safe1, the site footer, and the login toast (showTempMsg) stay. Dates people read stay MM/DD/YYYY. A missing function does not trap Home. Cache bust ?v=aide-home-addr1. v=care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, coveraide2, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-care-msg-safe1 v=care-msg-safe1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Messages (#messagesScreen) stays top:0 and still ends at the dock (bottom:var(--eca-dock-h)). The messages header pads with max(13px, calc(13px + env(safe-area-inset-top, 0px))) so Back and Refresh sit below the phone status bar. Both hit targets are at least 44px. .aidechat-compose is flush above #bottomNav: no padding under the send row, the thread scrolls in the middle, and the dock stays visible. The dock hides only while the phone keyboard is open on the composer (body.aidechat-kb). That path pins the screen to the visual viewport and retries through the keyboard animation so the thread and composer stay in view. If office-thread rows are already painted, a later refresh throw does not paint “The office thread did not load. Try Refresh.” The catch logs err.message and err.pack status and data. Refresh and the 15s poll share aideChatBusy so aideChatRefresh and list calls do not overlap. Ace is BACKEND_OK. No Ace patch. No new RPC. v=punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-punch-leftovers1 v=punch-leftovers1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. The bottom dock stays visible. Home, Timesheet, Inservices, and More can scroll their last card and the site footer clear of it: body.has-bottom-nav .wrap and footer use padding-bottom var(--eca-dock-clear), which is the dock height plus a gap. --eca-dock-h is the button plus the dock padding plus env(safe-area-inset-bottom). The viewport uses viewport-fit=cover so a notched phone reports that inset, and the dock labels sit in the button above it so the home indicator does not clip them. Messages (#messagesScreen) ends at the top of the dock (bottom:var(--eca-dock-h)); the thread scrolls inside that screen, and scrolling to the last message does not cover or dismiss the dock. The dock hides only while the phone keyboard is open on the composer (body.aidechat-kb), and that path sizes the thread to the visual viewport. Sandata Reminder, Important Notice, and Call off Submit are unchanged. v=care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-care-msg-tab1 v=care-msg-tab1 — Sunday 2026-09-27. MERGE HOLD. Do not claim LIVE. GHOST-CARE-MSG-TAB1-CONTRACT-v1. Caregiver bottom nav is five tabs in this order: Home, Timesheet, Messages, Inservices, More. The Messages tab calls openAideMessages() and opens #messagesScreen, the same screen the old Home card opened. Deep links #messages, #caregiver/messages, and ?open=messages stay valid. Home no longer shows #aideChatHomeCard. #callOffHomeCard stays. #msgNavBadge uses the same red .bn-badge as #isNavBadge (background #ff3b30). It shows when aide_list_office_messages returns office or Remi messages that still lack read_by_aide_at, or an equivalent unread field already on that list, and the count is greater than 0. It hides at 0. The badge is decorative (pointer-events none) and the Messages tab stays the control. The count refreshes on Home open, the login schedule (scheduleHomeBackgroundLoads), pageshow, and visibilitychange. After aide_mark_office_messages_read succeeds on Messages open, the badge clears. A missing list RPC hides the badge and does not invent a count. No new Ace RPC. No SQL. No Admin. No Auth reseal. No Quo. No SMS. v=vapid1, clienthrs1d, aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -130,6 +132,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);color:var(--text);ma
 .device-btn.active{background:var(--navy);color:white;}
 .instructions-box{background:var(--off);border-radius:8px;padding:12px 14px;font-size:0.76rem;color:var(--text);line-height:1.9;}
 .instructions-box ol{padding-left:16px;}
+/* Home address gate (v=aide-home-addr1). Full screen. Not punch GPS. Short labels only. */
+#homeAddrScreen.active{display:flex !important;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px 28px;min-height:100vh;min-height:100dvh;text-align:center;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#homeAddrScreen.homeaddr-signup{background:#2a7f7f;}
+#homeAddrScreen.homeaddr-missing{background:#1a2744;}
+#homeAddrScreen.homeaddr-checking .homeaddr-brand,
+#homeAddrScreen.homeaddr-checking .homeaddr-mark,
+#homeAddrScreen.homeaddr-checking .homeaddr-title,
+#homeAddrScreen.homeaddr-checking .homeaddr-card{visibility:hidden;}
+.homeaddr-brand{font-size:0.72rem;font-weight:600;letter-spacing:2.4px;color:rgba(255,255,255,0.88);margin:0 0 6px;}
+.homeaddr-mark{width:86px;height:86px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:14px auto 8px;}
+.homeaddr-signup .homeaddr-mark{background:rgba(255,255,255,0.16);}
+.homeaddr-missing .homeaddr-mark{background:rgba(255,255,255,0.1);}
+.homeaddr-ico{width:46px;height:46px;display:block;}
+.homeaddr-signup .homeaddr-ico-pin{display:none;}
+.homeaddr-missing .homeaddr-ico-house{display:none;}
+.homeaddr-title{font-family:'Playfair Display',serif;font-size:1.85rem;font-weight:600;color:#fff;margin:10px 0 18px;line-height:1.2;}
+.homeaddr-card{background:#fff;border-radius:18px;padding:22px 18px 18px;max-width:380px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,0.18);text-align:left;}
+.homeaddr-card label{font-size:0.68rem;font-weight:700;letter-spacing:0.6px;}
+.homeaddr-card .req{color:#d64545;letter-spacing:0;}
+.homeaddr-card input{min-height:48px;font-size:1rem;padding:12px 14px;border-radius:10px;border-color:#d5deea;}
+.homeaddr-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+#homeAddrContinue{min-height:52px;font-size:1.05rem;border-radius:12px;margin-top:6px;}
+body.homeaddr-gate footer{display:none !important;}
 /* CORRECTION */
 .correction-banner{background:var(--warn);color:white;padding:12px 16px;border-radius:8px;font-size:0.82rem;font-weight:500;margin-bottom:14px;cursor:pointer;display:none;}
 .correction-banner.show{display:block;}
@@ -621,6 +646,34 @@ else setupEverCarePWA();
       <p id="recoveryDoneHint" style="margin-top:14px;margin-bottom:0">If you use the app icon on your phone, open it from there after this</p>
     </div>
   </div>
+</div>
+
+<!-- HOME ADDRESS GATE v=aide-home-addr1 ?v=aide-home-addr1. Where do you live? Not punch GPS. -->
+<div class="screen" id="homeAddrScreen" data-home-addr="v=aide-home-addr1" data-cache="?v=aide-home-addr1">
+  <div class="homeaddr-brand">CAREGIVER · EVERCARE</div>
+  <div class="homeaddr-mark" aria-hidden="true">
+    <svg class="homeaddr-ico homeaddr-ico-house" viewBox="0 0 64 64" focusable="false">
+      <path d="M8 30 L32 10 L56 30" fill="none" stroke="#e07a3d" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M16 28 V52 H48 V28" fill="#fff7ee" stroke="#e7b089" stroke-width="2"/>
+      <rect x="22" y="34" width="8" height="7" rx="1" fill="#f3c49a"/>
+      <rect x="29" y="38" width="8" height="14" rx="1" fill="#2a7f7f"/>
+    </svg>
+    <svg class="homeaddr-ico homeaddr-ico-pin" viewBox="0 0 64 64" focusable="false">
+      <circle cx="32" cy="22" r="10" fill="#e24b4b"/>
+      <path d="M32 32 V54" stroke="#243044" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <h1 class="homeaddr-title">Where do you live?</h1>
+  <form class="homeaddr-card" id="homeAddrForm" onsubmit="submitHomeAddr();return false;">
+    <div class="field"><label for="homeAddrStreet">Street address <span class="req">*</span></label><input type="text" id="homeAddrStreet" autocomplete="street-address" enterkeyhint="next"></div>
+    <div class="field"><label for="homeAddrCity">City <span class="req">*</span></label><input type="text" id="homeAddrCity" autocomplete="address-level2" enterkeyhint="next"></div>
+    <div class="homeaddr-split">
+      <div class="field"><label for="homeAddrState">State <span class="req">*</span></label><input type="text" id="homeAddrState" autocomplete="address-level1" maxlength="2" autocapitalize="characters" enterkeyhint="next"></div>
+      <div class="field"><label for="homeAddrZip">ZIP <span class="req">*</span></label><input type="text" id="homeAddrZip" inputmode="numeric" autocomplete="postal-code" maxlength="10" enterkeyhint="done"></div>
+    </div>
+    <button class="btn btn-teal btn-full" type="submit" id="homeAddrContinue">Continue</button>
+    <div class="auth-err" id="homeAddrErr"></div>
+  </form>
 </div>
 
 <!-- LOCATION PERMISSION (first time) -->
@@ -1502,6 +1555,11 @@ function showScreen(id){
     showAideSetupGate();
     return;
   }
+  if(typeof homeAddrBlocksNavigation==='function'&&homeAddrBlocksNavigation(id)){
+    showHomeAddrGate();
+    return;
+  }
+  if(id!=='homeAddrScreen')document.body.classList.remove('homeaddr-gate');
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById(id);
   if(el)el.classList.add('active');
@@ -2074,12 +2132,12 @@ async function doSignup(){
   try{
     const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'signup',username:user,password:pass,name,email})});
     const data=await res.json();
-    if(data.success){cacheInvalidate('get_users');const u=store.get('cg_users')||{};u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);startCgSession({username:user,name});err.style.display='none';afterLogin({freshLogin:true});}
+    if(data.success){cacheInvalidate('get_users');const u=store.get('cg_users')||{};u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);startCgSession({username:user,name});if(typeof homeAddrMarkFirstLogin==='function')homeAddrMarkFirstLogin();err.style.display='none';afterLogin({freshLogin:true});}
     else{err.textContent=data.error||'Username taken.';err.style.display='block';}
   }catch(e){
     const u=store.get('cg_users')||{};
     if(u[user]){err.textContent='Username taken.';err.style.display='block';btn.textContent='Create Account →';btn.disabled=false;return;}
-    u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);startCgSession({username:user,name});afterLogin({freshLogin:true});
+    u[user]={name,email,password:pass,created:new Date().toLocaleDateString()};store.set('cg_users',u);startCgSession({username:user,name});if(typeof homeAddrMarkFirstLogin==='function')homeAddrMarkFirstLogin();afterLogin({freshLogin:true});
   }
   btn.textContent='Create Account →';btn.disabled=false;
 }
@@ -2100,7 +2158,7 @@ function caregiverLogout(){
   for(let i=0;i<openModals.length;i++)openModals[i].classList.remove('show');
   if(typeof unlockBodyScroll==='function')unlockBodyScroll();
   rememberSignInUsername((currentUser&&currentUser.username)||((store.get('cg_session')||'').username));
-  store.del('cg_session');sbClearAuth();clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);showScreen('authScreen');
+  store.del('cg_session');sbClearAuth();clearNoticeAck();currentUser=null;correctionMode=false;correctionData=null;window._aideSetupCurrentPassword='';window._cgFreshLogin=false;clearSandataAck();setPendingLoginLocation(false);if(typeof homeAddrReset==='function')homeAddrReset();showScreen('authScreen');
   if(typeof aideChatBadgeScope==='function')aideChatBadgeScope();
   if(typeof clearMsgNavBadge==='function')clearMsgNavBadge();
 }
@@ -2285,6 +2343,7 @@ async function submitAideSetup(){
       if(err)err.style.display='none';
       showTempMsg('Account setup complete.','var(--success)');
       window._cgFreshLogin=false;
+      if(typeof homeAddrMarkFirstLogin==='function')homeAddrMarkFirstLogin();
       showAideSetupSaved();
       return;
     }
@@ -2304,6 +2363,7 @@ async function submitAideSetup(){
       if(err)err.style.display='none';
       showTempMsg('Account setup complete.','var(--success)');
       window._cgFreshLogin=false;
+      if(typeof homeAddrMarkFirstLogin==='function')homeAddrMarkFirstLogin();
       showAideSetupSaved();
       return;
     }
@@ -2322,6 +2382,297 @@ async function submitAideSetup(){
   }
 }
 
+// v=aide-home-addr1. GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 CALLABLE. No new SQL.
+// POST rpc/aide_get_home_address {} → gate_required plus address and coords when Ace has them.
+// POST rpc/aide_save_home_address {p_home_address, p_lat, p_lng} after Nominatim geocode.
+// This is the aide's home for Cover near-ranking. It is not punch GPS (getGpsPosition).
+var homeAddrGate={phase:'unknown',look:'missing',record:null,busy:false,saving:false};
+var homeAddrGen=0;
+function homeAddrReset(){
+  homeAddrGen+=1;
+  homeAddrGate.phase='unknown';
+  homeAddrGate.look='missing';
+  homeAddrGate.record=null;
+  homeAddrGate.busy=false;
+  homeAddrGate.saving=false;
+  try{document.body.classList.remove('homeaddr-gate');}catch(e){}
+}
+function homeAddrNeedsGate(){
+  if(!currentUser||!currentUser.username)return false;
+  if(typeof evercareSbEnabled==='function'&&!evercareSbEnabled())return false;
+  if(homeAddrGate.phase==='clear')return false;
+  return true;
+}
+function homeAddrBlocksNavigation(id){
+  if(id==='homeAddrScreen'||id==='authScreen'||id==='aideSetupScreen'||id==='recoveryScreen')return false;
+  if(!homeAddrNeedsGate())return false;
+  return homeAddrGate.phase==='checking'||homeAddrGate.phase==='required';
+}
+function homeAddrFirstKey(){
+  const u=currentUser&&currentUser.username?String(currentUser.username):'';
+  return u?('evercare_homeaddr_first_'+u):'';
+}
+function homeAddrMarkFirstLogin(){
+  const k=homeAddrFirstKey();
+  if(!k)return;
+  try{localStorage.setItem(k,'1');}catch(e){}
+}
+function homeAddrIsFirstLogin(){
+  const k=homeAddrFirstKey();
+  if(!k)return false;
+  try{return localStorage.getItem(k)==='1';}catch(e){return false;}
+}
+function homeAddrClearFirstLogin(){
+  const k=homeAddrFirstKey();
+  if(!k)return;
+  try{localStorage.removeItem(k);}catch(e){}
+}
+function homeAddrUnwrap(data){
+  let node=data;
+  if(typeof node==='string'){
+    try{node=JSON.parse(node);}catch(e){return null;}
+  }
+  if(Array.isArray(node)){
+    if(!node.length)return {};
+    node=node[0];
+  }
+  if(!node||typeof node!=='object')return {};
+  if(node.data&&typeof node.data==='object'&&!Array.isArray(node.data)){
+    node=Object.assign({}, node, node.data);
+  }
+  return node;
+}
+function homeAddrNum(v){
+  if(v==null||v==='')return null;
+  const n=typeof v==='number'?v:Number(String(v).trim());
+  return Number.isFinite(n)?n:null;
+}
+function homeAddrPick(node, keys){
+  for(let i=0;i<keys.length;i++){
+    if(node&&Object.prototype.hasOwnProperty.call(node, keys[i]))return node[keys[i]];
+  }
+  return undefined;
+}
+function homeAddrNormalize(data){
+  const node=homeAddrUnwrap(data);
+  if(!node)return {unreadable:true, sawCoords:false, lat:null, lng:null, address:'', gate_required:null, kind:'', first_login:false};
+  const latKeys=['home_lat','lat','p_lat','homeLat'];
+  const lngKeys=['home_lng','lng','lon','p_lng','homeLng'];
+  const sawCoords=latKeys.concat(lngKeys).some(function(k){return Object.prototype.hasOwnProperty.call(node,k);});
+  let gate=null;
+  if(Object.prototype.hasOwnProperty.call(node,'gate_required'))gate=aideTruth(node.gate_required);
+  else if(Object.prototype.hasOwnProperty.call(node,'gateRequired'))gate=aideTruth(node.gateRequired);
+  const address=String(homeAddrPick(node,['home_address','p_home_address','address'])||'').trim();
+  const kind=String(node.gate_kind||node.gate||node.reason||node.kind||'').trim().toLowerCase();
+  return {
+    unreadable:false,
+    sawCoords:sawCoords,
+    lat:homeAddrNum(homeAddrPick(node, latKeys)),
+    lng:homeAddrNum(homeAddrPick(node, lngKeys)),
+    address:address,
+    street:String(homeAddrPick(node,['street','home_street','street_address'])||'').trim(),
+    city:String(homeAddrPick(node,['city','home_city'])||'').trim(),
+    state:String(homeAddrPick(node,['state','home_state'])||'').trim(),
+    zip:String(homeAddrPick(node,['zip','home_zip','postal_code'])||'').trim(),
+    gate_required:gate,
+    kind:kind,
+    first_login:aideTruth(node.first_login)||aideTruth(node.signup)||aideTruth(node.is_first_login)
+  };
+}
+function homeAddrShouldBlock(rec){
+  if(!rec||rec.unreadable||rec.skipped)return false;
+  if(rec.gate_required===true)return true;
+  if(rec.sawCoords&&(rec.lat==null||rec.lng==null))return true;
+  return false;
+}
+function homeAddrLook(rec){
+  const kind=String((rec&&rec.kind)||'').toLowerCase();
+  if(/first|signup|sign_up/.test(kind)||(rec&&rec.first_login))return 'signup';
+  if(homeAddrIsFirstLogin())return 'signup';
+  return 'missing';
+}
+function homeAddrSplit(address){
+  const text=String(address||'').trim();
+  const m=text.match(/^(.*),\s*([^,]+),\s*([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+  if(!m)return {street:text, city:'', state:'', zip:''};
+  return {street:m[1].trim(), city:m[2].trim(), state:m[3].toUpperCase(), zip:m[4]};
+}
+function homeAddrPartsFrom(rec){
+  rec=rec||{};
+  const split=homeAddrSplit(rec.address||'');
+  return {
+    street:rec.street||split.street||'',
+    city:rec.city||split.city||'',
+    state:(rec.state||split.state||'').toUpperCase(),
+    zip:rec.zip||split.zip||''
+  };
+}
+function homeAddrReadForm(){
+  const val=function(id){
+    const el=document.getElementById(id);
+    return el?String(el.value||'').trim():'';
+  };
+  return {
+    street:val('homeAddrStreet'),
+    city:val('homeAddrCity'),
+    state:val('homeAddrState').toUpperCase(),
+    zip:val('homeAddrZip')
+  };
+}
+function homeAddrLine(parts){
+  return parts.street+', '+parts.city+', '+parts.state+' '+parts.zip;
+}
+function homeAddrSaveOk(data){
+  const node=homeAddrUnwrap(data);
+  if(!node)return false;
+  if(node.success===false||node.ok===false)return false;
+  return true;
+}
+function homeAddrPaint(rec){
+  const parts=homeAddrPartsFrom(rec);
+  const set=function(id, value){
+    const el=document.getElementById(id);
+    if(el&&!el.value&&value)el.value=value;
+  };
+  set('homeAddrStreet', parts.street);
+  set('homeAddrCity', parts.city);
+  set('homeAddrState', parts.state);
+  set('homeAddrZip', parts.zip);
+}
+function showHomeAddrGate(opts){
+  opts=opts||{};
+  const el=document.getElementById('homeAddrScreen');
+  if(!el)return;
+  const checking=!!opts.checking||homeAddrGate.phase==='checking';
+  const look=(homeAddrGate.look==='signup')?'signup':'missing';
+  el.classList.toggle('homeaddr-signup', look==='signup');
+  el.classList.toggle('homeaddr-missing', look!=='signup');
+  el.classList.toggle('homeaddr-checking', checking);
+  document.body.classList.add('homeaddr-gate');
+  document.querySelectorAll('.modal-bg.show').forEach(function(m){m.classList.remove('show');});
+  if(typeof unlockBodyScroll==='function')unlockBodyScroll();
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  el.classList.add('active');
+  if(!checking){
+    homeAddrPaint(homeAddrGate.record);
+    const err=document.getElementById('homeAddrErr');
+    if(err&&opts.clearErr!==false){err.textContent='';err.style.display='none';}
+  }
+  try{window.scrollTo(0,0);}catch(e){}
+  if(typeof syncPortalChrome==='function')syncPortalChrome('homeAddrScreen');
+}
+function enterHomeAfterAddr(){
+  try{document.body.classList.remove('homeaddr-gate');}catch(e){}
+  window._cgPendingBackupRestore=true;
+  loadCaregiverScreen();
+  if(!isSandataAcked())openModal('sandataModal');
+  if(typeof clienthrsMaybeOpenMessages==='function')clienthrsMaybeOpenMessages();
+}
+async function homeAddrFetch(){
+  if(typeof aideChatCanCallAce==='function'&&!aideChatCanCallAce())return {skipped:true};
+  const got=await sbRest('rpc/aide_get_home_address',{method:'POST',body:{}});
+  return homeAddrNormalize(got);
+}
+function beginHomeAddrGate(){
+  if(homeAddrGate.phase==='clear')return;
+  if(!homeAddrNeedsGate()){
+    homeAddrGate.phase='clear';
+    return;
+  }
+  if(homeAddrGate.phase==='required'){
+    showHomeAddrGate();
+    return;
+  }
+  if(homeAddrGate.busy)return;
+  const gen=homeAddrGen;
+  homeAddrGate.busy=true;
+  homeAddrGate.phase='checking';
+  homeAddrGate.look=homeAddrLook(null);
+  showHomeAddrGate({checking:true});
+  homeAddrFetch().then(function(rec){
+    if(gen!==homeAddrGen)return;
+    homeAddrGate.busy=false;
+    const row=rec||{skipped:true};
+    homeAddrGate.record=row;
+    if(!homeAddrShouldBlock(row)){
+      homeAddrGate.phase='clear';
+      homeAddrClearFirstLogin();
+      enterHomeAfterAddr();
+      return;
+    }
+    homeAddrGate.phase='required';
+    homeAddrGate.look=homeAddrLook(row);
+    showHomeAddrGate({clearErr:true});
+  }).catch(function(){
+    if(gen!==homeAddrGen)return;
+    homeAddrGate.busy=false;
+    homeAddrGate.phase='clear';
+    enterHomeAfterAddr();
+  });
+}
+async function homeAddrGeocode(parts){
+  const q=[parts.street, parts.city, parts.state, parts.zip].filter(Boolean).join(', ');
+  const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q='+encodeURIComponent(q);
+  const res=await fetch(url,{headers:{Accept:'application/json'}});
+  const data=await res.json();
+  if(!data||!data.length)return null;
+  const lat=homeAddrNum(data[0].lat);
+  const lng=homeAddrNum(data[0].lon!=null?data[0].lon:data[0].lng);
+  if(lat==null||lng==null)return null;
+  return {lat:lat, lng:lng};
+}
+async function submitHomeAddr(){
+  if(homeAddrGate.saving)return;
+  const parts=homeAddrReadForm();
+  const err=document.getElementById('homeAddrErr');
+  const btn=document.getElementById('homeAddrContinue');
+  const showErr=function(msg){if(err){err.textContent=msg;err.style.display='block';}};
+  if(err){err.textContent='';err.style.display='none';}
+  if(!parts.street||!parts.city||!parts.state||!parts.zip){
+    showErr('Street, city, state, and ZIP are required.');
+    return;
+  }
+  if(!/^[A-Za-z]{2}$/.test(parts.state)||!/^\d{5}(?:-\d{4})?$/.test(parts.zip)){
+    showErr('Street, city, state, and ZIP are required.');
+    return;
+  }
+  homeAddrGate.saving=true;
+  if(btn)btn.disabled=true;
+  let coords=null;
+  try{
+    coords=await homeAddrGeocode(parts);
+  }catch(e){
+    coords=null;
+  }
+  if(!coords){
+    homeAddrGate.saving=false;
+    if(btn)btn.disabled=false;
+    showErr('Check the address and try again.');
+    return;
+  }
+  try{
+    const got=await sbRest('rpc/aide_save_home_address',{method:'POST',body:{
+      p_home_address:homeAddrLine(parts),
+      p_lat:coords.lat,
+      p_lng:coords.lng
+    }});
+    if(!homeAddrSaveOk(got)){
+      showErr('Could not save. Try again.');
+      return;
+    }
+    homeAddrClearFirstLogin();
+    homeAddrGate.phase='clear';
+    homeAddrGate.saving=false;
+    if(btn)btn.disabled=false;
+    enterHomeAfterAddr();
+  }catch(e){
+    showErr('Could not save. Try again.');
+  }finally{
+    homeAddrGate.saving=false;
+    if(btn){btn.disabled=false;btn.textContent='Continue';}
+  }
+}
+
 function afterLogin(opts){
   if(opts&&opts.freshLogin){
     clearSandataAck();
@@ -2335,6 +2686,11 @@ function afterLogin(opts){
       email:(currentUser&&currentUser.email)||'',
       freshLogin:!!(opts&&opts.freshLogin)
     });
+    return;
+  }
+  // Home address before Home. Punch GPS still waits for Sandata Got It.
+  if(typeof homeAddrNeedsGate==='function'&&homeAddrNeedsGate()&&homeAddrGate.phase!=='clear'){
+    beginHomeAddrGate();
     return;
   }
   // Home first. Heavy list calls start only after that paint (see scheduleHomeBackgroundLoads).
@@ -2532,6 +2888,10 @@ async function loadBroadcastBanner(){
 // CAREGIVER SCREEN
 function loadCaregiverScreen(){
   if(!requireAideSetup())return;
+  if(typeof homeAddrNeedsGate==='function'&&homeAddrNeedsGate()&&homeAddrGate.phase!=='clear'){
+    beginHomeAddrGate();
+    return;
+  }
   showScreen('caregiverScreen');
   document.getElementById('hdr_name').textContent=currentUser.name;
   document.getElementById('cgHomeView').style.display='block';
@@ -9170,7 +9530,7 @@ function clienthrsWantsMessages(){
 }
 function clienthrsMaybeOpenMessages(){
   if(!clienthrsWantsMessages())return false;
-  if(!currentUser||(typeof aideSetupRequired==='function'&&aideSetupRequired())){
+  if(!currentUser||(typeof aideSetupRequired==='function'&&aideSetupRequired())||(typeof homeAddrNeedsGate==='function'&&homeAddrNeedsGate())){
     clienthrsRememberMessages();
     return false;
   }
