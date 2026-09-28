@@ -9,7 +9,8 @@ const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-28-punch-leftovers1">', 'punch-leftovers1 meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-28-care-msg-safe1">', 'newer tip meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-28-punch-leftovers1">') > 0, 'punch-leftovers1 meta stays');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-28-punch-leftovers1 v=punch-leftovers1 —'), 'punch-leftovers1 comment');
 assert.ok(html.includes('v=punch-leftovers1'), 'punch-leftovers1 probe');
 assert.ok(html.includes('data-punch-leftovers="v=punch-leftovers1"'), 'dock marker');
