@@ -43,7 +43,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
-<!-- caregiver-build: 2026-09-28-aide-home-addr1 v=aide-home-addr1 ?v=aide-home-addr1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE. No new SQL. Columns home_address, home_lat, and home_lng are already on aides. After auth (and after the finish-account gate), POST /rest/v1/rpc/aide_get_home_address {}. The reply is gate_required plus any existing address and coords. If gate_required is true, or home_lat/home_lng are present and empty, show #homeAddrScreen full screen and hide #bottomNav and Home until Continue succeeds. Two looks, short labels only, no Cover or nearby why-copy: signup / first login is teal #2a7f7f with the house mark and title Where do you live?; an existing aide missing coords (one time) is navy #1a2744 with the pin mark and the same title. Fields are Street, City, State, and ZIP. Continue validates those fields, geocodes on the phone with Nominatim (not punch GPS), then POST /rest/v1/rpc/aide_save_home_address {p_home_address, p_lat, p_lng}. A saved pair enters normal Home. Punch GPS stays getGpsPosition / navigator.geolocation on Save Day and submit. Cover call-off, care-msg-safe1, the site footer, and the login toast (showTempMsg) stay. Dates people read stay MM/DD/YYYY. A missing function does not trap Home. Cache bust ?v=aide-home-addr1. v=care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, coveraide2, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-28-aide-home-addr1 v=aide-home-addr1 ?v=aide-home-addr1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Columns home_address, home_lat, and home_lng are already on aides (cover1). Caregiver JWT only, via sbUserHeaders Bearer. Not the anon key. Not admin, scheduler, or nurse. POST /rest/v1/rpc/aide_get_home_address {}. gate_required is !has_address || !has_coords. When gate_required, #homeAddrScreen is full screen and #bottomNav and Home stay hidden. Signup / first login is teal #2a7f7f with the house mark. An existing aide missing an address or coords is navy #1a2744 with the pin mark. Title is Where do you live? Fields are Street, City, State, and ZIP. No why-copy on the gate. Continue builds one address (max 500), geocodes with the Admin geocodeClientAddress Nominatim call https://nominatim.openstreetmap.org/search?format=json&q= (not punch GPS), and requires finite p_lat in [-90,90] and p_lng in [-180,180]. Then POST /rest/v1/rpc/aide_save_home_address {p_home_address, p_lat, p_lng}. The gate clears only when that save returns an address and coords (has_address, has_coords, gate_required false). Punch GPS stays getGpsPosition. Cover call-off, care-msg-safe1, the site footer, and the login toast (showTempMsg) stay. Dates people read stay MM/DD/YYYY. A missing function does not trap Home. Cache bust ?v=aide-home-addr1. v=care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, coveraide2, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-care-msg-safe1 v=care-msg-safe1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Messages (#messagesScreen) stays top:0 and still ends at the dock (bottom:var(--eca-dock-h)). The messages header pads with max(13px, calc(13px + env(safe-area-inset-top, 0px))) so Back and Refresh sit below the phone status bar. Both hit targets are at least 44px. .aidechat-compose is flush above #bottomNav: no padding under the send row, the thread scrolls in the middle, and the dock stays visible. The dock hides only while the phone keyboard is open on the composer (body.aidechat-kb). That path pins the screen to the visual viewport and retries through the keyboard animation so the thread and composer stay in view. If office-thread rows are already painted, a later refresh throw does not paint “The office thread did not load. Try Refresh.” The catch logs err.message and err.pack status and data. Refresh and the 15s poll share aideChatBusy so aideChatRefresh and list calls do not overlap. Ace is BACKEND_OK. No Ace patch. No new RPC. v=punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-punch-leftovers1 v=punch-leftovers1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. The bottom dock stays visible. Home, Timesheet, Inservices, and More can scroll their last card and the site footer clear of it: body.has-bottom-nav .wrap and footer use padding-bottom var(--eca-dock-clear), which is the dock height plus a gap. --eca-dock-h is the button plus the dock padding plus env(safe-area-inset-bottom). The viewport uses viewport-fit=cover so a notched phone reports that inset, and the dock labels sit in the button above it so the home indicator does not clip them. Messages (#messagesScreen) ends at the top of the dock (bottom:var(--eca-dock-h)); the thread scrolls inside that screen, and scrolling to the last message does not cover or dismiss the dock. The dock hides only while the phone keyboard is open on the composer (body.aidechat-kb), and that path sizes the thread to the visual viewport. Sandata Reminder, Important Notice, and Call off Submit are unchanged. v=care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-care-msg-tab1 v=care-msg-tab1 — Sunday 2026-09-27. MERGE HOLD. Do not claim LIVE. GHOST-CARE-MSG-TAB1-CONTRACT-v1. Caregiver bottom nav is five tabs in this order: Home, Timesheet, Messages, Inservices, More. The Messages tab calls openAideMessages() and opens #messagesScreen, the same screen the old Home card opened. Deep links #messages, #caregiver/messages, and ?open=messages stay valid. Home no longer shows #aideChatHomeCard. #callOffHomeCard stays. #msgNavBadge uses the same red .bn-badge as #isNavBadge (background #ff3b30). It shows when aide_list_office_messages returns office or Remi messages that still lack read_by_aide_at, or an equivalent unread field already on that list, and the count is greater than 0. It hides at 0. The badge is decorative (pointer-events none) and the Messages tab stays the control. The count refreshes on Home open, the login schedule (scheduleHomeBackgroundLoads), pageshow, and visibilitychange. After aide_mark_office_messages_read succeeds on Messages open, the badge clears. A missing list RPC hides the badge and does not invent a count. No new Ace RPC. No SQL. No Admin. No Auth reseal. No Quo. No SMS. v=vapid1, clienthrs1d, aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -2382,10 +2382,12 @@ async function submitAideSetup(){
   }
 }
 
-// v=aide-home-addr1. GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 CALLABLE. No new SQL.
-// POST rpc/aide_get_home_address {} → gate_required plus address and coords when Ace has them.
-// POST rpc/aide_save_home_address {p_home_address, p_lat, p_lng} after Nominatim geocode.
-// This is the aide's home for Cover near-ranking. It is not punch GPS (getGpsPosition).
+// v=aide-home-addr1. GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 CALLABLE LIVE. No new Ace patch. No new SQL.
+// Caregiver JWT only (sbRest / sbUserHeaders). POST rpc/aide_get_home_address {}.
+// gate_required = !has_address || !has_coords.
+// POST rpc/aide_save_home_address {p_home_address, p_lat, p_lng} after Nominatim.
+// Nominatim matches Admin geocodeClientAddress: /search?format=json&q=
+// The gate clears only when the save has an address and coords. Not punch GPS.
 var homeAddrGate={phase:'unknown',look:'missing',record:null,busy:false,saving:false};
 var homeAddrGen=0;
 function homeAddrReset(){
@@ -2458,15 +2460,19 @@ function homeAddrNormalize(data){
   if(!node)return {unreadable:true, sawCoords:false, lat:null, lng:null, address:'', gate_required:null, kind:'', first_login:false};
   const latKeys=['home_lat','lat','p_lat','homeLat'];
   const lngKeys=['home_lng','lng','lon','p_lng','homeLng'];
+  const addrKeys=['home_address','p_home_address','address'];
   const sawCoords=latKeys.concat(lngKeys).some(function(k){return Object.prototype.hasOwnProperty.call(node,k);});
-  let gate=null;
-  if(Object.prototype.hasOwnProperty.call(node,'gate_required'))gate=aideTruth(node.gate_required);
-  else if(Object.prototype.hasOwnProperty.call(node,'gateRequired'))gate=aideTruth(node.gateRequired);
-  const address=String(homeAddrPick(node,['home_address','p_home_address','address'])||'').trim();
-  const kind=String(node.gate_kind||node.gate||node.reason||node.kind||'').trim().toLowerCase();
+  const sawAddress=addrKeys.some(function(k){return Object.prototype.hasOwnProperty.call(node,k);});
+  const flag=function(key){
+    if(!Object.prototype.hasOwnProperty.call(node,key))return null;
+    return aideTruth(node[key]);
+  };
+  const address=String(homeAddrPick(node,addrKeys)||'').trim();
+  const kind=String(node.gate_kind||node.reason||node.kind||'').trim().toLowerCase();
   return {
     unreadable:false,
     sawCoords:sawCoords,
+    sawAddress:sawAddress,
     lat:homeAddrNum(homeAddrPick(node, latKeys)),
     lng:homeAddrNum(homeAddrPick(node, lngKeys)),
     address:address,
@@ -2474,15 +2480,27 @@ function homeAddrNormalize(data){
     city:String(homeAddrPick(node,['city','home_city'])||'').trim(),
     state:String(homeAddrPick(node,['state','home_state'])||'').trim(),
     zip:String(homeAddrPick(node,['zip','home_zip','postal_code'])||'').trim(),
-    gate_required:gate,
+    gate_required:flag('gate_required')===null?flag('gateRequired'):flag('gate_required'),
+    has_address:flag('has_address'),
+    has_coords:flag('has_coords'),
+    success:node.success===false?false:(node.success===true?true:null),
+    ok:node.ok===false?false:(node.ok===true?true:null),
     kind:kind,
     first_login:aideTruth(node.first_login)||aideTruth(node.signup)||aideTruth(node.is_first_login)
   };
 }
+function homeAddrCoordsOk(lat,lng){
+  return lat!=null&&lng!=null&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180;
+}
 function homeAddrShouldBlock(rec){
   if(!rec||rec.unreadable||rec.skipped)return false;
+  const spoke=rec.gate_required!=null||rec.has_address!=null||rec.has_coords!=null||rec.sawAddress||rec.sawCoords;
+  if(!spoke)return false;
+  // gate_required = !has_address || !has_coords. Stay up until both are set.
+  if(rec.has_address===false||rec.has_coords===false)return true;
   if(rec.gate_required===true)return true;
-  if(rec.sawCoords&&(rec.lat==null||rec.lng==null))return true;
+  if(rec.sawAddress&&!String(rec.address||'').trim())return true;
+  if(rec.sawCoords&&!homeAddrCoordsOk(rec.lat,rec.lng))return true;
   return false;
 }
 function homeAddrLook(rec){
@@ -2523,9 +2541,13 @@ function homeAddrLine(parts){
   return parts.street+', '+parts.city+', '+parts.state+' '+parts.zip;
 }
 function homeAddrSaveOk(data){
-  const node=homeAddrUnwrap(data);
-  if(!node)return false;
-  if(node.success===false||node.ok===false)return false;
+  const rec=homeAddrNormalize(data);
+  if(!rec||rec.unreadable)return false;
+  if(rec.success===false||rec.ok===false)return false;
+  if(rec.gate_required===true||rec.has_address===false||rec.has_coords===false)return false;
+  const addr=String(rec.address||'').trim();
+  if(!addr||addr.length>500)return false;
+  if(!homeAddrCoordsOk(rec.lat,rec.lng))return false;
   return true;
 }
 function homeAddrPaint(rec){
@@ -2610,15 +2632,16 @@ function beginHomeAddrGate(){
     enterHomeAfterAddr();
   });
 }
-async function homeAddrGeocode(parts){
-  const q=[parts.street, parts.city, parts.state, parts.zip].filter(Boolean).join(', ');
-  const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q='+encodeURIComponent(q);
-  const res=await fetch(url,{headers:{Accept:'application/json'}});
+async function homeAddrGeocode(addr){
+  const q=String(addr||'').trim();
+  if(!q)return null;
+  // Admin geocodeClientAddress: format=json and q only. lat/lon come back as strings.
+  const res=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q));
   const data=await res.json();
-  if(!data||!data.length)return null;
+  if(!(data&&data.length>0))return null;
   const lat=homeAddrNum(data[0].lat);
-  const lng=homeAddrNum(data[0].lon!=null?data[0].lon:data[0].lng);
-  if(lat==null||lng==null)return null;
+  const lng=homeAddrNum(data[0].lon);
+  if(!homeAddrCoordsOk(lat,lng))return null;
   return {lat:lat, lng:lng};
 }
 async function submitHomeAddr(){
@@ -2636,11 +2659,16 @@ async function submitHomeAddr(){
     showErr('Street, city, state, and ZIP are required.');
     return;
   }
+  const line=homeAddrLine(parts);
+  if(!line.trim()||line.length>500){
+    showErr('Street, city, state, and ZIP are required.');
+    return;
+  }
   homeAddrGate.saving=true;
   if(btn)btn.disabled=true;
   let coords=null;
   try{
-    coords=await homeAddrGeocode(parts);
+    coords=await homeAddrGeocode(line);
   }catch(e){
     coords=null;
   }
@@ -2652,7 +2680,7 @@ async function submitHomeAddr(){
   }
   try{
     const got=await sbRest('rpc/aide_save_home_address',{method:'POST',body:{
-      p_home_address:homeAddrLine(parts),
+      p_home_address:line,
       p_lat:coords.lat,
       p_lng:coords.lng
     }});

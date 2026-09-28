@@ -34,7 +34,10 @@ assert.ok(html.includes('data-home-addr="v=aide-home-addr1"'), 'gate marker');
 assert.ok(html.includes('data-cache="?v=aide-home-addr1"'), 'cache bust on the gate');
 const tip = html.slice(html.indexOf('<!-- caregiver-build: 2026-09-28-aide-home-addr1'), html.indexOf('<!-- caregiver-build: 2026-09-28-care-msg-safe1'));
 assert.ok(tip.includes('MERGE HOLD') && tip.includes('Do not claim LIVE'), 'merge hold');
-assert.ok(tip.includes('CALLABLE'), 'Ace is callable');
+assert.ok(tip.includes('CALLABLE LIVE'), 'Ace contract is callable');
+assert.ok(tip.includes('No new Ace patch'), 'no new Ace patch');
+assert.ok(tip.includes('!has_address || !has_coords'), 'gate_required formula');
+assert.ok(tip.includes('https://nominatim.openstreetmap.org/search?format=json&q='), 'Admin Nominatim URL');
 assert.ok(!/CONTRACT-v1 is LIVE/.test(tip), 'this tip does not claim live');
 assert.ok(tip.includes('aide_get_home_address') && tip.includes('aide_save_home_address'), 'rpc names documented');
 assert.ok(tip.includes('p_home_address') && tip.includes('p_lat') && tip.includes('p_lng'), 'save args documented');
@@ -61,7 +64,10 @@ assert.ok(html.includes('#homeAddrScreen.homeaddr-missing{background:#1a2744;}')
 assert.ok(html.includes('body.homeaddr-gate footer{display:none !important;}'), 'footer hides only while the gate is up');
 assert.ok(html.includes('nominatim.openstreetmap.org/search'), 'client geocode');
 
-const geoFn = extractFn(html, 'async function homeAddrGeocode(parts)');
+const geoFn = extractFn(html, 'async function homeAddrGeocode(addr)');
+assert.ok(geoFn.includes("fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q))"), 'Admin geocodeClientAddress URL');
+assert.ok(geoFn.includes('data[0].lat') && geoFn.includes('data[0].lon'), 'lat and lon from the first hit');
+assert.ok(!/countrycodes|limit=|data\[0\]\.lng/.test(geoFn), 'no extra Nominatim params');
 assert.ok(!/getGpsPosition|navigator\.geolocation/.test(geoFn), 'home geocode is not punch GPS');
 const gpsFn = extractFn(html, 'function getGpsPosition()');
 assert.ok(gpsFn.includes('navigator.geolocation.getCurrentPosition'), 'punch GPS function stays');
@@ -80,6 +86,7 @@ const helpers = [
   extractFn(html, 'function homeAddrNum(v)'),
   extractFn(html, 'function homeAddrPick(node, keys)'),
   extractFn(html, 'function homeAddrNormalize(data)'),
+  extractFn(html, 'function homeAddrCoordsOk(lat,lng)'),
   extractFn(html, 'function homeAddrShouldBlock(rec)'),
   extractFn(html, 'function homeAddrFirstKey()'),
   extractFn(html, 'function homeAddrIsFirstLogin()'),
@@ -123,9 +130,51 @@ assert.strictEqual(api.homeAddrLook(coordsOnly), 'signup', 'finish-account flag 
 const parts = api.homeAddrSplit('123 Maple Ave, Cleveland, OH 44115');
 assert.strictEqual(JSON.stringify(parts), JSON.stringify({street:'123 Maple Ave', city:'Cleveland', state:'OH', zip:'44115'}));
 assert.strictEqual(api.homeAddrLine({street:'123 Maple Ave', city:'Cleveland', state:'OH', zip:'44115'}), '123 Maple Ave, Cleveland, OH 44115');
-assert.strictEqual(api.homeAddrSaveOk({success:true}), true);
+
+const contractMissing = api.homeAddrNormalize({
+  success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
+  aide_id:'00000000-0000-4000-8000-000000000001',
+  home_address:null, home_lat:null, home_lng:null,
+  has_address:false, has_coords:false, gate_required:true
+});
+assert.strictEqual(api.homeAddrShouldBlock(contractMissing), true, 'get blocks when address and coords are missing');
+const addressOnly = api.homeAddrNormalize({
+  success:true, ok:true,
+  home_address:'100 Public Square, Cleveland, OH 44114',
+  home_lat:null, home_lng:null,
+  has_address:true, has_coords:false, gate_required:true
+});
+assert.strictEqual(api.homeAddrShouldBlock(addressOnly), true, 'missing coords still require the gate');
+const coordsWithoutAddress = api.homeAddrNormalize({
+  success:true, ok:true,
+  home_address:null, home_lat:41.4993, home_lng:-81.6944,
+  has_address:false, has_coords:true, gate_required:true
+});
+assert.strictEqual(api.homeAddrShouldBlock(coordsWithoutAddress), true, 'missing address still requires the gate');
+const contractSaved = {
+  success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
+  home_address:'100 Public Square, Cleveland, OH 44114',
+  home_lat:41.4993, home_lng:-81.6944,
+  has_address:true, has_coords:true, gate_required:false, geocoded:true
+};
+assert.strictEqual(api.homeAddrShouldBlock(api.homeAddrNormalize(contractSaved)), false, 'saved address and coords clear the get gate');
+assert.strictEqual(api.homeAddrSaveOk(contractSaved), true, 'contract save clears the gate');
+assert.strictEqual(api.homeAddrSaveOk({success:true}), false, 'success alone does not clear');
 assert.strictEqual(api.homeAddrSaveOk({success:false, error:'no'}), false);
-assert.strictEqual(api.homeAddrSaveOk({home_lat:1, home_lng:2}), true);
+assert.strictEqual(api.homeAddrSaveOk({home_lat:1, home_lng:2}), false, 'coords without an address do not clear');
+assert.strictEqual(api.homeAddrSaveOk({
+  success:true, ok:true,
+  home_address:'100 Public Square, Cleveland, OH 44114',
+  home_lat:41.4993, home_lng:-81.6944,
+  has_address:true, has_coords:true, gate_required:true
+}), false, 'gate_required true does not clear');
+assert.strictEqual(api.homeAddrSaveOk({
+  success:true, home_address:'100 Public Square, Cleveland, OH 44114',
+  home_lat:91, home_lng:0, has_address:true, has_coords:true, gate_required:false
+}), false, 'lat out of range does not clear');
+assert.strictEqual(api.homeAddrSaveOk({
+  success:true, home_address:'x'.repeat(501), home_lat:41.4993, home_lng:-81.6944
+}), false, 'address over 500 does not clear');
 
 const week = extractFn(html, 'function formatWeekOfLabel(val)');
 const weekFn = vm.runInContext(week + '\nformatWeekOfLabel', ctx);
@@ -175,7 +224,7 @@ async function runBrowser(){
     await page.evaluateOnNewDocument(function(){
       var preset = null;
       try{preset = JSON.parse(localStorage.getItem('__homeAddrGet') || 'null');}catch(e){preset = null;}
-      window.__homeAddr = {get:preset, saves:[], geos:[]};
+      window.__homeAddr = {get:preset, saves:[], geos:[], auths:[]};
       const orig = window.fetch.bind(window);
       window.fetch = function(url, init){
         const u = String(url);
@@ -188,10 +237,24 @@ async function runBrowser(){
         try{body = init && init.body ? JSON.parse(init.body) : {};}catch(e){body = {};}
         let data = {success:true, data:null};
         if(u.indexOf('rpc/aide_get_home_address') !== -1){
-          data = window.__homeAddr.get || {success:true, gate_required:false, home_lat:41.49, home_lng:-81.69, home_address:'1 Main St, Cleveland, OH 44115'};
+          data = window.__homeAddr.get || {
+            success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
+            home_address:'1 Main St, Cleveland, OH 44115', home_lat:41.49, home_lng:-81.69,
+            has_address:true, has_coords:true, gate_required:false
+          };
         }else if(u.indexOf('rpc/aide_save_home_address') !== -1){
           window.__homeAddr.saves.push(body);
-          data = {success:true, home_address:body.p_home_address, home_lat:body.p_lat, home_lng:body.p_lng};
+          var auth = (init && init.headers && (init.headers.Authorization || init.headers.authorization)) || '';
+          window.__homeAddr.auths.push(String(auth));
+          if(localStorage.getItem('__homeAddrSaveBare') === '1'){
+            data = {success:true};
+          }else{
+            data = {
+              success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
+              home_address:body.p_home_address, home_lat:body.p_lat, home_lng:body.p_lng,
+              has_address:true, has_coords:true, gate_required:false, geocoded:true
+            };
+          }
         }
         return Promise.resolve(new Response(JSON.stringify(data), {status:200, headers:{'Content-Type':'application/json'}}));
       };
@@ -220,12 +283,18 @@ async function runBrowser(){
         sessionStorage.setItem('notice_ack_ada', '1');
         if(o.get)localStorage.setItem('__homeAddrGet', JSON.stringify(o.get));
         else localStorage.removeItem('__homeAddrGet');
+        if(o.saveBare)localStorage.setItem('__homeAddrSaveBare', '1');
+        else localStorage.removeItem('__homeAddrSaveBare');
       }, opts);
       await page.reload({waitUntil:'domcontentloaded', timeout:20000});
     }
 
     await boot({
-      get:{success:true, data:{gate_required:true, home_address:'123 Maple Ave, Cleveland, OH 44115', home_lat:null, home_lng:null}}
+      get:{
+        success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
+        home_address:'123 Maple Ave, Cleveland, OH 44115', home_lat:null, home_lng:null,
+        has_address:true, has_coords:false, gate_required:true
+      }
     });
     await page.waitForFunction(function(){
       const el = document.getElementById('homeAddrScreen');
@@ -304,6 +373,7 @@ async function runBrowser(){
       return {
         saves: window.__homeAddr.saves,
         geos: window.__homeAddr.geos,
+        auths: window.__homeAddr.auths,
         footer: getComputedStyle(document.querySelector('footer')).display,
         gate: document.getElementById('homeAddrScreen').classList.contains('active')
       };
@@ -312,14 +382,22 @@ async function runBrowser(){
     assert.strictEqual(savedCall.saves[0].p_home_address, '123 Maple Ave, Cleveland, OH 44115');
     assert.strictEqual(savedCall.saves[0].p_lat, 41.4993);
     assert.strictEqual(savedCall.saves[0].p_lng, -81.6944);
-    assert.ok(savedCall.geos.length === 1 && /nominatim/.test(savedCall.geos[0]), 'nominatim before save');
+    assert.strictEqual(savedCall.geos.length, 1, 'one geocode');
+    assert.ok(savedCall.geos[0].indexOf('https://nominatim.openstreetmap.org/search?format=json&q=') === 0, 'Admin Nominatim URL');
+    assert.ok(savedCall.geos[0].indexOf(encodeURIComponent('123 Maple Ave, Cleveland, OH 44115')) > 0, 'composed address is the query');
+    assert.ok(savedCall.geos[0].indexOf('countrycodes') === -1, 'no country filter');
+    assert.ok(savedCall.auths.length === 1 && savedCall.auths[0].indexOf('Bearer test-jwt') === 0, 'save uses the caregiver JWT');
     assert.notStrictEqual(savedCall.footer, 'none', 'footer returns on home');
     assert.strictEqual(savedCall.gate, false);
     await page.screenshot({path:path.join(shotDir, '03-home-after-continue.png')});
 
     await boot({
       first:true,
-      get:{gate_required:true, home_address:null, home_lat:null, home_lng:null, first_login:true}
+      get:{
+        success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
+        home_address:null, home_lat:null, home_lng:null,
+        has_address:false, has_coords:false, gate_required:true, first_login:true
+      }
     });
     await page.waitForFunction(function(){
       const el = document.getElementById('homeAddrScreen');
@@ -342,7 +420,11 @@ async function runBrowser(){
     await page.screenshot({path:path.join(shotDir, '01-signup-gate.png')});
 
     await boot({
-      get:{success:true, data:{gate_required:false, home_lat:41.5, home_lng:-81.7, home_address:'1 Main St, Cleveland, OH 44115'}}
+      get:{
+        success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
+        home_address:'1 Main St, Cleveland, OH 44115', home_lat:41.5, home_lng:-81.7,
+        has_address:true, has_coords:true, gate_required:false
+      }
     });
     await page.waitForFunction(function(){
       return document.getElementById('caregiverScreen').classList.contains('active') && document.getElementById('bottomNav').hidden === false;
@@ -352,7 +434,54 @@ async function runBrowser(){
     });
     assert.strictEqual(passed, false, 'coords on file skip the gate');
 
-    await boot({sheets:true, search:'&sheets=1', session:true, get:{gate_required:true, home_lat:null, home_lng:null}});
+    await boot({
+      get:{
+        success:true, ok:true,
+        home_address:null, home_lat:41.4993, home_lng:-81.6944,
+        has_address:false, has_coords:true, gate_required:true
+      }
+    });
+    await page.waitForFunction(function(){
+      const el = document.getElementById('homeAddrScreen');
+      return el.classList.contains('active') && el.classList.contains('homeaddr-missing') && !el.classList.contains('homeaddr-checking');
+    }, {timeout:8000});
+
+    await boot({
+      saveBare:true,
+      get:{
+        success:true, ok:true,
+        home_address:null, home_lat:null, home_lng:null,
+        has_address:false, has_coords:false, gate_required:true
+      }
+    });
+    await page.waitForFunction(function(){
+      const el = document.getElementById('homeAddrScreen');
+      return el.classList.contains('active') && !el.classList.contains('homeaddr-checking');
+    }, {timeout:8000});
+    await page.type('#homeAddrStreet', '100 Public Square');
+    await page.type('#homeAddrCity', 'Cleveland');
+    await page.type('#homeAddrState', 'OH');
+    await page.type('#homeAddrZip', '44114');
+    await page.click('#homeAddrContinue');
+    await page.waitForFunction(function(){
+      const err = document.getElementById('homeAddrErr');
+      const gate = document.getElementById('homeAddrScreen');
+      return err && /could not save/i.test(err.textContent) && gate.classList.contains('active') && window.__homeAddr.saves.length === 1;
+    }, {timeout:8000});
+    const bare = await page.evaluate(function(){
+      return {
+        home: document.getElementById('caregiverScreen').classList.contains('active'),
+        address: window.__homeAddr.saves[0].p_home_address,
+        lat: window.__homeAddr.saves[0].p_lat,
+        lng: window.__homeAddr.saves[0].p_lng
+      };
+    });
+    assert.strictEqual(bare.home, false, 'success without address and coords keeps the gate');
+    assert.strictEqual(bare.address, '100 Public Square, Cleveland, OH 44114');
+    assert.strictEqual(bare.lat, 41.4993);
+    assert.strictEqual(bare.lng, -81.6944);
+
+    await boot({sheets:true, search:'&sheets=1', session:true, get:{gate_required:true, home_lat:null, home_lng:null, has_address:false, has_coords:false}});
     await page.waitForFunction(function(){
       return document.getElementById('caregiverScreen').classList.contains('active');
     }, {timeout:8000});
