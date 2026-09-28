@@ -4,6 +4,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-build" content="2026-09-28-care-msg-safe1">
 <meta name="caregiver-build" content="2026-09-28-punch-leftovers1">
 <meta name="caregiver-build" content="2026-09-27-care-msg-tab1">
 <meta name="caregiver-build" content="2026-09-27-vapid1">
@@ -41,6 +42,7 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<!-- caregiver-build: 2026-09-28-care-msg-safe1 v=care-msg-safe1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Messages (#messagesScreen) stays top:0 and still ends at the dock (bottom:var(--eca-dock-h)). The messages header pads with max(13px, calc(13px + env(safe-area-inset-top, 0px))) so Back and Refresh sit below the phone status bar. Both hit targets are at least 44px. .aidechat-compose is flush above #bottomNav: no padding under the send row, the thread scrolls in the middle, and the dock stays visible. The dock hides only while the phone keyboard is open on the composer (body.aidechat-kb). That path pins the screen to the visual viewport and retries through the keyboard animation so the thread and composer stay in view. If office-thread rows are already painted, a later refresh throw does not paint “The office thread did not load. Try Refresh.” The catch logs err.message and err.pack status and data. Refresh and the 15s poll share aideChatBusy so aideChatRefresh and list calls do not overlap. Ace is BACKEND_OK. No Ace patch. No new RPC. v=punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-punch-leftovers1 v=punch-leftovers1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. The bottom dock stays visible. Home, Timesheet, Inservices, and More can scroll their last card and the site footer clear of it: body.has-bottom-nav .wrap and footer use padding-bottom var(--eca-dock-clear), which is the dock height plus a gap. --eca-dock-h is the button plus the dock padding plus env(safe-area-inset-bottom). The viewport uses viewport-fit=cover so a notched phone reports that inset, and the dock labels sit in the button above it so the home indicator does not clip them. Messages (#messagesScreen) ends at the top of the dock (bottom:var(--eca-dock-h)); the thread scrolls inside that screen, and scrolling to the last message does not cover or dismiss the dock. The dock hides only while the phone keyboard is open on the composer (body.aidechat-kb), and that path sizes the thread to the visual viewport. Sandata Reminder, Important Notice, and Call off Submit are unchanged. v=care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-care-msg-tab1 v=care-msg-tab1 — Sunday 2026-09-27. MERGE HOLD. Do not claim LIVE. GHOST-CARE-MSG-TAB1-CONTRACT-v1. Caregiver bottom nav is five tabs in this order: Home, Timesheet, Messages, Inservices, More. The Messages tab calls openAideMessages() and opens #messagesScreen, the same screen the old Home card opened. Deep links #messages, #caregiver/messages, and ?open=messages stay valid. Home no longer shows #aideChatHomeCard. #callOffHomeCard stays. #msgNavBadge uses the same red .bn-badge as #isNavBadge (background #ff3b30). It shows when aide_list_office_messages returns office or Remi messages that still lack read_by_aide_at, or an equivalent unread field already on that list, and the count is greater than 0. It hides at 0. The badge is decorative (pointer-events none) and the Messages tab stays the control. The count refreshes on Home open, the login schedule (scheduleHomeBackgroundLoads), pageshow, and visibilitychange. After aide_mark_office_messages_read succeeds on Messages open, the badge clears. A missing list RPC hides the badge and does not invent a count. No new Ace RPC. No SQL. No Admin. No Auth reseal. No Quo. No SMS. v=vapid1, clienthrs1d, aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-vapid1 v=vapid1 — Sunday GO 2026-09-27. Ace set get_vapid_public_key to configured true with a non-empty vapidPublicKey. GHOST-VAPID1-CONTRACT-v1 is CALLABLE. Account Allow notifications and the Remi reminders and office chat push switches POST /rest/v1/rpc/get_vapid_public_key {} before PushManager.subscribe. When configured is true and vapidPublicKey is non-empty, subscribe uses that public key as applicationServerKey through urlB64ToUint8Array, then POSTs /rest/v1/rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}. When configured is false, null, or the key is empty, PushManager stays off, a later note shows, and the reminder choices still save. If configured flips false later, that same soft path runs and the page does not throw. Not now, or both switches off, still POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {}. Only the public key is used on this page. No Quo. No SMS sender. No Auth. v=clienthrs1d roster prefs, Messages, schedule-send, chat display names, and Remi-never-full-page stay. v=aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -332,12 +334,15 @@ body.has-bottom-nav footer{margin-bottom:0;padding-bottom:var(--eca-dock-clear);
 /* Messages — one office thread (v=aidechat1). Phone-first, above the bottom nav. */
 .aidechat-home p{font-size:1rem;color:var(--navy);line-height:1.5;margin-bottom:12px;}
 /* Messages ends above the dock (v=punch-leftovers1). The thread scrolls inside the screen. The dock hides only while the phone keyboard is open on the composer. */
+/* v=care-msg-safe1. Screen stays top:0. Header padding clears the status bar. Composer is flush on the dock; the thread scrolls in the middle. */
 #messagesScreen.active{display:flex !important;flex-direction:column;position:fixed;left:0;right:0;top:0;bottom:var(--eca-dock-h);z-index:40;height:auto;min-height:0;max-height:none;overflow:hidden;background:var(--off);}
-#messagesScreen .hdr{flex:0 0 auto;}
-.aidechat-refresh{margin-left:auto;min-height:44px;padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.18);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;}
-.aidechat-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;width:100%;max-width:600px;margin:0 auto;padding:0 12px 12px;}
+#messagesScreen .hdr{flex:0 0 auto;padding-top:max(13px, calc(13px + env(safe-area-inset-top, 0px)));}
+#messagesScreen .hdr .hdr-back,#messagesScreen #aideChatRefresh{min-width:44px;min-height:44px;}
+.aidechat-refresh{margin-left:auto;min-height:44px;min-width:44px;padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.18);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;}
+.aidechat-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;width:100%;max-width:600px;margin:0 auto;padding:0 12px 0;}
+body.aidechat-kb{overflow:hidden;}
 body.aidechat-kb #messagesScreen.active{bottom:0;}
-body.aidechat-kb #messagesScreen .aidechat-body{padding-bottom:8px;}
+body.aidechat-kb #messagesScreen .aidechat-body{padding-bottom:0;}
 body.aidechat-kb #bottomNav{display:none !important;}
 .aidechat-rule{font-size:0.92rem;color:var(--navy);line-height:1.45;margin:10px 0 0;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:10px;}
 .aidechat-thread{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 2px 8px;}
@@ -372,14 +377,15 @@ body.aidechat-kb #bottomNav{display:none !important;}
 a.aidechat-phone{display:inline-block;min-height:44px;line-height:44px;padding:0 4px;color:var(--teal-dark);font-weight:800;text-decoration:underline;text-transform:none;}
 .aidechat-earlier{display:block;width:100%;min-height:44px;margin:0 0 12px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:700;}
 .aidechat-time{font-size:0.75rem;color:var(--muted);margin-top:4px;}
-.aidechat-compose{flex:0 0 auto;background:var(--off);border-top:1px solid var(--border);padding:8px 0 10px;}
+.aidechat-compose{flex:0 0 auto;margin-top:auto;background:var(--off);border-top:1px solid var(--border);padding:8px 0 0;}
 .aidechat-prompts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
 .aidechat-prompt{min-height:44px;padding:8px 12px;border-radius:999px;border:1.5px solid var(--navy);background:#fff;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.92rem;font-weight:700;cursor:pointer;touch-action:manipulation;}
 .aidechat-sendrow{display:flex;gap:8px;align-items:flex-end;}
 #aideChatInput{min-height:52px;max-height:120px;font-size:1rem;flex:1;margin:0;}
 #aideChatSend{min-height:52px;min-width:88px;padding:12px 16px;flex:0 0 auto;}
 #aideChatSend:disabled{background:#8aa4a4;color:#fff;cursor:not-allowed;}
-.aidechat-note{font-size:0.85rem;color:var(--muted);line-height:1.4;margin-top:8px;min-height:1.2em;}
+.aidechat-note{font-size:0.85rem;color:var(--muted);line-height:1.4;margin:0 0 8px;min-height:0;}
+.aidechat-note:empty{display:none;margin:0;}
 /* Offscreen paper overlay for the soft-flag Storage PDF. Not a print screen. */
 .ts-pdf-sheet{position:relative;width:8.5in;height:11in;background:#fff;overflow:hidden;color:#111;font-family:Times,'Times New Roman',serif;box-sizing:border-box;}
 .ts-pdf-sheet .ts-blank{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:0;border:0;}
@@ -1047,7 +1053,7 @@ else setupEverCarePWA();
   </div>
 </div>
 <!-- MESSAGES v=aidechat1 -->
-<div class="screen" id="messagesScreen" data-aidechat="v=aidechat1" data-clienthrs="v=clienthrs1d">
+<div class="screen" id="messagesScreen" data-aidechat="v=aidechat1" data-clienthrs="v=clienthrs1d" data-msg-safe="v=care-msg-safe1">
   <div class="hdr">
     <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
     <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
@@ -1058,6 +1064,7 @@ else setupEverCarePWA();
     <p class="aidechat-rule" id="aideChatRule">A call-off question in this thread does not decide the call-off. The office decides.</p>
     <div id="aideChatThread" class="aidechat-thread" role="log" aria-live="polite" aria-relevant="additions"></div>
     <form class="aidechat-compose" id="aideChatCompose" onsubmit="submitAideMessage(event);return false;">
+      <p id="aideChatNote" class="aidechat-note" role="status"></p>
       <div class="aidechat-prompts" role="group" aria-label="Common questions">
         <button class="aidechat-prompt" type="button" data-aidechat-prompt="status" onclick="aideChatUsePrompt('status')">Shift status</button>
         <button class="aidechat-prompt" type="button" data-aidechat-prompt="calloff" onclick="aideChatUsePrompt('calloff')">Call-off question</button>
@@ -1068,7 +1075,6 @@ else setupEverCarePWA();
         <textarea id="aideChatInput" rows="2" maxlength="1000" placeholder="Message the office" enterkeyhint="send"></textarea>
         <button class="btn btn-teal" type="submit" id="aideChatSend">Send</button>
       </div>
-      <p id="aideChatNote" class="aidechat-note" role="status"></p>
     </form>
   </div>
 </div>
@@ -8436,14 +8442,34 @@ async function aideChatDeliver(text, kind){
     throw err;
   }
 }
-async function aideChatRefresh(){
-  if(!aideChatCanCallAce()){
-    aideChatMode='stub';
-    aideChatHasEarlier=false;
-    aideChatPaint(aideChatReadLocal(), aideChatStubNote());
-    return;
-  }
+function aideChatHasThreadRows(){
+  if(aideChatRows&&aideChatRows.length)return true;
+  const thread=document.getElementById('aideChatThread');
+  if(!thread||typeof thread.querySelector!=='function')return false;
+  return !!thread.querySelector('.aidechat-row');
+}
+function aideChatLogRefreshErr(err){
   try{
+    const pack=err&&err.pack;
+    if(typeof console!=='undefined'&&console&&typeof console.error==='function'){
+      console.error('aideChatRefresh', err&&err.message, pack&&pack.status, pack&&pack.data);
+    }
+  }catch(e){}
+}
+function aideChatNoteLoadFail(text){
+  if(aideChatHasThreadRows())return;
+  aideChatSetNote(text||'The office thread did not load.');
+}
+async function aideChatRefresh(){
+  if(aideChatBusy)return;
+  aideChatBusy=true;
+  try{
+    if(!aideChatCanCallAce()){
+      aideChatMode='stub';
+      aideChatHasEarlier=false;
+      aideChatPaint(aideChatReadLocal(), aideChatStubNote());
+      return;
+    }
     const created=await sbRest('rpc/aide_get_or_create_office_thread',{method:'POST',body:{}});
     const got=await sbRest('rpc/aide_list_office_messages',{method:'POST',body:aideChatListBody()});
     let parsed=aideChatRowsFromRpc(got);
@@ -8452,7 +8478,7 @@ async function aideChatRefresh(){
       if(fromCreate.ok&&fromCreate.rows.length)parsed=fromCreate;
     }
     if(!parsed.ok){
-      aideChatSetNote(parsed.error||'The office thread did not load.');
+      aideChatNoteLoadFail(parsed.error||'The office thread did not load.');
       return;
     }
     aideChatMode='ace';
@@ -8466,7 +8492,10 @@ async function aideChatRefresh(){
       aideChatPaint(aideChatReadLocal(), aideChatStubNote());
       return;
     }
-    aideChatSetNote('The office thread did not load. Try Refresh.');
+    aideChatLogRefreshErr(err);
+    aideChatNoteLoadFail('The office thread did not load. Try Refresh.');
+  }finally{
+    aideChatBusy=false;
   }
 }
 async function aideChatLoadEarlier(){
@@ -8624,9 +8653,11 @@ function aideChatReleaseChrome(){
   if(!screen)return;
   screen.style.top='';
   screen.style.height='';
+  screen.style.maxHeight='';
   screen.style.bottom='';
 }
 // v=punch-leftovers1. Steady state uses CSS (screen ends at --eca-dock-h). While the phone keyboard is open, or the visual viewport has slid, pin the thread to the visible area and keep the dock on that bottom edge.
+// v=care-msg-safe1. Keyboard mode sizes the screen to the visual viewport so the composer stays on that bottom edge. Focus retries follow the keyboard animation.
 function aideChatKbApply(){
   if(aideChatPinLock)return;
   aideChatPinLock=true;
@@ -8659,10 +8690,12 @@ function aideChatKbApply(){
     screen.style.bottom='auto';
     if(kb){
       screen.style.height=Math.max(0, vh)+'px';
+      screen.style.maxHeight=Math.max(0, vh)+'px';
       if(nav)nav.style.transform='';
       return;
     }
     screen.style.height=Math.max(0, vh-aideChatDockPx())+'px';
+    screen.style.maxHeight='';
     if(nav)nav.style.transform=lift?('translateY(-'+lift+'px)'):'';
   }finally{
     aideChatPinLock=false;
@@ -8672,6 +8705,15 @@ function aideChatOnFocus(){
   if(typeof loginKbIsPhone==='function'&&!loginKbIsPhone())return;
   document.body.classList.add('aidechat-kb');
   aideChatKbApply();
+  aideChatScrollThread();
+  [60,320,680].forEach(function(ms){
+    setTimeout(function(){
+      const input=document.getElementById('aideChatInput');
+      if(!input||document.activeElement!==input)return;
+      if(!document.body.classList.contains('aidechat-kb'))return;
+      aideChatKbApply();
+    }, ms);
+  });
 }
 function aideChatOnBlur(){
   setTimeout(function(){
