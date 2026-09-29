@@ -5,6 +5,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="caregiver-shell" content="2026-09-29-pages-cache-fresh1">
+<meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">
 <meta name="caregiver-build" content="2026-09-29-pwa-install-copy1">
 <meta name="caregiver-build" content="2026-09-29-care-msg-send1">
 <meta name="caregiver-build" content="2026-09-29-aide-notif-done-hide1">
@@ -158,6 +159,7 @@ function cgShellBoot(){
 // end v=pages-cache-fresh1
 cgShellBoot();
 </script>
+<!-- caregiver-build: 2026-09-29-msg-composer-rect1 v=msg-composer-rect1 ?v=msg-composer-rect1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Pure UI. Ace NO CALLABLE. No new Ace patch. No new SQL. No Auth. No Quo. No SMS. Caregiver Office Messages (#messagesScreen) Type (#aideChatInput) is rectangular: border-radius 11px (10–12px max), min-height 44px, DM Sans, teal #2a7f7f, never a stadium or oval, never border-radius 999px. Send (#aideChatSend) is a rectangular button of matching height, never a circle. The aidechat-kb / visualViewport pin stays. While the phone keyboard is open, the pin measures the composer against the visual viewport and corrects the screen height until the composer bottom meets that edge within 1px, so the white gap above Safari Done is zero. .aidechat-sendrow flex is not the fix. pages-cache-fresh1, caregiver-push-sw.js, and care-msg-send1 stay. v=pwa-install-copy1 iOS install steps stay: Share, View More, Add to Home Screen, Add. Probe soft FAIL-only on the Caregiver Office thread. -->
 <!-- caregiver-build: 2026-09-29-pwa-install-copy1 v=pwa-install-copy1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. #iosInstallModal iPhone steps are exactly these, in order, with the action names in bold: 1 Share — the square with an arrow pointing up (usually at the bottom of Safari). 2 View More — if you don’t see Add to Home Screen yet, tap View More / the row that opens more actions. 3 Add to Home Screen. 4 Add — top right. Done. The second step names View More. Android Chrome footnote stays. Got it stays. Banner and CTA labels stay Add to Home Screen and Install. Ace unchanged. No new Ace patch. No new SQL. caregiver-push-sw.js stays the only worker at scope ./. The shell id stays pages-cache-fresh1. v=care-msg-send1, aide-notif-done-hide1, pages-cache-fresh1, aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, and aidechat1 unchanged. -->
 <!-- caregiver-build: 2026-09-29-care-msg-send1 v=care-msg-send1 ?v=care-msg-send1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Messages (#messagesScreen) send no longer paints “The message did not send. Try again.” after Ace already stored the message. After aide_send_office_message parses ok, the follow-up aide_list_office_messages is soft: auth, network, parse, or a missing list RPC keeps the send-parsed rows via aideChatEnsureSent and stays on the success path. Never throw after a successful send parse. Before deliver and refresh, sbEnsureCaregiverJwt runs when it is present. A 401/403 or cgIsAuthErr on get_or_create or send calls sbRefreshCaregiverJwt once and retries that deliver once. A second auth failure keeps “The message did not send. Try again.” A send while aideChatBusy shows “Still loading messages…” and does not clear the composer. The send catch logs console.error aideChatSend with err.message and err.pack status and data. aideChatSendBody stays {p_body} plus optional p_escalate_kind. Stub path, phone lock, and Admin stay. Ace unchanged. No new Ace patch. No new SQL. Cache bust ?v=care-msg-send1. v=aide-notif-done-hide1, pages-cache-fresh1, aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, and aidechat1 unchanged. -->
 <!-- caregiver-build: 2026-09-29-aide-notif-done-hide1 v=aide-notif-done-hide1 ?v=aide-notif-done-hide1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Settings Notifications (#moreScreen #clienthrsPushCard) is Remi reminders and Office chat only. The Turn on Remi reminders card, Allow notifications button, Not now, and What you’ll get gate are gone. Flipping either toggle ON saves that choice and asks the phone for notification permission, then subscribes with the existing public key under the hood. Aide-facing copy stays plain English. If permission is not granted after ON, the only extra line is “Open the app from your Home Screen, then tap Allow.” When phone pings are on, the line is “Phone pings on.” Both choices ON does not show a nag card. Both OFF still POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {}. POST /rest/v1/rpc/aide_get_notification_prefs {}, POST /rest/v1/rpc/aide_save_notification_prefs, POST /rest/v1/rpc/get_vapid_public_key {}, and POST /rest/v1/rpc/aide_upsert_web_push_subscription stay. The public key never appears on screen. caregiver-push-sw.js stays the only worker at scope ./. v=pages-cache-fresh1 clean-URL shell behavior stays. No new Ace patch. No new SQL. No Admin. No Auth. Cache bust ?v=aide-notif-done-hide1. -->
@@ -489,6 +491,9 @@ body.aidechat-kb{overflow:hidden;}
 body.aidechat-kb #messagesScreen.active{bottom:0;}
 body.aidechat-kb #messagesScreen .aidechat-body{padding-bottom:0;}
 body.aidechat-kb #bottomNav{display:none !important;}
+/* v=msg-composer-rect1. Keyboard dock has no padding under the composer. The pin flushes that edge to the visual viewport. */
+body.aidechat-kb #messagesScreen.active{padding-bottom:0;margin-bottom:0;}
+body.aidechat-kb #messagesScreen .aidechat-compose{margin-bottom:0;padding-bottom:0;}
 .aidechat-rule{font-size:0.92rem;color:var(--navy);line-height:1.45;margin:10px 0 0;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:10px;}
 .aidechat-thread{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 2px 8px;}
 .aidechat-empty{font-size:1rem;color:var(--muted);line-height:1.5;margin:12px 4px;}
@@ -540,11 +545,15 @@ a.aidechat-phone{display:inline-block;min-height:44px;line-height:44px;padding:0
 .aidechat-earlier{display:block;width:100%;min-height:44px;margin:0 0 12px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:700;}
 .aidechat-time{font-size:0.75rem;color:var(--muted);margin-top:4px;}
 .aidechat-compose{flex:0 0 auto;margin-top:auto;background:var(--off);border-top:1px solid var(--border);padding:8px 0 0;}
+#aideChatCompose.aidechat-compose{background:#fff;}
 .aidechat-prompts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
 .aidechat-prompt{min-height:44px;padding:8px 12px;border-radius:999px;border:1.5px solid var(--navy);background:#fff;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.92rem;font-weight:700;cursor:pointer;touch-action:manipulation;}
 .aidechat-sendrow{display:flex;gap:8px;align-items:flex-end;}
-#aideChatInput{min-height:52px;max-height:120px;font-size:1rem;flex:1;margin:0;}
-#aideChatSend{min-height:52px;min-width:88px;padding:12px 16px;flex:0 0 auto;}
+/* v=msg-composer-rect1. Rectangular Type. Radius 11px (10–12 max). Never 999px. Never a stadium. */
+#aideChatInput{min-height:44px;max-height:120px;font-size:1rem;flex:1;margin:0;border-radius:11px;border:1.5px solid var(--border);padding:10px 12px;box-sizing:border-box;resize:none;background:#fff;color:var(--text);font-family:'DM Sans',sans-serif;line-height:1.3;-webkit-appearance:none;appearance:none;}
+#aideChatInput:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);outline:none;}
+/* v=msg-composer-rect1. Rectangular Send matching Type height. Never a circle. */
+#aideChatSend{min-height:44px;min-width:72px;width:auto;height:auto;padding:0 16px;flex:0 0 auto;align-self:stretch;border-radius:11px;box-sizing:border-box;font-family:'DM Sans',sans-serif;font-weight:700;font-size:1rem;-webkit-appearance:none;appearance:none;}
 #aideChatSend:disabled{background:#8aa4a4;color:#fff;cursor:not-allowed;}
 .aidechat-note{font-size:0.85rem;color:var(--muted);line-height:1.4;margin:0 0 8px;min-height:0;}
 .aidechat-note:empty{display:none;margin:0;}
@@ -1244,7 +1253,7 @@ else setupEverCarePWA();
   </div>
 </div>
 <!-- MESSAGES v=aidechat1 -->
-<div class="screen" id="messagesScreen" data-aidechat="v=aidechat1" data-clienthrs="v=clienthrs1d" data-msg-safe="v=care-msg-safe1" data-msg-send="v=care-msg-send1" data-cache="?v=care-msg-send1">
+<div class="screen" id="messagesScreen" data-aidechat="v=aidechat1" data-clienthrs="v=clienthrs1d" data-msg-safe="v=care-msg-safe1" data-msg-send="v=care-msg-send1" data-cache="?v=care-msg-send1" data-msg-composer-rect1="v=msg-composer-rect1">
   <div class="hdr">
     <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
     <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
@@ -1254,7 +1263,7 @@ else setupEverCarePWA();
   <div class="aidechat-body">
     <p class="aidechat-rule" id="aideChatRule">A call-off question in this thread does not decide the call-off. The office decides.</p>
     <div id="aideChatThread" class="aidechat-thread" role="log" aria-live="polite" aria-relevant="additions"></div>
-    <form class="aidechat-compose" id="aideChatCompose" onsubmit="submitAideMessage(event);return false;">
+    <form class="aidechat-compose" id="aideChatCompose" data-msg-composer-rect1="v=msg-composer-rect1" onsubmit="submitAideMessage(event);return false;">
       <p id="aideChatNote" class="aidechat-note" role="status"></p>
       <div class="aidechat-prompts" role="group" aria-label="Common questions">
         <button class="aidechat-prompt" type="button" data-aidechat-prompt="status" onclick="aideChatUsePrompt('status')">Shift status</button>
@@ -1263,7 +1272,7 @@ else setupEverCarePWA();
       </div>
       <div class="aidechat-sendrow">
         <label class="sr-only" for="aideChatInput" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Message the office</label>
-        <textarea id="aideChatInput" rows="2" maxlength="1000" placeholder="Message the office" enterkeyhint="send"></textarea>
+        <textarea id="aideChatInput" rows="1" maxlength="1000" placeholder="Message the office" enterkeyhint="send"></textarea>
         <button class="btn btn-teal" type="submit" id="aideChatSend">Send</button>
       </div>
     </form>
@@ -9276,15 +9285,71 @@ function aideChatDockPx(){
 function aideChatReleaseChrome(){
   const nav=document.getElementById('bottomNav');
   const screen=document.getElementById('messagesScreen');
+  const compose=document.getElementById('aideChatCompose');
   if(nav)nav.style.transform='';
+  if(compose&&compose.style){
+    compose.style.marginBottom='';
+    compose.style.paddingBottom='';
+  }
   if(!screen)return;
   screen.style.top='';
   screen.style.height='';
   screen.style.maxHeight='';
   screen.style.bottom='';
+  screen.style.paddingBottom='';
+  screen.style.marginBottom='';
+}
+// v=msg-composer-rect1. Fixed probe tells whether getBoundingClientRect shares the visual viewport. The composer is flushed to that bottom. Radius stays in CSS (11px). This does not change send-row flex.
+function aideChatProbeTop(){
+  var probe=null;
+  try{probe=document.getElementById('aideChatVvProbe');}catch(e){probe=null;}
+  if(!probe&&document.body&&document.createElement){
+    probe=document.createElement('div');
+    probe.id='aideChatVvProbe';
+    probe.setAttribute('aria-hidden','true');
+    probe.style.cssText='position:fixed;top:0;left:0;width:0;height:0;margin:0;padding:0;border:0;pointer-events:none;visibility:hidden;';
+    document.body.appendChild(probe);
+  }
+  if(!probe||!probe.getBoundingClientRect)return 0;
+  var top=0;
+  try{top=probe.getBoundingClientRect().top;}catch(e2){top=0;}
+  return isFinite(top)?top:0;
+}
+function aideChatVisualBottom(vv){
+  var h=vv&&isFinite(vv.height)?Number(vv.height):(window.innerHeight||0);
+  var off=vv&&isFinite(vv.offsetTop)?Number(vv.offsetTop):0;
+  if(!isFinite(h))h=0;
+  if(!isFinite(off)||off<0)off=0;
+  var probeTop=0;
+  try{probeTop=aideChatProbeTop();}catch(e){probeTop=0;}
+  if(Math.abs(probeTop)<2)return Math.round(h);
+  return Math.round(probeTop+off+h);
+}
+function aideChatFlushEdge(screen, edgeEl, targetBottom){
+  if(!screen||!edgeEl||!edgeEl.getBoundingClientRect||!screen.style)return 0;
+  var guard=0;
+  var delta=0;
+  while(guard<4){
+    guard+=1;
+    var rect=null;
+    try{rect=edgeEl.getBoundingClientRect();}catch(e){rect=null;}
+    if(!rect||!(rect.height>0)||!isFinite(rect.bottom))return delta;
+    delta=Math.round(rect.bottom-targetBottom);
+    if(Math.abs(delta)<=1)return delta;
+    var srect=null;
+    try{srect=screen.getBoundingClientRect();}catch(e2){srect=null;}
+    var base=srect&&isFinite(srect.height)?srect.height:0;
+    var next=Math.round(base-delta);
+    if(next<160)next=160;
+    screen.style.height=next+'px';
+    screen.style.maxHeight=next+'px';
+    screen.style.bottom='auto';
+  }
+  return delta;
 }
 // v=punch-leftovers1. Steady state uses CSS (screen ends at --eca-dock-h). While the phone keyboard is open, or the visual viewport has slid, pin the thread to the visible area and keep the dock on that bottom edge.
 // v=care-msg-safe1. Keyboard mode sizes the screen to the visual viewport so the composer stays on that bottom edge. Focus retries follow the keyboard animation.
+// v=msg-composer-rect1. After that pin, correct until the composer bottom meets the visual viewport bottom. Zero white gap above Safari Done.
 function aideChatKbApply(){
   if(aideChatPinLock)return;
   aideChatPinLock=true;
@@ -9318,7 +9383,14 @@ function aideChatKbApply(){
     if(kb){
       screen.style.height=Math.max(0, vh)+'px';
       screen.style.maxHeight=Math.max(0, vh)+'px';
+      screen.style.paddingBottom='0px';
+      screen.style.marginBottom='0px';
       if(nav)nav.style.transform='';
+      if(compose&&compose.style){
+        compose.style.marginBottom='0px';
+        compose.style.paddingBottom='0px';
+      }
+      aideChatFlushEdge(screen, compose||screen, aideChatVisualBottom(vv));
       return;
     }
     screen.style.height=Math.max(0, vh-aideChatDockPx())+'px';
