@@ -14,7 +14,8 @@ const sw = fs.readFileSync(path.join(__dirname, 'caregiver-push-sw.js'), 'utf8')
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">', 'newer tip meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-29-aide-notif-done-hide1">', 'newer tip meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">') > 0, 'pages-cache-fresh1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-aide-home-addr1-autofill1">') > 0, 'aide-home-addr1-autofill1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-28-aide-home-addr1">') > 0, 'aide-home-addr1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-28-care-msg-safe1">') > 0, 'care-msg-safe1 meta stays');
@@ -45,11 +46,16 @@ const account = html.slice(html.indexOf('id="moreScreen"'), html.indexOf('id="bo
 assert.ok(account.includes('id="clienthrsPushCard"'), 'account opt-in card');
 assert.ok(account.includes('id="clienthrsRemi"'), 'remi reminders switch');
 assert.ok(account.includes('id="clienthrsOffice"'), 'office chat push switch');
-assert.ok(account.includes('Turn on Remi reminders'), 'opt-in title');
-assert.ok(account.includes('No SMS needed'), 'no sms copy');
-assert.ok(account.includes('Allow notifications'), 'allow button');
-assert.ok(account.includes('>Not now<'), 'not now');
-assert.ok(account.includes('What you’ll get'), 'what you get');
+assert.ok(account.includes('>Notifications</h3>'), 'settings title');
+assert.ok(account.includes('Remi reminders'), 'remi label');
+assert.ok(account.includes('>Office chat</span>'), 'office chat label');
+assert.ok(account.includes('Phone pings on'), 'plain pings status');
+assert.ok(!account.includes('Turn on Remi reminders'), 'gate title is gone');
+assert.ok(!account.includes('Allow notifications'), 'allow button is gone');
+assert.ok(!account.includes('>Not now<'), 'not now is gone');
+assert.ok(!account.includes('What you’ll get'), 'what you get gate is gone');
+assert.ok(!account.includes('id="clienthrsAllow"'), 'no allow control');
+assert.ok(!account.includes('id="clienthrsNotNow"'), 'no not now control');
 assert.ok(account.includes('> Account</div>'), 'account card stays');
 assert.ok(account.includes('>Log out</button>'), 'log out stays');
 assert.ok(!account.includes('>Call off</button>'), 'account still has no call off');
@@ -230,7 +236,7 @@ function bootHrs(opts){
   assert.strictEqual(soft.pushes.register, 0, 'unconfigured vapid does not register push');
   assert.strictEqual(soft.pushes.subscribe, 0, 'unconfigured vapid does not call PushManager.subscribe');
   assert.ok(!soft.calls.some(function(c){return c.q==='rpc/aide_upsert_web_push_subscription';}), 'no subscription upsert when vapid is off');
-  assert.strictEqual(soft.note.textContent, 'Push alerts turn on later. Your reminder choices are saved.');
+  assert.strictEqual(soft.note.textContent, 'Phone pings turn on later. Your choices are saved.');
   assert.strictEqual(soft.remi.checked, true);
   assert.strictEqual(soft.office.checked, true);
 
@@ -250,7 +256,7 @@ function bootHrs(opts){
   assert.strictEqual(up[0].body.p_p256dh, 'cDEy');
   assert.strictEqual(up[0].body.p_auth, 'YXV0aA');
   assert.strictEqual(up[0].body.p_user_agent, 'test-agent');
-  assert.strictEqual(live.note.textContent, 'Lock-screen alerts are on. A tap opens Messages.');
+  assert.strictEqual(live.note.textContent, 'Phone pings on');
 
   const off = bootHrs();
   await vm.runInContext('clienthrsNotNow()', off);
@@ -370,23 +376,25 @@ async function runBrowser(){
     await page.evaluate(function(){
       document.querySelector('#bottomNav button[data-nav="more"]').click();
     });
-    await page.waitForSelector('#clienthrsAllow', {timeout:4000});
+    await page.waitForSelector('#clienthrsRemi', {timeout:4000});
     const optinPhone = await page.evaluate(function(){
       const card = document.getElementById('clienthrsPushCard');
       return {
         title: card.querySelector('.clienthrs-title').textContent,
-        allow: document.getElementById('clienthrsAllow').textContent,
-        skip: document.getElementById('clienthrsNotNow').textContent,
+        allow: !!document.getElementById('clienthrsAllow'),
+        skip: !!document.getElementById('clienthrsNotNow'),
         remi: document.getElementById('clienthrsRemi').checked,
         office: document.getElementById('clienthrsOffice').checked,
         screen: document.getElementById('moreScreen').classList.contains('active'),
-        name: document.getElementById('more_aide_line').textContent
+        name: document.getElementById('more_aide_line').textContent,
+        text: card.innerText
       };
     });
     assert.strictEqual(optinPhone.name, 'Sara');
-    assert.strictEqual(optinPhone.title, 'Turn on Remi reminders');
-    assert.strictEqual(optinPhone.allow, 'Allow notifications');
-    assert.strictEqual(optinPhone.skip, 'Not now');
+    assert.strictEqual(optinPhone.title, 'Notifications');
+    assert.strictEqual(optinPhone.allow, false);
+    assert.strictEqual(optinPhone.skip, false);
+    assert.ok(!/Turn on Remi reminders/i.test(optinPhone.text));
     assert.strictEqual(optinPhone.remi, false);
     assert.strictEqual(optinPhone.office, false);
     assert.strictEqual(optinPhone.screen, true);
@@ -395,9 +403,9 @@ async function runBrowser(){
     await page.screenshot({path:path.join(shotDir, 'clienthrs1d-optin-desktop.png')});
     await page.setViewport({width:390, height:844, isMobile:true, hasTouch:true, deviceScaleFactor:2});
     await page.evaluate(function(){
-      const btn=document.getElementById('clienthrsAllow');
-      if(btn&&btn.scrollIntoView)btn.scrollIntoView({block:'center'});
-      btn.click();
+      const remi=document.getElementById('clienthrsRemi');
+      if(remi&&remi.scrollIntoView)remi.scrollIntoView({block:'center'});
+      remi.click();
     });
     await page.waitForFunction(function(){
       return /turn on later/.test(document.getElementById('clienthrsPushNote').textContent);
@@ -413,7 +421,7 @@ async function runBrowser(){
     assert.ok(/turn on later/.test(softPush.note), 'soft note when push is not configured');
     assert.strictEqual(softPush.subs, 0, 'browser PushManager.subscribe stays off');
     assert.strictEqual(softPush.remi, true);
-    assert.strictEqual(softPush.office, true);
+    assert.strictEqual(softPush.office, false);
 
     await page.setRequestInterception(true);
     const cors = {

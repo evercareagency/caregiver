@@ -11,7 +11,8 @@ const sw = fs.readFileSync(path.join(__dirname, 'caregiver-push-sw.js'), 'utf8')
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">', 'pages-cache-fresh1 meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-29-aide-notif-done-hide1">', 'newer tip meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">') > 0, 'pages-cache-fresh1 meta stays');
 assert.ok(html.includes('<meta name="caregiver-shell" content="2026-09-29-pages-cache-fresh1">'), 'tiny shell build id');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-aide-home-addr1-autofill1">') > 0, 'autofill meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-28-aide-home-addr1">') > 0, 'aide-home-addr1 meta stays');
