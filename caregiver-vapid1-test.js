@@ -19,7 +19,8 @@ const sw = fs.readFileSync(path.join(__dirname, 'caregiver-push-sw.js'), 'utf8')
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">', 'newer tip meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-29-aide-notif-done-hide1">', 'newer tip meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">') > 0, 'pages-cache-fresh1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-aide-home-addr1-autofill1">') > 0, 'aide-home-addr1-autofill1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-28-aide-home-addr1">') > 0, 'aide-home-addr1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-28-care-msg-safe1">') > 0, 'care-msg-safe1 meta stays');
@@ -160,7 +161,7 @@ function liveVapid(extra){
   assert.strictEqual(off.pushes.subscribe, 0, 'configured false does not subscribe');
   assert.strictEqual(off.pushes.register, 0, 'configured false does not register');
   assert.ok(!off.calls.some(function(c){return c.q==='rpc/aide_upsert_web_push_subscription';}), 'configured false does not upsert');
-  assert.strictEqual(off.note.textContent, 'Push alerts turn on later. Your reminder choices are saved.');
+  assert.strictEqual(off.note.textContent, 'Phone pings turn on later. Your choices are saved.');
   assert.strictEqual(off.remi.checked, true, 'prefs still save when push is off');
   assert.strictEqual(off.office.checked, true);
 
@@ -179,7 +180,7 @@ function liveVapid(extra){
     try{await vm.runInContext('clienthrsAllowNotifications()', soft);}catch(err){threw = true;}
     assert.strictEqual(threw, false, 'soft-disable does not throw '+JSON.stringify(absent[i]));
     assert.strictEqual(soft.pushes.subscribe, 0, 'no subscribe for '+JSON.stringify(absent[i]));
-    assert.strictEqual(soft.note.textContent, 'Push alerts turn on later. Your reminder choices are saved.');
+    assert.strictEqual(soft.note.textContent, 'Phone pings turn on later. Your choices are saved.');
     assert.strictEqual(soft.calls.filter(function(c){return c.q==='rpc/aide_save_notification_prefs';}).length, 1, 'prefs still save');
   }
 
@@ -188,7 +189,7 @@ function liveVapid(extra){
   try{await vm.runInContext('clienthrsAllowNotifications()', broken);}catch(err){brokenThrew = true;}
   assert.strictEqual(brokenThrew, false, 'a vapid read error does not throw');
   assert.strictEqual(broken.pushes.subscribe, 0, 'a vapid read error does not subscribe');
-  assert.strictEqual(broken.note.textContent, 'Push alerts turn on later. Your reminder choices are saved.');
+  assert.strictEqual(broken.note.textContent, 'Phone pings turn on later. Your choices are saved.');
 
   const live = boot({vapid:liveVapid()});
   await vm.runInContext('clienthrsAllowNotifications()', live);
@@ -209,7 +210,7 @@ function liveVapid(extra){
   assert.strictEqual(up[0].body.p_p256dh, 'cDEy');
   assert.strictEqual(up[0].body.p_auth, 'YXV0aA');
   assert.strictEqual(up[0].body.p_user_agent, 'test-agent');
-  assert.strictEqual(live.note.textContent, 'Lock-screen alerts are on. A tap opens Messages.');
+  assert.strictEqual(live.note.textContent, 'Phone pings on');
 
   const snake = boot({vapid:{success:true, configured:'true', vapid_public_key:PUB}});
   await vm.runInContext('clienthrsAllowNotifications()', snake);
@@ -235,7 +236,7 @@ function liveVapid(extra){
   try{await vm.runInContext('clienthrsAllowNotifications()', flip);}catch(err){flipThrew = true;}
   assert.strictEqual(flipThrew, false, 'configured flipping false does not throw');
   assert.strictEqual(flip.pushes.subscribe, 1, 'a later false configured does not subscribe again');
-  assert.strictEqual(flip.note.textContent, 'Push alerts turn on later. Your reminder choices are saved.');
+  assert.strictEqual(flip.note.textContent, 'Phone pings turn on later. Your choices are saved.');
 
   const skip = boot({vapid:liveVapid()});
   await vm.runInContext('clienthrsNotNow()', skip);
@@ -380,20 +381,41 @@ async function runBrowser(){
     await page.evaluate(function(){
       document.querySelector('#bottomNav button[data-nav="more"]').click();
     });
-    await page.waitForSelector('#clienthrsAllow', {timeout:4000});
+    await page.waitForSelector('#clienthrsRemi', {timeout:4000});
+    const gate = await page.evaluate(function(){
+      const card = document.getElementById('clienthrsPushCard');
+      return {
+        allow: !!document.getElementById('clienthrsAllow'),
+        notNow: !!document.getElementById('clienthrsNotNow'),
+        text: card ? card.innerText : ''
+      };
+    });
+    assert.strictEqual(gate.allow, false, 'allow button stays off the page');
+    assert.strictEqual(gate.notNow, false, 'not now stays off the page');
+    assert.ok(!/Turn on Remi reminders/i.test(gate.text), 'gate title stays off the card');
+    assert.ok(!/\bVAPID\b/i.test(gate.text), 'aides do not see VAPID');
     await page.evaluate(function(){
-      const btn=document.getElementById('clienthrsAllow');
-      if(btn&&btn.scrollIntoView)btn.scrollIntoView({block:'center'});
-      btn.click();
+      const remi=document.getElementById('clienthrsRemi');
+      if(remi&&remi.scrollIntoView)remi.scrollIntoView({block:'center'});
+      remi.click();
     });
     await page.waitForFunction(function(){
-      return /Lock-screen alerts are on/.test((document.getElementById('clienthrsPushNote')||{}).textContent||'');
+      return /Phone pings on/.test((document.getElementById('clienthrsPushNote')||{}).textContent||'');
+    }, {timeout:8000});
+    await page.evaluate(function(){
+      document.getElementById('clienthrsOffice').click();
+    });
+    await page.waitForFunction(function(){
+      return document.getElementById('clienthrsOffice').checked && (window.__vapidSubs||[]).length >= 2;
     }, {timeout:8000});
     const on = await page.evaluate(function(){
       const card = document.getElementById('clienthrsPushCard');
       return {
         marker: card ? card.getAttribute('data-vapid') : '',
+        notif: card ? card.getAttribute('data-notif') : '',
         note: document.getElementById('clienthrsPushNote').textContent,
+        pings: (document.getElementById('clienthrsPings')||{}).textContent || '',
+        gate: !!document.getElementById('clienthrsAllow'),
         subs: window.__vapidSubs||[],
         upserts: (window.__vapidState&&window.__vapidState.upserts)||[],
         remi: document.getElementById('clienthrsRemi').checked,
@@ -402,11 +424,14 @@ async function runBrowser(){
       };
     });
     assert.strictEqual(on.marker, 'v=vapid1');
-    assert.strictEqual(on.note, 'Lock-screen alerts are on. A tap opens Messages.');
-    assert.strictEqual(on.subs.length, 1, 'phone Allow subscribes when configured');
+    assert.strictEqual(on.notif, 'v=aide-notif-done-hide1');
+    assert.strictEqual(on.note, 'Phone pings on');
+    assert.ok(/Phone pings on/.test(on.pings), 'visible pings line');
+    assert.strictEqual(on.gate, false, 'both prefs on still has no allow gate');
+    assert.strictEqual(on.subs.length, 2, 'each toggle ON subscribes when configured');
     assert.strictEqual(on.subs[0].userVisibleOnly, true);
     assert.deepStrictEqual(on.subs[0].key, expectedPub, 'phone subscribe applicationServerKey');
-    assert.strictEqual(on.upserts.length, 1, 'phone Allow upserts the subscription');
+    assert.strictEqual(on.upserts.length, 2, 'each toggle ON upserts the subscription');
     assert.strictEqual(on.upserts[0].p_endpoint, 'https://push.example/sara');
     assert.strictEqual(on.remi, true);
     assert.strictEqual(on.office, true);
@@ -429,7 +454,7 @@ async function runBrowser(){
       };
     });
     assert.ok(/turn on later/.test(flipped.note), 'later note when configured flips false');
-    assert.strictEqual(flipped.subs, 1, 'flip to false does not subscribe again');
+    assert.strictEqual(flipped.subs, 2, 'flip to false does not subscribe again');
     assert.strictEqual(flipped.office, true, 'office choice stays saved');
     assert.strictEqual(flipped.remi, false);
     await page.screenshot({path:path.join(shotDir, 'vapid1-soft-disable-phone.png')});

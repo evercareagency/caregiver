@@ -5,6 +5,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="caregiver-shell" content="2026-09-29-pages-cache-fresh1">
+<meta name="caregiver-build" content="2026-09-29-aide-notif-done-hide1">
 <meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">
 <meta name="caregiver-build" content="2026-09-29-aide-home-addr1-autofill1">
 <meta name="caregiver-build" content="2026-09-28-aide-home-addr1">
@@ -155,6 +156,7 @@ function cgShellBoot(){
 // end v=pages-cache-fresh1
 cgShellBoot();
 </script>
+<!-- caregiver-build: 2026-09-29-aide-notif-done-hide1 v=aide-notif-done-hide1 ?v=aide-notif-done-hide1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Settings Notifications (#moreScreen #clienthrsPushCard) is Remi reminders and Office chat only. The Turn on Remi reminders card, Allow notifications button, Not now, and What you’ll get gate are gone. Flipping either toggle ON saves that choice and asks the phone for notification permission, then subscribes with the existing public key under the hood. Aide-facing copy stays plain English. If permission is not granted after ON, the only extra line is “Open the app from your Home Screen, then tap Allow.” When phone pings are on, the line is “Phone pings on.” Both choices ON does not show a nag card. Both OFF still POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {}. POST /rest/v1/rpc/aide_get_notification_prefs {}, POST /rest/v1/rpc/aide_save_notification_prefs, POST /rest/v1/rpc/get_vapid_public_key {}, and POST /rest/v1/rpc/aide_upsert_web_push_subscription stay. The public key never appears on screen. caregiver-push-sw.js stays the only worker at scope ./. v=pages-cache-fresh1 clean-URL shell behavior stays. No new Ace patch. No new SQL. No Admin. No Auth. Cache bust ?v=aide-notif-done-hide1. -->
 <!-- caregiver-build: 2026-09-29-pages-cache-fresh1 v=pages-cache-fresh1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. The clean Home Screen URL https://evercareagency.github.io/caregiver/ gets the latest Pages deploy without a new ?v= link. GitHub Pages still sends index.html with max-age=600, and Safari or Add to Home Screen can keep that shell. caregiver-push-sw.js stays the only worker, registered as ./caregiver-push-sw.js at scope ./ (the same registration push already uses). It keeps the v=clienthrs1d push and notificationclick behavior: a tap still opens #messages. The worker calls skipWaiting and clientsClaim. Document navigations are network-first with cache no-store, and index.html is never written into Cache Storage. The page listens for controllerchange and reloads once. The tiny caregiver-shell build id is revalidated with cache:'no-store' against that clean URL; a mismatch hard-reloads once. Existing ?v= probe markers stay, including ?v=aide-home-addr1-autofill1 and ?v=aide-home-addr1. No new Ace patch. No new SQL. No Auth. v=aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-29-aide-home-addr1-autofill1 v=aide-home-addr1-autofill1 ?v=aide-home-addr1-autofill1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Where do you live? (#homeAddrScreen / #homeAddrForm) Continue re-reads live DOM .value from #homeAddrStreet, #homeAddrCity, #homeAddrState, and #homeAddrZip after requestAnimationFrame and a short settle, so iOS/Safari autofill that has painted is captured. input, change, and blur on those fields acknowledge a value that lands. State accepts a full US state name or a 2-letter code, case-insensitive, and is normalized to the 2-letter code before the address line and the ZIP/state checks. #homeAddrState has no maxlength. ZIP stays 5 or 5+4 digits. Autocomplete stays street-address, address-level2, address-level1, and postal-code. Nominatim and POST /rest/v1/rpc/aide_save_home_address are unchanged. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Punch GPS, Cover call-off, care-msg, the login toast, and the site footer stay. Cache bust ?v=aide-home-addr1-autofill1. v=aide-home-addr1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-aide-home-addr1 v=aide-home-addr1 ?v=aide-home-addr1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Columns home_address, home_lat, and home_lng are already on aides (cover1). Caregiver JWT only, via sbUserHeaders Bearer. Not the anon key. Not admin, scheduler, or nurse. POST /rest/v1/rpc/aide_get_home_address {}. gate_required is !has_address || !has_coords. When gate_required, #homeAddrScreen is full screen and #bottomNav and Home stay hidden. Signup / first login is teal #2a7f7f with the house mark. An existing aide missing an address or coords is navy #1a2744 with the pin mark. Title is Where do you live? Fields are Street, City, State, and ZIP. No why-copy on the gate. Continue builds one address (max 500), geocodes with the Admin geocodeClientAddress Nominatim call https://nominatim.openstreetmap.org/search?format=json&q= (not punch GPS), and requires finite p_lat in [-90,90] and p_lng in [-180,180]. Then POST /rest/v1/rpc/aide_save_home_address {p_home_address, p_lat, p_lng}. The gate clears only when that save returns an address and coords (has_address, has_coords, gate_required false). Punch GPS stays getGpsPosition. Cover call-off, care-msg-safe1, the site footer, and the login toast (showTempMsg) stay. Dates people read stay MM/DD/YYYY. A missing function does not trap Home. Cache bust ?v=aide-home-addr1. v=care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, coveraide2, and offline1 unchanged. -->
@@ -499,20 +501,37 @@ body.aidechat-kb #bottomNav{display:none !important;}
 .aidechat-bubble-aide{background:var(--teal);color:#fff;border-bottom-right-radius:6px;}
 .aidechat-bubble-office{background:#fff;color:var(--navy);border:1.5px solid var(--border);border-bottom-left-radius:6px;}
 .aidechat-bubble-remi{background:var(--teal-light);color:var(--navy);border:none;border-bottom-left-radius:4px;}
-/* Account push opt-in (v=clienthrs1d, v=vapid1). Phone-first card. Remi is not a page. */
-#clienthrsPushCard{background:#f5f8fc;border-radius:14px;padding:20px 18px 12px;}
-.clienthrs-bell{width:48px;height:48px;border-radius:14px;background:#e8f4f4;color:#2a7f7f;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;}
-.clienthrs-title{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#1a2744;margin:0 0 8px;line-height:1.25;}
-.clienthrs-sub{font-size:14px;color:#6b7a90;line-height:1.45;margin:0 0 18px;}
-.clienthrs-get{background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:16px;margin-bottom:14px;}
-.clienthrs-get strong{display:block;font-size:14px;margin-bottom:6px;color:#1a2744;}
-.clienthrs-get p{font-size:13px;color:#6b7a90;line-height:1.4;margin:0;}
-.clienthrs-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:0 0 8px;font-size:14px;font-weight:700;color:#1a2744;}
-.clienthrs-row input{width:22px;height:22px;accent-color:#2a7f7f;flex:0 0 auto;}
-.clienthrs-loc{font-size:13px;color:#6b7a90;line-height:1.4;margin:0 0 8px;}
-#clienthrsAllow{border-radius:12px;padding:14px;font-size:15px;font-weight:700;margin-top:8px;}
-.clienthrs-skip{display:block;width:100%;background:transparent;border:none;color:#6b7a90;font-weight:600;font-size:13px;margin-top:10px;min-height:44px;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.clienthrs-note{font-size:13px;color:#1e6060;line-height:1.4;margin:8px 0 0;min-height:1.2em;}
+/* Settings notifications (v=aide-notif-done-hide1). Two toggles. No Allow gate. Remi is not a page. */
+#clienthrsPushCard.clienthrs-desk{background:transparent;border:none;box-shadow:none;padding:2px 0 8px;margin-bottom:8px;}
+.clienthrs-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.clienthrs-title{font-family:'Playfair Display',serif;font-size:1.65rem;font-weight:700;color:#1a2744;margin:0;line-height:1.2;}
+.clienthrs-pill{background:#e7f6ee;color:#1b7a43;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:0;}
+.clienthrs-pill[hidden]{display:none !important;}
+.clienthrs-sub{font-size:0.92rem;color:#6b7a90;line-height:1.45;margin:6px 0 16px;font-weight:400;text-transform:none;letter-spacing:0;}
+.clienthrs-kicker{font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#8b97a8;margin:0 0 8px;}
+label.clienthrs-toggle{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e3eaf2;border-radius:16px;padding:14px 14px;margin:0 0 10px;min-height:76px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:1rem;font-weight:500;color:#1a2744;box-shadow:0 1px 3px rgba(26,39,68,0.04);}
+.clienthrs-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.clienthrs-ico-remi{background:#fff4e5;}
+.clienthrs-ico-office{background:#f2f4f7;}
+.clienthrs-copy{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.clienthrs-name{font-weight:700;font-size:0.98rem;color:#1a2744;text-transform:none;letter-spacing:0;line-height:1.25;}
+.clienthrs-hint{font-weight:500;font-size:0.8rem;color:#6b7a90;text-transform:none;letter-spacing:0;line-height:1.3;}
+.clienthrs-switch{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto;min-width:52px;}
+.clienthrs-switch input{position:absolute;opacity:0;width:52px;height:32px;margin:0;top:0;left:0;cursor:pointer;}
+.clienthrs-track{width:52px;height:32px;border-radius:999px;background:#d5dbe3;position:relative;display:block;transition:background .15s;}
+.clienthrs-track::after{content:'';position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18);transition:transform .15s;}
+.clienthrs-switch input:checked + .clienthrs-track{background:#2a7f7f;}
+.clienthrs-switch input:checked + .clienthrs-track::after{transform:translateX(20px);}
+.clienthrs-switch input:focus-visible + .clienthrs-track{outline:2px solid #2a7f7f;outline-offset:2px;}
+.clienthrs-state{font-size:11px;font-weight:800;letter-spacing:.4px;color:#8b97a8;text-transform:uppercase;}
+.clienthrs-state::after{content:'OFF';}
+.clienthrs-switch input:checked ~ .clienthrs-state{color:#2a7f7f;}
+.clienthrs-switch input:checked ~ .clienthrs-state::after{content:'ON';}
+.clienthrs-pings{display:flex;align-items:center;gap:8px;background:#e7f6ee;color:#1b7a43;border-radius:12px;padding:12px 14px;font-weight:700;font-size:0.95rem;margin:6px 0 0;}
+.clienthrs-pings[hidden]{display:none !important;}
+.clienthrs-dot{width:8px;height:8px;border-radius:50%;background:#2e9b57;flex:0 0 auto;}
+.clienthrs-note{font-size:0.92rem;color:#6b7a90;line-height:1.45;margin:14px 2px 0;font-weight:500;}
+.clienthrs-note[hidden]{display:none !important;}
 a.aidechat-phone{display:inline-block;min-height:44px;line-height:44px;padding:0 4px;color:var(--teal-dark);font-weight:800;text-decoration:underline;text-transform:none;}
 .aidechat-earlier{display:block;width:100%;min-height:44px;margin:0 0 12px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:700;}
 .aidechat-time{font-size:0.75rem;color:var(--muted);margin-top:4px;}
@@ -1252,24 +1271,39 @@ else setupEverCarePWA();
     <div class="hdr-text"><h2>ECA Aide Portal</h2><p id="more_aide_name">More</p></div>
   </div>
   <div class="wrap">
-    <div class="card" id="clienthrsPushCard" data-clienthrs="v=clienthrs1d" data-vapid="v=vapid1">
-      <div class="clienthrs-bell" aria-hidden="true">&#128276;</div>
-      <h3 class="clienthrs-title">Turn on Remi reminders</h3>
-      <p class="clienthrs-sub">Get a ping on your phone when Remi has a message — timesheet reminders, schedule notes, and office chat. No SMS needed.</p>
-      <div class="clienthrs-get">
-        <strong>What you’ll get</strong>
-        <p>Lock-screen alerts that open caregiver Messages. You can change this anytime in Account.</p>
+    <div class="card clienthrs-desk" id="clienthrsPushCard" data-clienthrs="v=clienthrs1d" data-vapid="v=vapid1" data-notif="v=aide-notif-done-hide1">
+      <div class="clienthrs-head">
+        <h3 class="clienthrs-title">Notifications</h3>
+        <span class="clienthrs-pill" id="clienthrsPingsPill" hidden>Phone pings on</span>
       </div>
-      <label class="clienthrs-row" for="clienthrsRemi">Remi reminders
-        <input type="checkbox" id="clienthrsRemi" onchange="clienthrsOnToggle()">
+      <p class="clienthrs-sub">Change anytime. Remi reminders + office chat.</p>
+      <p class="clienthrs-kicker">Your prefs</p>
+      <label class="clienthrs-toggle" for="clienthrsRemi">
+        <span class="clienthrs-ico clienthrs-ico-remi" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="#e0a23a" d="M12 22a2.2 2.2 0 0 0 2.15-1.6h-4.3A2.2 2.2 0 0 0 12 22zm7-6V11a7 7 0 0 0-5-6.7V3.2a2 2 0 1 0-4 0v1.1A7 7 0 0 0 5 11v5l-1.6 1.6V19h17.2v-1.4L19 16z"/></svg></span>
+        <span class="clienthrs-copy">
+          <span class="clienthrs-name">Remi reminders</span>
+          <span class="clienthrs-hint">Timesheet + schedule pings</span>
+        </span>
+        <span class="clienthrs-switch">
+          <input type="checkbox" id="clienthrsRemi" onchange="clienthrsOnToggle()" aria-label="Remi reminders">
+          <span class="clienthrs-track" aria-hidden="true"></span>
+          <span class="clienthrs-state" aria-hidden="true"></span>
+        </span>
       </label>
-      <label class="clienthrs-row" for="clienthrsOffice">Office chat push
-        <input type="checkbox" id="clienthrsOffice" onchange="clienthrsOnToggle()">
+      <label class="clienthrs-toggle" for="clienthrsOffice">
+        <span class="clienthrs-ico clienthrs-ico-office" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="#8aa0b8" d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/></svg></span>
+        <span class="clienthrs-copy">
+          <span class="clienthrs-name">Office chat</span>
+          <span class="clienthrs-hint">Messages when office / Remi write</span>
+        </span>
+        <span class="clienthrs-switch">
+          <input type="checkbox" id="clienthrsOffice" onchange="clienthrsOnToggle()" aria-label="Office chat">
+          <span class="clienthrs-track" aria-hidden="true"></span>
+          <span class="clienthrs-state" aria-hidden="true"></span>
+        </span>
       </label>
-      <p class="clienthrs-loc" id="clienthrsLoc">Timesheet location: Not asked yet</p>
-      <button class="btn btn-teal btn-full" type="button" id="clienthrsAllow" onclick="clienthrsAllowNotifications()">Allow notifications</button>
-      <button class="clienthrs-skip" type="button" id="clienthrsNotNow" onclick="clienthrsNotNow()">Not now</button>
-      <p class="clienthrs-note" id="clienthrsPushNote" role="status"></p>
+      <p class="clienthrs-pings" id="clienthrsPings" hidden><span class="clienthrs-dot" aria-hidden="true"></span> Phone pings on</p>
+      <p class="clienthrs-note" id="clienthrsPushNote" role="status" hidden></p>
     </div>
     <div class="card">
       <div class="card-title"><img class="portal-mark-hands card-mark" alt="" width="24" height="24"> Account</div>
@@ -9387,12 +9421,15 @@ function showCaregiverHome(){
 // Deep link #messages, #caregiver/messages, or ?open=messages opens #messagesScreen.
 // Remi is a bubble in that thread. There is no Remi page.
 // No Quo. No SMS sender. No Auth.
+// v=aide-notif-done-hide1 Settings Notifications is the two toggles. Flip ON asks the phone, then subscribes. No Allow gate. Aide copy is plain English.
 var clienthrsPrefs={remi_reminders:false,office_chat_push:false,timesheet_location_permission:'never_asked',has_active_subscription:false};
 var clienthrsBusy=false;
 var clienthrsToggleQuiet=false;
 var CLIENTHRS_SW='./caregiver-push-sw.js';
 var CLIENTHRS_OPEN_KEY='clienthrs1d_open_messages';
-var CLIENTHRS_LATER_NOTE='Push alerts turn on later. Your reminder choices are saved.';
+var CLIENTHRS_LATER_NOTE='Phone pings turn on later. Your choices are saved.';
+var CLIENTHRS_HOME_LINE='Open the app from your Home Screen, then tap Allow.';
+var CLIENTHRS_PINGS_ON='Phone pings on';
 function clienthrsStoreKey(){
   const u=currentUser&&currentUser.username?String(currentUser.username):'session';
   return 'evercare_clienthrs1d_'+u;
@@ -9449,7 +9486,34 @@ function clienthrsCanCall(){
 }
 function clienthrsSetNote(text){
   const note=document.getElementById('clienthrsPushNote');
-  if(note)note.textContent=text||'';
+  if(!note)return;
+  note.textContent=text||'';
+  note.hidden=!text;
+}
+function clienthrsShowPings(on){
+  ['clienthrsPingsPill','clienthrsPings'].forEach(function(id){
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.hidden=!on;
+  });
+}
+function clienthrsApplyAideStatus(mode){
+  if(mode==='pings'){
+    clienthrsShowPings(true);
+    const note=document.getElementById('clienthrsPushNote');
+    if(note){note.textContent=CLIENTHRS_PINGS_ON; note.hidden=true;}
+    return;
+  }
+  clienthrsShowPings(false);
+  if(mode==='home'){clienthrsSetNote(CLIENTHRS_HOME_LINE);return;}
+  if(mode==='later'){clienthrsSetNote(CLIENTHRS_LATER_NOTE);return;}
+  clienthrsSetNote('');
+}
+function clienthrsPaintResult(result){
+  if(!result)return;
+  if(result.subscribed){clienthrsApplyAideStatus('pings');return;}
+  if(result.later||result.unsupported){clienthrsApplyAideStatus('later');return;}
+  if(result.blocked||result.quiet){clienthrsApplyAideStatus('home');return;}
 }
 function clienthrsLocWord(loc){
   if(loc==='allowed')return 'Allowed';
@@ -9468,7 +9532,7 @@ function clienthrsPaint(){
 }
 function clienthrsSetBusy(on){
   clienthrsBusy=!!on;
-  ['clienthrsAllow','clienthrsNotNow','clienthrsRemi','clienthrsOffice'].forEach(function(id){
+  ['clienthrsRemi','clienthrsOffice'].forEach(function(id){
     const el=document.getElementById(id);
     if(el)el.disabled=!!on;
   });
@@ -9564,11 +9628,11 @@ async function clienthrsSubscribeIfConfigured(opts){
   const show=!(opts&&opts.quiet);
   const vapid=await clienthrsGetVapid();
   if(!vapid.configured){
-    if(show)clienthrsSetNote(CLIENTHRS_LATER_NOTE);
+    if(show)clienthrsApplyAideStatus('later');
     return {subscribed:false, later:true};
   }
   if(!('serviceWorker' in navigator)||!('PushManager' in window)){
-    if(show)clienthrsSetNote('This phone cannot take lock-screen alerts yet. Your reminder choices are saved.');
+    if(show)clienthrsApplyAideStatus('later');
     return {subscribed:false, unsupported:true};
   }
   let perm='granted';
@@ -9576,13 +9640,13 @@ async function clienthrsSubscribeIfConfigured(opts){
     perm=Notification.permission||'default';
     if(perm!=='granted'){
       if(opts&&opts.quiet)return {subscribed:false, quiet:true};
-      if(perm==='denied'||typeof Notification.requestPermission!=='function'){
-        if(show)clienthrsSetNote('Notifications are blocked in this browser. Your reminder choices are saved.');
+      if(typeof Notification.requestPermission!=='function'){
+        if(show)clienthrsApplyAideStatus('home');
         return {subscribed:false, blocked:true};
       }
       perm=await Notification.requestPermission();
       if(perm!=='granted'){
-        if(show)clienthrsSetNote('Notifications are blocked in this browser. Your reminder choices are saved.');
+        if(show)clienthrsApplyAideStatus('home');
         return {subscribed:false, blocked:true};
       }
     }
@@ -9596,7 +9660,7 @@ async function clienthrsSubscribeIfConfigured(opts){
   const ready=navigator.serviceWorker.ready?await navigator.serviceWorker.ready:reg;
   const manager=(ready&&ready.pushManager)||(reg&&reg.pushManager);
   if(!manager||typeof manager.subscribe!=='function'){
-    if(show)clienthrsSetNote('This phone cannot take lock-screen alerts yet. Your reminder choices are saved.');
+    if(show)clienthrsApplyAideStatus('later');
     return {subscribed:false, unsupported:true};
   }
   const sub=await manager.subscribe({
@@ -9605,8 +9669,8 @@ async function clienthrsSubscribeIfConfigured(opts){
   });
   const rec=clienthrsSubRecord(sub);
   if(!rec.endpoint||!rec.p256dh||!rec.auth){
-    if(show)clienthrsSetNote('The phone did not finish the alert setup. Your reminder choices are saved.');
-    return {subscribed:false};
+    if(show)clienthrsApplyAideStatus('later');
+    return {subscribed:false, later:true};
   }
   const saved=await sbRest('rpc/aide_upsert_web_push_subscription',{method:'POST',body:{
     p_endpoint:rec.endpoint,
@@ -9619,7 +9683,7 @@ async function clienthrsSubscribeIfConfigured(opts){
   if(saved&&typeof saved==='object'&&saved.has_active_subscription===false)clienthrsPrefs.has_active_subscription=false;
   else clienthrsPrefs.has_active_subscription=true;
   clienthrsWriteLocal(clienthrsPrefs);
-  if(show)clienthrsSetNote('Lock-screen alerts are on. A tap opens Messages.');
+  if(show)clienthrsApplyAideStatus('pings');
   return {subscribed:true, endpoint:rec.endpoint};
 }
 async function clienthrsRevoke(endpoint){
@@ -9647,6 +9711,7 @@ function clienthrsReportLocationFromStatus(status){
   clienthrsSavePrefs({location:loc}).catch(function(){});
 }
 async function clienthrsOpenAccount(){
+  let loadNote=false;
   const local=clienthrsReadLocal();
   if(local)clienthrsPrefs=local;
   const loc=await clienthrsReadLocation();
@@ -9663,6 +9728,7 @@ async function clienthrsOpenAccount(){
     }catch(err){
       if(!(typeof aideChatRpcMissing==='function'&&aideChatRpcMissing(err))){
         clienthrsSetNote('Reminder settings did not load. You can still choose here.');
+        loadNote=true;
       }
     }
     try{
@@ -9672,7 +9738,14 @@ async function clienthrsOpenAccount(){
     clienthrsWriteLocal(clienthrsPrefs);
   }
   if(clienthrsPrefs.remi_reminders||clienthrsPrefs.office_chat_push){
-    try{await clienthrsSubscribeIfConfigured({quiet:true});}catch(e){}
+    try{
+      const result=await clienthrsSubscribeIfConfigured({quiet:true});
+      clienthrsPaintResult(result);
+    }catch(e){
+      clienthrsApplyAideStatus('home');
+    }
+  }else if(!loadNote){
+    clienthrsApplyAideStatus('clear');
   }
 }
 async function clienthrsAllowNotifications(){
@@ -9683,7 +9756,7 @@ async function clienthrsAllowNotifications(){
     await clienthrsSavePrefs({remi:true, office:true, location:loc});
     await clienthrsSubscribeIfConfigured();
   }catch(err){
-    clienthrsSetNote('Your reminder choices are saved. Lock-screen alerts did not start.');
+    clienthrsSetNote('Your choices are saved.');
   }finally{
     clienthrsSetBusy(false);
   }
@@ -9695,9 +9768,9 @@ async function clienthrsNotNow(){
     const loc=await clienthrsReadLocation();
     await clienthrsSavePrefs({remi:false, office:false, location:loc, hasActive:false});
     await clienthrsRevoke();
-    clienthrsSetNote('Not now. You can turn this on later in Account.');
+    clienthrsApplyAideStatus('clear');
   }catch(err){
-    clienthrsSetNote('Not now. You can turn this on later in Account.');
+    clienthrsApplyAideStatus('clear');
   }finally{
     clienthrsSetBusy(false);
   }
@@ -9715,10 +9788,10 @@ async function clienthrsOnToggle(){
     if(remi||office)await clienthrsSubscribeIfConfigured();
     else{
       await clienthrsRevoke();
-      clienthrsSetNote('Reminders are off. You can turn them on later in Account.');
+      clienthrsApplyAideStatus('clear');
     }
   }catch(err){
-    clienthrsSetNote('Your reminder choices are saved.');
+    clienthrsSetNote('Your choices are saved.');
   }finally{
     clienthrsSetBusy(false);
   }
