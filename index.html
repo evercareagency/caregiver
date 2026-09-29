@@ -4,6 +4,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="caregiver-shell" content="2026-09-29-pages-cache-fresh1">
+<meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">
 <meta name="caregiver-build" content="2026-09-29-aide-home-addr1-autofill1">
 <meta name="caregiver-build" content="2026-09-28-aide-home-addr1">
 <meta name="caregiver-build" content="2026-09-28-care-msg-safe1">
@@ -44,6 +46,116 @@
 <meta name="caregiver-build" content="2026-09-24-inservice-nocert">
 <meta name="caregiver-build" content="2026-09-24-sb-seal">
 <meta name="caregiver-build" content="2026-09-24-offline-save">
+<script>
+// v=pages-cache-fresh1 — clean Home Screen URL. The push worker stays ./caregiver-push-sw.js scope ./ .
+// skipWaiting + clientsClaim run in that worker. controllerchange reloads once.
+// The build id is revalidated with cache:'no-store'. A mismatch hard-reloads once.
+var cgShellDidReload = false;
+var cgShellBooted = false;
+var cgShellReloadKey = 'cg_pages_cache_fresh1';
+function cgShellDocUrl(){
+  var path = (location && location.pathname) ? location.pathname : './';
+  return path || './';
+}
+function cgShellTokenFromHtml(html){
+  var text = String(html || '');
+  var build = (/<meta\s+name="caregiver-build"\s+content="([^"]*)"/i.exec(text) || [])[1] || '';
+  var shell = (/<meta\s+name="caregiver-shell"\s+content="([^"]*)"/i.exec(text) || [])[1] || '';
+  if (!build) return '';
+  return build + '|' + shell;
+}
+function cgShellTokenHere(){
+  var build = '';
+  var shell = '';
+  try {
+    var b = document.querySelector('meta[name="caregiver-build"]');
+    var s = document.querySelector('meta[name="caregiver-shell"]');
+    build = (b && (b.content || b.getAttribute('content'))) || '';
+    shell = (s && (s.content || s.getAttribute('content'))) || '';
+  } catch (e) {}
+  if (!build) return '';
+  return build + '|' + shell;
+}
+function cgShellReloadNow(){
+  if (cgShellDidReload) return;
+  cgShellDidReload = true;
+  try { location.reload(true); } catch (e) {}
+}
+function cgShellOnControllerChange(){
+  cgShellReloadNow();
+}
+function cgShellWatchController(){
+  if (!navigator.serviceWorker || !navigator.serviceWorker.addEventListener) return;
+  navigator.serviceWorker.addEventListener('controllerchange', cgShellOnControllerChange);
+}
+function cgShellRegister(){
+  if (!navigator.serviceWorker || typeof navigator.serviceWorker.register !== 'function') return Promise.resolve(null);
+  var script = './caregiver-push-sw.js';
+  return navigator.serviceWorker.register(script, {scope:'./', updateViaCache:'none'}).catch(function(){
+    return navigator.serviceWorker.register(script, {scope:'./'});
+  });
+}
+function cgShellUpdate(){
+  if (!navigator.serviceWorker || typeof navigator.serviceWorker.getRegistration !== 'function') return Promise.resolve(null);
+  return navigator.serviceWorker.getRegistration('./').then(function(reg){
+    if (reg && typeof reg.update === 'function') return reg.update();
+    return reg || null;
+  }).catch(function(){ return null; });
+}
+function cgShellHardReload(nextToken){
+  if (!nextToken || cgShellDidReload) return;
+  try {
+    if (sessionStorage.getItem(cgShellReloadKey) === nextToken) return;
+    sessionStorage.setItem(cgShellReloadKey, nextToken);
+  } catch (e) {}
+  var controlled = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+  if (controlled || typeof fetch !== 'function') {
+    cgShellReloadNow();
+    return;
+  }
+  fetch(cgShellDocUrl(), {cache:'reload', credentials:'same-origin'}).then(function(){
+    cgShellReloadNow();
+  }, function(){
+    cgShellReloadNow();
+  });
+}
+function cgShellRevalidate(){
+  if (typeof fetch !== 'function') return Promise.resolve(false);
+  var here = cgShellTokenHere();
+  if (!here) return Promise.resolve(false);
+  return fetch(cgShellDocUrl(), {cache:'no-store', credentials:'same-origin', headers:{Accept:'text/html'}}).then(function(res){
+    if (!res || !res.ok || typeof res.text !== 'function') return '';
+    return res.text();
+  }).then(function(html){
+    var there = cgShellTokenFromHtml(html);
+    if (!there || there === here) return false;
+    cgShellHardReload(there);
+    return true;
+  }).catch(function(){ return false; });
+}
+function cgShellBoot(){
+  if (cgShellBooted) return;
+  cgShellBooted = true;
+  try {
+    if (location && /[?&]certSample=1(?:&|$)/.test(location.search || '')) return;
+  } catch (e) {}
+  cgShellWatchController();
+  cgShellRegister();
+  cgShellRevalidate();
+  window.addEventListener('pageshow', function(ev){
+    cgShellUpdate();
+    if (ev && ev.persisted) cgShellRevalidate();
+  });
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState !== 'visible') return;
+    cgShellUpdate();
+    cgShellRevalidate();
+  });
+}
+// end v=pages-cache-fresh1
+cgShellBoot();
+</script>
+<!-- caregiver-build: 2026-09-29-pages-cache-fresh1 v=pages-cache-fresh1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. The clean Home Screen URL https://evercareagency.github.io/caregiver/ gets the latest Pages deploy without a new ?v= link. GitHub Pages still sends index.html with max-age=600, and Safari or Add to Home Screen can keep that shell. caregiver-push-sw.js stays the only worker, registered as ./caregiver-push-sw.js at scope ./ (the same registration push already uses). It keeps the v=clienthrs1d push and notificationclick behavior: a tap still opens #messages. The worker calls skipWaiting and clientsClaim. Document navigations are network-first with cache no-store, and index.html is never written into Cache Storage. The page listens for controllerchange and reloads once. The tiny caregiver-shell build id is revalidated with cache:'no-store' against that clean URL; a mismatch hard-reloads once. Existing ?v= probe markers stay, including ?v=aide-home-addr1-autofill1 and ?v=aide-home-addr1. No new Ace patch. No new SQL. No Auth. v=aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-29-aide-home-addr1-autofill1 v=aide-home-addr1-autofill1 ?v=aide-home-addr1-autofill1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Where do you live? (#homeAddrScreen / #homeAddrForm) Continue re-reads live DOM .value from #homeAddrStreet, #homeAddrCity, #homeAddrState, and #homeAddrZip after requestAnimationFrame and a short settle, so iOS/Safari autofill that has painted is captured. input, change, and blur on those fields acknowledge a value that lands. State accepts a full US state name or a 2-letter code, case-insensitive, and is normalized to the 2-letter code before the address line and the ZIP/state checks. #homeAddrState has no maxlength. ZIP stays 5 or 5+4 digits. Autocomplete stays street-address, address-level2, address-level1, and postal-code. Nominatim and POST /rest/v1/rpc/aide_save_home_address are unchanged. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Punch GPS, Cover call-off, care-msg, the login toast, and the site footer stay. Cache bust ?v=aide-home-addr1-autofill1. v=aide-home-addr1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-aide-home-addr1 v=aide-home-addr1 ?v=aide-home-addr1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Columns home_address, home_lat, and home_lng are already on aides (cover1). Caregiver JWT only, via sbUserHeaders Bearer. Not the anon key. Not admin, scheduler, or nurse. POST /rest/v1/rpc/aide_get_home_address {}. gate_required is !has_address || !has_coords. When gate_required, #homeAddrScreen is full screen and #bottomNav and Home stay hidden. Signup / first login is teal #2a7f7f with the house mark. An existing aide missing an address or coords is navy #1a2744 with the pin mark. Title is Where do you live? Fields are Street, City, State, and ZIP. No why-copy on the gate. Continue builds one address (max 500), geocodes with the Admin geocodeClientAddress Nominatim call https://nominatim.openstreetmap.org/search?format=json&q= (not punch GPS), and requires finite p_lat in [-90,90] and p_lng in [-180,180]. Then POST /rest/v1/rpc/aide_save_home_address {p_home_address, p_lat, p_lng}. The gate clears only when that save returns an address and coords (has_address, has_coords, gate_required false). Punch GPS stays getGpsPosition. Cover call-off, care-msg-safe1, the site footer, and the login toast (showTempMsg) stay. Dates people read stay MM/DD/YYYY. A missing function does not trap Home. Cache bust ?v=aide-home-addr1. v=care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, coveraide2, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-care-msg-safe1 v=care-msg-safe1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Messages (#messagesScreen) stays top:0 and still ends at the dock (bottom:var(--eca-dock-h)). The messages header pads with max(13px, calc(13px + env(safe-area-inset-top, 0px))) so Back and Refresh sit below the phone status bar. Both hit targets are at least 44px. .aidechat-compose is flush above #bottomNav: no padding under the send row, the thread scrolls in the middle, and the dock stays visible. The dock hides only while the phone keyboard is open on the composer (body.aidechat-kb). That path pins the screen to the visual viewport and retries through the keyboard animation so the thread and composer stay in view. If office-thread rows are already painted, a later refresh throw does not paint “The office thread did not load. Try Refresh.” The catch logs err.message and err.pack status and data. Refresh and the 15s poll share aideChatBusy so aideChatRefresh and list calls do not overlap. Ace is BACKEND_OK. No Ace patch. No new RPC. v=punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
@@ -9475,7 +9587,12 @@ async function clienthrsSubscribeIfConfigured(opts){
       }
     }
   }
-  const reg=await navigator.serviceWorker.register(CLIENTHRS_SW,{scope:'./'});
+  let reg;
+  try{
+    reg=await navigator.serviceWorker.register(CLIENTHRS_SW,{scope:'./',updateViaCache:'none'});
+  }catch(regErr){
+    reg=await navigator.serviceWorker.register(CLIENTHRS_SW,{scope:'./'});
+  }
   const ready=navigator.serviceWorker.ready?await navigator.serviceWorker.ready:reg;
   const manager=(ready&&ready.pushManager)||(reg&&reg.pushManager);
   if(!manager||typeof manager.subscribe!=='function'){
