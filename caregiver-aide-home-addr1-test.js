@@ -25,13 +25,19 @@ function extractFn(src, sig){
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-28-aide-home-addr1">', 'aide-home-addr1 meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-09-29-aide-home-addr1-autofill1">', 'aide-home-addr1-autofill1 meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-28-aide-home-addr1">') > 0, 'aide-home-addr1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-28-care-msg-safe1">') > 0, 'care-msg-safe1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-28-punch-leftovers1">') > 0, 'punch-leftovers1 meta stays');
+assert.ok(html.includes('<!-- caregiver-build: 2026-09-29-aide-home-addr1-autofill1 v=aide-home-addr1-autofill1 ?v=aide-home-addr1-autofill1 —'), 'autofill comment');
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-28-aide-home-addr1 v=aide-home-addr1 ?v=aide-home-addr1 —'), 'aide-home-addr1 comment');
-assert.ok(html.includes('?v=aide-home-addr1'), 'cache bust query');
-assert.ok(html.includes('data-home-addr="v=aide-home-addr1"'), 'gate marker');
-assert.ok(html.includes('data-cache="?v=aide-home-addr1"'), 'cache bust on the gate');
+assert.ok(html.includes('?v=aide-home-addr1-autofill1'), 'cache bust query');
+assert.ok(html.includes('data-home-addr="v=aide-home-addr1-autofill1"'), 'gate marker');
+assert.ok(html.includes('data-cache="?v=aide-home-addr1-autofill1"'), 'cache bust on the gate');
+const autofillTip = html.slice(html.indexOf('<!-- caregiver-build: 2026-09-29-aide-home-addr1-autofill1'), html.indexOf('<!-- caregiver-build: 2026-09-28-aide-home-addr1'));
+assert.ok(autofillTip.includes('MERGE HOLD') && autofillTip.includes('Do not claim LIVE') && autofillTip.includes('Do not squash-merge'), 'autofill merge hold');
+assert.ok(autofillTip.includes('CALLABLE LIVE'), 'Ace contract stays callable');
+assert.ok(autofillTip.includes('No new SQL'), 'no new sql on the autofill tip');
 const tip = html.slice(html.indexOf('<!-- caregiver-build: 2026-09-28-aide-home-addr1'), html.indexOf('<!-- caregiver-build: 2026-09-28-care-msg-safe1'));
 assert.ok(tip.includes('MERGE HOLD') && tip.includes('Do not claim LIVE'), 'merge hold');
 assert.ok(tip.includes('CALLABLE LIVE'), 'Ace contract is callable');
@@ -57,6 +63,13 @@ assert.ok(gate.includes('>City'), 'city label');
 assert.ok(gate.includes('>State'), 'state label');
 assert.ok(gate.includes('>ZIP'), 'zip label');
 assert.ok(gate.includes('>Continue<'), 'continue');
+assert.ok(gate.includes('autocomplete="street-address"'), 'street autocomplete');
+assert.ok(gate.includes('autocomplete="address-level2"'), 'city autocomplete');
+assert.ok(gate.includes('autocomplete="address-level1"'), 'state autocomplete');
+assert.ok(gate.includes('autocomplete="postal-code"'), 'zip autocomplete');
+const stateInput = gate.slice(gate.indexOf('id="homeAddrState"'), gate.indexOf('id="homeAddrZip"'));
+assert.ok(!/maxlength\s*=/.test(stateInput), 'state field has no maxlength');
+assert.ok(/maxlength="10"/.test(gate.slice(gate.indexOf('id="homeAddrZip"'))), 'zip keeps maxlength 10');
 assert.ok(gate.includes('homeaddr-ico-house') && gate.includes('homeaddr-ico-pin'), 'both marks');
 assert.ok(!/nearby|near-rank|Cover rank|why we/i.test(gate), 'no why-copy on the gate');
 assert.ok(html.includes('#homeAddrScreen.homeaddr-signup{background:#2a7f7f;}'), 'signup teal');
@@ -94,7 +107,8 @@ const helpers = [
   extractFn(html, 'function homeAddrSplit(address)'),
   extractFn(html, 'function homeAddrPartsFrom(rec)'),
   extractFn(html, 'function homeAddrLine(parts)'),
-  extractFn(html, 'function homeAddrSaveOk(data)')
+  extractFn(html, 'function homeAddrSaveOk(data)'),
+  extractFn(html, 'function homeAddrStateCode(raw)')
 ].join('\n');
 
 const mem = {};
@@ -108,7 +122,7 @@ const ctx = {
 };
 vm.createContext(ctx);
 vm.runInContext(helpers, ctx);
-const api = vm.runInContext('({homeAddrNormalize, homeAddrShouldBlock, homeAddrLook, homeAddrSplit, homeAddrLine, homeAddrSaveOk})', ctx);
+const api = vm.runInContext('({homeAddrNormalize, homeAddrShouldBlock, homeAddrLook, homeAddrSplit, homeAddrLine, homeAddrSaveOk, homeAddrStateCode})', ctx);
 
 const missing = api.homeAddrNormalize({success:true, data:{gate_required:true, home_address:null, home_lat:null, home_lng:null}});
 assert.strictEqual(api.homeAddrShouldBlock(missing), true, 'gate_required blocks');
@@ -130,6 +144,33 @@ assert.strictEqual(api.homeAddrLook(coordsOnly), 'signup', 'finish-account flag 
 const parts = api.homeAddrSplit('123 Maple Ave, Cleveland, OH 44115');
 assert.strictEqual(JSON.stringify(parts), JSON.stringify({street:'123 Maple Ave', city:'Cleveland', state:'OH', zip:'44115'}));
 assert.strictEqual(api.homeAddrLine({street:'123 Maple Ave', city:'Cleveland', state:'OH', zip:'44115'}), '123 Maple Ave, Cleveland, OH 44115');
+['OH', 'oh', 'Ohio', 'OHIO'].forEach(function(raw){
+  assert.strictEqual(api.homeAddrStateCode(raw), 'OH', 'state ' + raw);
+});
+assert.strictEqual(api.homeAddrStateCode('  new york '), 'NY');
+assert.strictEqual(api.homeAddrStateCode('District of Columbia'), 'DC');
+assert.strictEqual(api.homeAddrStateCode('california'), 'CA');
+assert.strictEqual(api.homeAddrStateCode('West Virginia'), 'WV');
+assert.strictEqual(api.homeAddrStateCode('Cali'), '', 'partial name is not a code');
+assert.strictEqual(api.homeAddrStateCode('ZZ'), '', 'unknown code is rejected');
+assert.strictEqual(api.homeAddrStateCode(''), '');
+assert.strictEqual(Object.keys(api.homeAddrStateCode.names).length, 51, '50 states plus DC');
+const submitFn = extractFn(html, 'async function submitHomeAddr()');
+assert.ok(submitFn.includes('homeAddrReadSettled()'), 'submit re-reads after settle');
+assert.ok(submitFn.includes('homeAddrStateCode(live.state)'), 'submit normalizes state before checks');
+assert.ok(submitFn.indexOf('homeAddrStateCode(live.state)') < submitFn.indexOf("/^[A-Za-z]{2}$/"), 'state code is normalized before the format check');
+assert.ok(submitFn.includes("/^\\d{5}(?:-\\d{4})?$/"), 'zip stays 5 or 5+4');
+assert.ok(submitFn.includes("sbRest('rpc/aide_save_home_address'"), 'save wire stays');
+assert.ok(submitFn.includes('homeAddrGeocode(line)'), 'geocode wire stays');
+const flushFn = extractFn(html, 'function homeAddrFlushAutofill()');
+assert.ok(flushFn.includes('requestAnimationFrame'), 'settle flushes a frame');
+assert.ok(flushFn.includes('setTimeout(resolve, 80)'), 'settle waits a short beat');
+assert.ok(flushFn.includes('setTimeout(finish, 50)'), 'settle still runs if the frame is skipped');
+const bindFn = extractFn(html, 'function homeAddrBindFields()');
+assert.ok(bindFn.includes('homeAddrStreet') && bindFn.includes('homeAddrCity') && bindFn.includes('homeAddrState') && bindFn.includes('homeAddrZip'), 'four fields are bound');
+assert.ok(bindFn.includes("'input'") && bindFn.includes("'change'") && bindFn.includes("'blur'"), 'input change and blur acknowledge autofill');
+const geoFnCheck = extractFn(html, 'async function homeAddrGeocode(addr)');
+assert.ok(geoFnCheck.includes("fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q))"), 'Nominatim URL unchanged');
 
 const contractMissing = api.homeAddrNormalize({
   success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
@@ -263,7 +304,7 @@ async function runBrowser(){
     const origin = 'http://127.0.0.1:' + port;
     async function boot(opts){
       opts = opts || {};
-      await page.goto(origin + '/index.html?v=aide-home-addr1' + (opts.search || ''), {waitUntil:'domcontentloaded', timeout:20000});
+      await page.goto(origin + '/index.html?v=aide-home-addr1-autofill1' + (opts.search || ''), {waitUntil:'domcontentloaded', timeout:20000});
       await page.evaluate(function(o){
         localStorage.clear();
         sessionStorage.clear();
@@ -358,6 +399,78 @@ async function runBrowser(){
     assert.strictEqual(blocked.saves, 0, 'invalid continue does not save');
     assert.strictEqual(blocked.home, false);
     assert.strictEqual(blocked.gate, true);
+
+    const stateCases = ['OH', 'oh', 'Ohio', 'OHIO'];
+    for(let si = 0; si < stateCases.length; si++){
+      const stateValue = stateCases[si];
+      await boot({
+        get:{
+          success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
+          home_address:null, home_lat:null, home_lng:null,
+          has_address:false, has_coords:false, gate_required:true
+        }
+      });
+      await page.waitForFunction(function(){
+        const el = document.getElementById('homeAddrScreen');
+        return el && el.classList.contains('active') && !el.classList.contains('homeaddr-checking');
+      }, {timeout:8000});
+      await page.evaluate(function(state){
+        const set = function(id, value){document.getElementById(id).value = value;};
+        set('homeAddrStreet', '123 Maple Ave');
+        set('homeAddrCity', 'Cleveland');
+        set('homeAddrState', state);
+        set('homeAddrZip', '44115');
+      }, stateValue);
+      const painted = await page.evaluate(function(){
+        const ids = ['homeAddrStreet', 'homeAddrCity', 'homeAddrState', 'homeAddrZip'];
+        return {
+          bound: ids.every(function(id){return document.getElementById(id).getAttribute('data-home-addr-bound') === '1';}),
+          ack: document.getElementById('homeAddrStreet').getAttribute('data-home-addr-ack')
+        };
+      });
+      assert.strictEqual(painted.bound, true, 'fields listen before continue');
+      assert.ok(!painted.ack, 'setting .value without input does not count as an event');
+      await page.$eval('#homeAddrContinue', function(el){el.click();});
+      await page.waitForFunction(function(){
+        const home = document.getElementById('caregiverScreen');
+        const err = document.getElementById('homeAddrErr');
+        return home.classList.contains('active') && !(err && err.style.display === 'block' && /required/i.test(err.textContent));
+      }, {timeout:8000});
+      const autofilled = await page.evaluate(function(){
+        return {
+          address: window.__homeAddr.saves[0] && window.__homeAddr.saves[0].p_home_address,
+          geos: window.__homeAddr.geos.length,
+          saves: window.__homeAddr.saves.length,
+          err: document.getElementById('homeAddrErr').textContent
+        };
+      });
+      assert.strictEqual(autofilled.saves, 1, 'silent autofill saves for ' + stateValue);
+      assert.strictEqual(autofilled.geos, 1, 'silent autofill geocodes for ' + stateValue);
+      assert.strictEqual(autofilled.address, '123 Maple Ave, Cleveland, OH 44115', 'normalized address for ' + stateValue);
+      assert.ok(!/required/i.test(autofilled.err), 'required error stays clear for ' + stateValue);
+    }
+
+    await boot({
+      get:{
+        success:true, ok:true,
+        home_address:null, home_lat:null, home_lng:null,
+        has_address:false, has_coords:false, gate_required:true
+      }
+    });
+    await page.waitForFunction(function(){
+      const el = document.getElementById('homeAddrScreen');
+      return el && el.classList.contains('active') && !el.classList.contains('homeaddr-checking');
+    }, {timeout:8000});
+    await page.focus('#homeAddrState');
+    await page.type('#homeAddrState', 'Ohio');
+    const typedState = await page.$eval('#homeAddrState', function(el){return el.value;});
+    assert.strictEqual(typedState, 'Ohio', 'state field accepts a full name');
+    await page.evaluate(function(){
+      document.getElementById('homeAddrStreet').value = '';
+      document.getElementById('homeAddrCity').value = '';
+      document.getElementById('homeAddrState').value = '';
+      document.getElementById('homeAddrZip').value = '';
+    });
 
     await page.type('#homeAddrStreet', '123 Maple Ave');
     await page.type('#homeAddrCity', 'Cleveland');
