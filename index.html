@@ -5,6 +5,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="caregiver-shell" content="2026-09-29-pages-cache-fresh1">
+<meta name="caregiver-build" content="2026-09-29-care-msg-send1">
 <meta name="caregiver-build" content="2026-09-29-aide-notif-done-hide1">
 <meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">
 <meta name="caregiver-build" content="2026-09-29-aide-home-addr1-autofill1">
@@ -156,6 +157,7 @@ function cgShellBoot(){
 // end v=pages-cache-fresh1
 cgShellBoot();
 </script>
+<!-- caregiver-build: 2026-09-29-care-msg-send1 v=care-msg-send1 ?v=care-msg-send1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Messages (#messagesScreen) send no longer paints “The message did not send. Try again.” after Ace already stored the message. After aide_send_office_message parses ok, the follow-up aide_list_office_messages is soft: auth, network, parse, or a missing list RPC keeps the send-parsed rows via aideChatEnsureSent and stays on the success path. Never throw after a successful send parse. Before deliver and refresh, sbEnsureCaregiverJwt runs when it is present. A 401/403 or cgIsAuthErr on get_or_create or send calls sbRefreshCaregiverJwt once and retries that deliver once. A second auth failure keeps “The message did not send. Try again.” A send while aideChatBusy shows “Still loading messages…” and does not clear the composer. The send catch logs console.error aideChatSend with err.message and err.pack status and data. aideChatSendBody stays {p_body} plus optional p_escalate_kind. Stub path, phone lock, and Admin stay. Ace unchanged. No new Ace patch. No new SQL. Cache bust ?v=care-msg-send1. v=aide-notif-done-hide1, pages-cache-fresh1, aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, and aidechat1 unchanged. -->
 <!-- caregiver-build: 2026-09-29-aide-notif-done-hide1 v=aide-notif-done-hide1 ?v=aide-notif-done-hide1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Settings Notifications (#moreScreen #clienthrsPushCard) is Remi reminders and Office chat only. The Turn on Remi reminders card, Allow notifications button, Not now, and What you’ll get gate are gone. Flipping either toggle ON saves that choice and asks the phone for notification permission, then subscribes with the existing public key under the hood. Aide-facing copy stays plain English. If permission is not granted after ON, the only extra line is “Open the app from your Home Screen, then tap Allow.” When phone pings are on, the line is “Phone pings on.” Both choices ON does not show a nag card. Both OFF still POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {}. POST /rest/v1/rpc/aide_get_notification_prefs {}, POST /rest/v1/rpc/aide_save_notification_prefs, POST /rest/v1/rpc/get_vapid_public_key {}, and POST /rest/v1/rpc/aide_upsert_web_push_subscription stay. The public key never appears on screen. caregiver-push-sw.js stays the only worker at scope ./. v=pages-cache-fresh1 clean-URL shell behavior stays. No new Ace patch. No new SQL. No Admin. No Auth. Cache bust ?v=aide-notif-done-hide1. -->
 <!-- caregiver-build: 2026-09-29-pages-cache-fresh1 v=pages-cache-fresh1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. The clean Home Screen URL https://evercareagency.github.io/caregiver/ gets the latest Pages deploy without a new ?v= link. GitHub Pages still sends index.html with max-age=600, and Safari or Add to Home Screen can keep that shell. caregiver-push-sw.js stays the only worker, registered as ./caregiver-push-sw.js at scope ./ (the same registration push already uses). It keeps the v=clienthrs1d push and notificationclick behavior: a tap still opens #messages. The worker calls skipWaiting and clientsClaim. Document navigations are network-first with cache no-store, and index.html is never written into Cache Storage. The page listens for controllerchange and reloads once. The tiny caregiver-shell build id is revalidated with cache:'no-store' against that clean URL; a mismatch hard-reloads once. Existing ?v= probe markers stay, including ?v=aide-home-addr1-autofill1 and ?v=aide-home-addr1. No new Ace patch. No new SQL. No Auth. v=aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-29-aide-home-addr1-autofill1 v=aide-home-addr1-autofill1 ?v=aide-home-addr1-autofill1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Where do you live? (#homeAddrScreen / #homeAddrForm) Continue re-reads live DOM .value from #homeAddrStreet, #homeAddrCity, #homeAddrState, and #homeAddrZip after requestAnimationFrame and a short settle, so iOS/Safari autofill that has painted is captured. input, change, and blur on those fields acknowledge a value that lands. State accepts a full US state name or a 2-letter code, case-insensitive, and is normalized to the 2-letter code before the address line and the ZIP/state checks. #homeAddrState has no maxlength. ZIP stays 5 or 5+4 digits. Autocomplete stays street-address, address-level2, address-level1, and postal-code. Nominatim and POST /rest/v1/rpc/aide_save_home_address are unchanged. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Punch GPS, Cover call-off, care-msg, the login toast, and the site footer stay. Cache bust ?v=aide-home-addr1-autofill1. v=aide-home-addr1 unchanged. -->
@@ -1239,7 +1241,7 @@ else setupEverCarePWA();
   </div>
 </div>
 <!-- MESSAGES v=aidechat1 -->
-<div class="screen" id="messagesScreen" data-aidechat="v=aidechat1" data-clienthrs="v=clienthrs1d" data-msg-safe="v=care-msg-safe1">
+<div class="screen" id="messagesScreen" data-aidechat="v=aidechat1" data-clienthrs="v=clienthrs1d" data-msg-safe="v=care-msg-safe1" data-msg-send="v=care-msg-send1" data-cache="?v=care-msg-send1">
   <div class="hdr">
     <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
     <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
@@ -9022,29 +9024,44 @@ async function aideChatDeliver(text, kind){
     aideChatMode='stub';
     return {mode:'stub', rows:aideChatStubAppend(clean), note:aideChatStubNote()};
   }
-  try{
-    await sbRest('rpc/aide_get_or_create_office_thread',{method:'POST',body:{}});
-    const got=await sbRest('rpc/aide_send_office_message',{method:'POST',body:aideChatSendBody(clean, kind)});
-    let parsed=aideChatRowsFromRpc(got);
-    if(!parsed.ok)return {mode:'ace', rows:null, note:parsed.error||'The office did not take that message.'};
-    try{
-      const again=await sbRest('rpc/aide_list_office_messages',{method:'POST',body:aideChatListBody()});
-      const fresh=aideChatRowsFromRpc(again);
-      if(fresh.ok)parsed=fresh;
-    }catch(e2){
-      if(!aideChatRpcMissing(e2))throw e2;
-    }
-    aideChatMode='ace';
-    const rows=aideChatEnsureSent(parsed.rows, clean);
-    aideChatRememberPage(rows);
-    return {mode:'ace', rows:rows, note:aideChatAceNote()};
-  }catch(err){
-    if(aideChatRpcMissing(err)){
-      aideChatMode='stub';
-      return {mode:'stub', rows:aideChatStubAppend(clean), note:aideChatStubNote()};
-    }
-    throw err;
+  // v=care-msg-send1. JWT ensure, then one 401/403 retry of this deliver. A stored send never throws.
+  if(typeof sbEnsureCaregiverJwt==='function'){
+    try{await sbEnsureCaregiverJwt();}catch(e){}
   }
+  for(let pass=0;pass<2;pass++){
+    try{
+      return await aideChatDeliverAttempt(clean, kind);
+    }catch(err){
+      if(aideChatRpcMissing(err)){
+        aideChatMode='stub';
+        return {mode:'stub', rows:aideChatStubAppend(clean), note:aideChatStubNote()};
+      }
+      const status=err&&err.pack&&err.pack.status;
+      const auth=status===401||status===403||(typeof cgIsAuthErr==='function'&&cgIsAuthErr(err));
+      if(pass!==0||!auth||typeof sbRefreshCaregiverJwt!=='function')throw err;
+      let ok=false;
+      try{ok=await sbRefreshCaregiverJwt();}catch(e2){ok=false;}
+      if(!ok)throw err;
+    }
+  }
+}
+async function aideChatDeliverAttempt(clean, kind){
+  await sbRest('rpc/aide_get_or_create_office_thread',{method:'POST',body:{}});
+  const got=await sbRest('rpc/aide_send_office_message',{method:'POST',body:aideChatSendBody(clean, kind)});
+  const parsed=aideChatRowsFromRpc(got);
+  if(!parsed.ok)return {mode:'ace', rows:null, note:parsed.error||'The office did not take that message.'};
+  let rows=parsed.rows;
+  try{
+    const again=await sbRest('rpc/aide_list_office_messages',{method:'POST',body:aideChatListBody()});
+    const fresh=aideChatRowsFromRpc(again);
+    if(fresh&&fresh.ok)rows=fresh.rows;
+  }catch(e2){
+    // v=care-msg-send1. List auth, network, parse, or a missing list RPC stays soft after a stored send.
+  }
+  aideChatMode='ace';
+  rows=aideChatEnsureSent(rows, clean);
+  aideChatRememberPage(rows);
+  return {mode:'ace', rows:rows, note:aideChatAceNote()};
 }
 function aideChatHasThreadRows(){
   if(aideChatRows&&aideChatRows.length)return true;
@@ -9073,6 +9090,9 @@ async function aideChatRefresh(){
       aideChatHasEarlier=false;
       aideChatPaint(aideChatReadLocal(), aideChatStubNote());
       return;
+    }
+    if(typeof sbEnsureCaregiverJwt==='function'){
+      try{await sbEnsureCaregiverJwt();}catch(e){}
     }
     const created=await sbRest('rpc/aide_get_or_create_office_thread',{method:'POST',body:{}});
     const got=await sbRest('rpc/aide_list_office_messages',{method:'POST',body:aideChatListBody()});
@@ -9366,7 +9386,10 @@ function openAideMessages(){
 }
 async function submitAideMessage(ev){
   if(ev&&ev.preventDefault)ev.preventDefault();
-  if(aideChatBusy)return;
+  if(aideChatBusy){
+    aideChatSetNote('Still loading messages…');
+    return;
+  }
   const input=document.getElementById('aideChatInput');
   const text=String(input&&input.value||'').replace(/\s+/g,' ').trim();
   if(!text)return;
@@ -9385,6 +9408,9 @@ async function submitAideMessage(ev){
       aideChatPaint(result.rows, result.note);
     }else if(result&&result.note)aideChatSetNote(result.note);
   }catch(err){
+    try{
+      console.error('aideChatSend', err&&err.message, err&&err.pack&&err.pack.status, err&&err.pack&&err.pack.data);
+    }catch(e){}
     aideChatSetNote('The message did not send. Try again.');
   }finally{
     aideChatBusy=false;
