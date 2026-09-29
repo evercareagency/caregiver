@@ -1,5 +1,38 @@
 /* v=clienthrs1d — web push for caregiver Messages.
-   A tap opens the same Remi thread (#messages). Remi is never a full page. */
+   A tap opens the same Remi thread (#messages). Remi is never a full page.
+   v=pages-cache-fresh1 — this is still the only worker. Scope stays ./ .
+   skipWaiting + clientsClaim. Document navigations are network-first.
+   index.html is never written into Cache Storage, so the clean Home Screen URL
+   is not stuck on GitHub Pages max-age=600. */
+self.addEventListener('install', function(event){
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', function(event){
+  event.waitUntil(self.clients.claim());
+});
+
+function cgShellIsDocument(request){
+  if (!request || request.method !== 'GET') return false;
+  if (request.mode === 'navigate') return true;
+  var dest = request.destination || '';
+  return dest === 'document';
+}
+
+function cgShellNetworkFirst(request){
+  var url = request && request.url ? request.url : '';
+  return fetch(url, {cache:'no-store', credentials:'same-origin', redirect:'follow'}).catch(function(){
+    return fetch(request);
+  });
+}
+
+self.addEventListener('fetch', function(event){
+  var request = event.request;
+  if (!cgShellIsDocument(request)) return;
+  if (!request.url || request.url.indexOf('http') !== 0) return;
+  event.respondWith(cgShellNetworkFirst(request));
+});
+
 self.addEventListener('push', function(event){
   var payload = {};
   try {
