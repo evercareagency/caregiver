@@ -44,11 +44,12 @@ assert.ok(loginFn && signupFn && verifyFn && resetFn && setupFn && authSetup && 
 assert.ok(loginFn.indexOf('await loginAideWithSupabase(user,pass)') < loginFn.indexOf("action:'login'"), 'default login is Auth before Sheets');
 assert.ok(loginFn.slice(0, loginFn.indexOf("action:'login'")).includes('return;'), 'Auth login returns before Sheets');
 assert.ok(loginFn.includes('showLoginErr(e&&e.message)'), 'cut login errors do not read a local password');
-assert.ok(html.includes('Too many attempts — please wait a few minutes and try again'), 'rate limit copy');
+assert.ok(html.includes('Too many attempts — please wait 15 minutes and try again'), 'rate limit copy');
+assert.ok(html.includes('15 minutes'), 'lockout copy names 15 minutes');
 
-const signupCut = signupFn.slice(0, signupFn.indexOf('SHEETS_URL'));
-assert.ok(signupCut.includes('evercareSbEnabled()') && signupCut.includes('return;'), 'cut signup returns before Sheets');
-assert.ok(!signupCut.includes('password:pass'), 'cut signup does not store a local password');
+assert.ok(signupFn.includes('Accounts are created by the office. Contact your manager.'), 'signup tells the aide the office creates accounts');
+assert.ok(!signupFn.includes('fetch(') && !signupFn.includes('SHEETS_URL') && !signupFn.includes('localStorage'), 'signup does not call the network or write storage');
+assert.ok(!signupFn.includes('startCgSession'), 'signup does not create a session');
 
 assert.ok(verifyFn.includes('sendAideRecoveryEmail(email)'), 'forgot sends the typed email');
 assert.ok(verifyFn.includes('If that email is on file, a reset link is on its way. Questions? Call the office at (216) 377-5991.'), 'forgot stays neutral');

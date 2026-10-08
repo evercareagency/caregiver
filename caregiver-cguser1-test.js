@@ -40,9 +40,10 @@ assert.ok(loginField.includes('id="l_user"') && loginField.includes('autocomplet
 assert.ok(loginField.includes('id="l_pass"') && loginField.includes('autocomplete="off"'), 'sign-in password is not a stored autofill');
 assert.ok(!loginField.includes('value='), 'sign-in fields are not hardcoded');
 
-const signupField = html.slice(html.indexOf('id="signupForm"'), html.indexOf('id="signupBtn"'));
-assert.ok(signupField.includes('id="s_user"'), 'sign-up username stays its own field');
-assert.ok(!signupField.includes('cg_last_username') && !signupField.includes('paintSignInForm'), 'sign-up is not prefilled from the remembered username');
+assert.ok(html.indexOf('id="signupForm"') < 0, 'sign-up form is not on the login screen');
+assert.ok(html.indexOf('id="tabSignup"') < 0 && html.indexOf('>Sign Up<') < 0, 'sign-up tab is not an entry point');
+assert.ok(html.indexOf('id="s_code"') < 0, 'office code input is gone');
+assert.ok(!html.includes('Create Account'), 'create account control is gone');
 
 const rememberFn = extractFn(html, 'function rememberSignInUsername(user)');
 const readFn = extractFn(html, 'function readRememberedUsername()');
@@ -72,7 +73,8 @@ assert.ok(!switchFn.includes('s_user'), 'switching tabs does not copy into sign 
 assert.strictEqual((loginFn.match(/rememberSignInUsername\(user\)/g) || []).length, 3, 'each successful sign-in path stores the username');
 assert.ok(!loginFn.includes('rememberSignInUsername(pass)') && !loginFn.includes('rememberSignInUsername(password)'), 'sign-in does not store the password');
 assert.ok(!signupFn.includes('rememberSignInUsername'), 'sign-up does not write the remembered username');
-assert.ok(forgotFn.includes("getElementById('reset_user').value=''"), 'forgot password still starts blank');
+assert.ok(forgotFn.includes("getElementById('reset_email')"), 'forgot password still clears the email');
+assert.ok(!forgotFn.includes('reset_user'), 'forgot password has no username field');
 assert.ok(!forgotFn.includes('remember') && !forgotFn.includes('cg_last_username'), 'forgot password is unchanged');
 assert.ok(bootFn.includes('paintSignInForm()'), 'cold open of Sign In paints the remembered username');
 assert.ok(!bootFn.includes('doLogin'), 'cold open does not sign in from the remembered username');

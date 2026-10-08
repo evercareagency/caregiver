@@ -13,7 +13,8 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-sec1-ui-h2">', 'sec1-ui-h2 meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-sec1-cg2">', 'sec1-cg2 meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui-h2">') > 0, 'sec1-ui-h2 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui">') > 0, 'sec1-ui meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">') > 0, 'msg-composer-rect1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">') > 0, 'pages-cache-fresh1 meta stays');
