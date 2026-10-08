@@ -27,10 +27,11 @@ const urlConst = (html.match(/const SUPABASE_URL='([^']+)'/) || [])[1];
 const keyConst = (html.match(/const SUPABASE_ANON_KEY='([^']+)'/) || [])[1];
 const schedule = extractFn(html, 'function scheduleHomeBackgroundLoads()');
 assert.ok(!/supabase/i.test(schedule), 'home scheduler must not name supabase');
-assert.ok(schedule.includes("apiGetCached('get_clients')"), 'sheets client prefetch stays');
-assert.ok(schedule.indexOf('sbLoadHomeLists(restoreBackups)') < schedule.indexOf('if(aceExecSoft())return'), 'flag on lists run before the sheets health skip');
+assert.ok(schedule.includes('sbLoadHomeLists(restoreBackups)'), 'home lists stay in the background');
+assert.ok(schedule.includes('checkForCorrection()'), 'corrections stay in the background');
+assert.ok(!schedule.includes('apiGetCached('), 'home lists do not prefetch Apps Script clients');
 const sheetsLogin = extractFn(html, 'async function doLogin()');
-assert.ok(sheetsLogin.includes("action:'login'"), 'sheets login stays on the flag-off path');
+assert.ok(!sheetsLogin.includes("action:'login'"), 'sign-in does not post Apps Script');
 
 const src = [
   extractFn(html, 'function evercareSbEnabled()'),
@@ -54,6 +55,7 @@ const src = [
   extractFn(html, 'function sbMergeDays(base,incoming)'),
   extractFn(html, 'function sbMergeDaysReplace(base,incoming)'),
   extractFn(html, 'function sbKeepSubmitted(existing,status)'),
+  extractFn(html, 'function civilWeekSunday(ymd)'),
   extractFn(html, 'function sbWeekSunday(value)'),
   extractFn(html, 'function sbDayIndex(key)'),
   extractFn(html, 'function sbNormalizeDays(days)'),
@@ -119,7 +121,7 @@ function run(opts){
   const bare = run({search:''});
   assert.strictEqual(vm.runInContext('sbDataEnabled()', bare), true, 'default uses the jwt data path with no ?sb=1');
   const sheets = run({search:'?sheets=1'});
-  assert.strictEqual(vm.runInContext('sbDataEnabled()', sheets), false, 'sheets emergency does not use the jwt data path');
+  assert.strictEqual(vm.runInContext('sbDataEnabled()', sheets), true, 'a leftover sheets query still uses the jwt data path');
   const oldOpt = run({search:'?sb=0'});
   assert.strictEqual(vm.runInContext('sbDataEnabled()', oldOpt), true, 'missing or sb=0 does not fall through to Sheets');
 
@@ -319,25 +321,23 @@ function run(opts){
   assert.strictEqual(noAide.calls.length, 0, 'missing aide id does not write inservice_results');
 
   const submitIs = extractFn(html, 'async function submitInservice()');
-  assert.ok(submitIs.includes("action:'submit_inservice'"), 'flag off inservice still posts Sheets');
-  assert.ok(submitIs.includes('SHEETS_URL'));
-  assert.ok(submitIs.indexOf('evercareSbEnabled()') < submitIs.indexOf('SHEETS_URL'), 'flag check precedes the sheets inservice post');
+  assert.ok(!submitIs.includes("action:'submit_inservice'") && !submitIs.includes('SHEETS_URL'), 'inservice does not post Apps Script');
+  assert.ok(submitIs.includes("sheetsOffMessage('inservice')"), 'sheets-mode inservice tells the aide');
   assert.ok(submitIs.includes('sbSubmitInservice('), 'flag on inserts inservice_results');
   const delFn = extractFn(html, 'async function deleteTimesheetBackup(id)');
-  assert.ok(delFn.includes("action:'delete_timesheet_backup'"), 'flag off delete still posts Sheets');
-  assert.ok(delFn.indexOf('evercareSbEnabled()') < delFn.indexOf('delete_timesheet_backup'));
+  assert.ok(!delFn.includes("action:'delete_timesheet_backup'"), 'delete does not post Apps Script');
+  assert.ok(delFn.includes("sheetsOffMessage('backup')"));
   assert.ok(delFn.includes('sbSoftDeleteBackup(id)'));
   const saveDay = extractFn(html, 'function saveDayData(i,dayObj)');
   assert.ok(saveDay.includes('sbSyncSavedDay'), 'flag on Save Day syncs the open day');
   const fin = extractFn(html, 'async function doFinalSubmit()');
-  assert.ok(fin.includes("action:'submit'"), 'flag off submit stays on /exec');
-  assert.ok(fin.indexOf('evercareSbEnabled()') < fin.indexOf("action:'submit'"));
+  assert.ok(!fin.includes("action:'submit'") && !fin.includes("action:'resubmit'"), 'submit does not post Apps Script');
+  assert.ok(fin.includes('sheetsOffMessage()') && extractFn(html, 'function sheetsOffMessage(kind)').includes('still here'), 'a blocked submit keeps the form and says so');
   const sheetsBackup = extractFn(html, 'async function doCloudBackup()');
-  assert.ok(sheetsBackup.includes("action:'save_timesheet_backup'"));
-  assert.ok(sheetsBackup.indexOf('evercareSbEnabled()') < sheetsBackup.indexOf('apiPost(payload)'));
+  assert.ok(!sheetsBackup.includes("action:'save_timesheet_backup'"));
+  assert.ok(sheetsBackup.includes("sheetsOffMessage('backup')"));
   const loc = extractFn(html, 'function saveLocationStatus(status)');
-  assert.ok(loc.includes("action:'save_location_status'"), 'sheets rollback can still post location');
-  assert.ok(loc.indexOf('evercareSbEnabled()') < loc.indexOf('SHEETS_URL'), 'default Save Day and submit do not post location to /exec');
+  assert.ok(!loc.includes("action:'save_location_status'") && !loc.includes('SHEETS_URL'), 'location status does not post Apps Script');
 
   console.log('caregiver-sb-data checks ok');
 })().catch(function(err){

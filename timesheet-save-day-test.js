@@ -61,21 +61,31 @@ async function runBrowser(){
   await page.setRequestInterception(true);
   page.on('request',req=>{
     const u=req.url();
-    if(/script\.google\.com|nominatim|fonts\.googleapis|fonts\.gstatic|gstatic\.com/.test(u))req.abort();
-    else req.continue();
+    if(/script\.google\.com|nominatim|fonts\.googleapis|fonts\.gstatic|gstatic\.com/.test(u)){req.abort();return;}
+    if(/supabase\.co/.test(u)){
+      req.respond({status:200,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:'[]'});
+      return;
+    }
+    req.continue();
   });
   page.on('dialog',d=>d.accept());
   const rawUrl=process.env.CG_URL||'http://127.0.0.1:8765/index.html';
   const url=/[?&]sheets=1(?:&|$)/.test(rawUrl)?rawUrl:(rawUrl+(rawUrl.indexOf('?')>=0?'&':'?')+'sheets=1');
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:20000});
   await page.evaluate(()=>{
-    const sess={username:'aide1',name:'Test Aide',loginAt:Date.now(),mustChangePassword:false,needsEmail:false};
+    const sess={username:'aide1',name:'Test Aide',loginAt:Date.now(),mustChangePassword:false,needsEmail:false,sbAccessToken:'jwt-test'};
     localStorage.setItem('cg_session',JSON.stringify(sess));
     sessionStorage.setItem('sandata_ack_session','1');
     sessionStorage.setItem('notice_ack_aide1','1');
   });
   await page.reload({waitUntil:'domcontentloaded',timeout:20000});
-  await page.waitForFunction(()=>typeof saveActiveDay==='function'&&document.getElementById('dayBlocks')&&document.getElementById('dayBlocks').children.length===7,{timeout:20000});
+  await page.waitForFunction(()=>{
+    if(typeof homeAddrGate!=='undefined')homeAddrGate.phase='clear';
+    const blocks=document.getElementById('dayBlocks');
+    if(typeof saveActiveDay==='function'&&blocks&&blocks.children.length===7)return true;
+    if(typeof currentUser!=='undefined'&&currentUser&&typeof loadCaregiverScreen==='function')loadCaregiverScreen();
+    return false;
+  },{timeout:20000});
 
   const result=await page.evaluate(()=>{
     const errors=[];
@@ -204,13 +214,19 @@ async function runBrowser(){
   const shotDir='/tmp/cg-shots';
   fs.mkdirSync(shotDir,{recursive:true});
   await page.evaluate(()=>{
-    const sess={username:'aide1',name:'Test Aide',loginAt:Date.now(),mustChangePassword:false,needsEmail:false};
+    const sess={username:'aide1',name:'Test Aide',loginAt:Date.now(),mustChangePassword:false,needsEmail:false,sbAccessToken:'jwt-test'};
     localStorage.setItem('cg_session',JSON.stringify(sess));
     sessionStorage.setItem('sandata_ack_session','1');
     sessionStorage.setItem('notice_ack_aide1','1');
   });
   await page.reload({waitUntil:'domcontentloaded',timeout:20000});
-  await page.waitForFunction(()=>document.getElementById('dayBlocks')&&document.getElementById('dayBlocks').children.length===7,{timeout:20000});
+  await page.waitForFunction(()=>{
+    if(typeof homeAddrGate!=='undefined')homeAddrGate.phase='clear';
+    const blocks=document.getElementById('dayBlocks');
+    if(blocks&&blocks.children.length===7)return true;
+    if(typeof currentUser!=='undefined'&&currentUser&&typeof loadCaregiverScreen==='function')loadCaregiverScreen();
+    return false;
+  },{timeout:20000});
   await page.evaluate(()=>{
     document.getElementById('cgHomeView').style.display='none';
     document.getElementById('cgFormView').style.display='block';

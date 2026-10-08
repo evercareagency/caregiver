@@ -25,7 +25,7 @@ function extractFn(src, sig){
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-sec1-cg2">', 'newer tip meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-exec-off1">', 'newer tip meta is first');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui">') > 0, 'sec1-ui meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">') > 0, 'msg-composer-rect1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pwa-install-copy1">') > 0, 'pwa-install-copy1 meta stays');
@@ -282,19 +282,35 @@ async function runBrowser(){
   });
   try{
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(function(){
+      const orig = window.fetch.bind(window);
+      window.fetch = function(input, init){
+        let mode = '';
+        try{mode = sessionStorage.getItem('__cgNet') || '';}catch(e){}
+        const url = String(input && input.url || input || '');
+        if(mode && /supabase\.co/.test(url)){
+          return Promise.resolve(new Response('[]', {status:200, headers:{'Content-Type':'application/json'}}));
+        }
+        return orig(input, init);
+      };
+    });
     await page.setViewport({width:390, height:844, isMobile:true, hasTouch:true, deviceScaleFactor:2});
     page.on('dialog', function(d){d.accept();});
-    await page.goto('http://127.0.0.1:'+port+'/index.html?sheets=1&v=care-msg-tab1', {waitUntil:'domcontentloaded', timeout:20000});
+    await page.goto('http://127.0.0.1:'+port+'/index.html?v=care-msg-tab1', {waitUntil:'domcontentloaded', timeout:20000});
     await page.evaluate(function(){
       localStorage.setItem('cg_session', JSON.stringify({
         username:'portal.aide',
         name:'Portal Aide',
         loginAt:Date.now()-60*60*1000,
         mustChangePassword:false,
-        needsEmail:false
+        needsEmail:false,
+        sbAccessToken:'jwt-test',
+        sbRefreshToken:'refresh-test',
+        sbExpiresAt:Date.now()+60*60*1000
       }));
       sessionStorage.setItem('sandata_ack_session','1');
       sessionStorage.setItem('notice_ack_portal.aide','1');
+      sessionStorage.setItem('__cgNet','stub');
     });
     await page.reload({waitUntil:'domcontentloaded', timeout:20000});
     await page.waitForFunction(function(){
@@ -382,6 +398,7 @@ async function runBrowser(){
       raw.sbAccessToken = 'test-jwt';
       localStorage.setItem('cg_session', JSON.stringify(raw));
       localStorage.removeItem('evercare_sheets');
+      sessionStorage.removeItem('__cgNet');
     });
     await page.goto('http://127.0.0.1:'+port+'/index.html?v=care-msg-tab1', {waitUntil:'domcontentloaded', timeout:20000});
     await page.evaluate(function(){

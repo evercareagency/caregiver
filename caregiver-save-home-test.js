@@ -50,7 +50,8 @@ assert.ok(fin.indexOf('cgEnqueueSubmit') < homeAt, 'queued submit still enqueues
 assert.ok(fin.indexOf('sbUpsertTimesheet') < homeAt, 'live submit still upserts before Home');
 assert.ok(!fin.includes("cgSuccessView').style.display='block'"), 'week submit does not stay on the submitted screen');
 assert.ok(fin.includes('Timesheet submitted.'), 'online submit still confirms');
-assert.ok(fin.includes('will upload when you\\\'re back online'), 'queued submit still uses the offline sentence');
+assert.ok(fin.includes("sheetsOffMessage('queued')"), 'queued submit uses the offline sentence');
+assert.ok(extractFn(html, 'function sheetsOffMessage(kind)').includes('will upload when you\\\'re back online'), 'queued submit still uses the offline sentence');
 
 function el(id, extra){
   return Object.assign({
@@ -75,6 +76,7 @@ function runSave(opts){
     getUserWeekData:function(){return {};},
     saveUserWeekData:function(){box._stored = true;},
     refreshSaveDayState:function(){},
+    paintDayRowStatus:function(){},
     showTempMsg:function(){},
     evercareSbEnabled:function(){return opts.sheets !== true;},
     cgShouldSyncNow:function(){return !!opts.live;},

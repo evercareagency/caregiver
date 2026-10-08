@@ -25,7 +25,7 @@ function extractFn(src, sig){
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-sec1-cg2">', 'newer tip meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-exec-off1">', 'newer tip meta is first');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui">') > 0, 'sec1-ui meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">') > 0, 'msg-composer-rect1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pwa-install-copy1">') > 0, 'pwa-install-copy1 meta stays');
@@ -315,7 +315,6 @@ async function runBrowser(){
       await page.evaluate(function(o){
         localStorage.clear();
         sessionStorage.clear();
-        if(o.sheets)localStorage.setItem('evercare_sheets', '1');
         if(o.first)localStorage.setItem('evercare_homeaddr_first_ada', '1');
         if(o.session !== false){
           localStorage.setItem('cg_session', JSON.stringify({
@@ -324,7 +323,9 @@ async function runBrowser(){
             loginAt:Date.now() - 60 * 60 * 1000,
             mustChangePassword:false,
             needsEmail:false,
-            sbAccessToken: o.sheets ? '' : 'test-jwt'
+            sbAccessToken:'test-jwt',
+            sbRefreshToken:'refresh-test',
+            sbExpiresAt:Date.now()+60*60*1000
           }));
         }
         sessionStorage.setItem('sandata_ack_session', '1');
@@ -601,18 +602,19 @@ async function runBrowser(){
     assert.strictEqual(bare.lat, 41.4993);
     assert.strictEqual(bare.lng, -81.6944);
 
-    await boot({sheets:true, search:'&sheets=1', session:true, get:{gate_required:true, home_lat:null, home_lng:null, has_address:false, has_coords:false}});
+    await boot({session:true, get:{gate_required:true, home_lat:null, home_lng:null, has_address:false, has_coords:false}});
     await page.waitForFunction(function(){
-      return document.getElementById('caregiverScreen').classList.contains('active');
+      const el = document.getElementById('homeAddrScreen');
+      return el && el.classList.contains('active') && !el.classList.contains('homeaddr-checking');
     }, {timeout:8000});
-    const sheets = await page.evaluate(function(){
+    const signedIn = await page.evaluate(function(){
       return {
         gate: document.getElementById('homeAddrScreen').classList.contains('active'),
         saves: window.__homeAddr.saves.length
       };
     });
-    assert.strictEqual(sheets.gate, false, 'sheets rollback does not show the gate');
-    assert.strictEqual(sheets.saves, 0);
+    assert.strictEqual(signedIn.gate, true, 'a signed-in aide with gate_required sees the address gate');
+    assert.strictEqual(signedIn.saves, 0);
   }finally{
     await browser.close();
     server.close();

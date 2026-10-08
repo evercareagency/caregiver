@@ -35,7 +35,7 @@ assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-sea
 assert.ok(html.includes('v=sbseal1'), 'sealed probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-offline-save">'), 'offline build meta');
 assert.ok(html.includes('v=offline1'), 'offline probe marker');
-assert.ok(html.includes('evercare_sheets'), 'emergency sheets rollback is documented');
+assert.ok(!html.includes('function releaseStuckSheetsRollback('), 'sheets rollback helper is gone');
 assert.ok(html.includes("const SUPABASE_URL='https://zealkptwgifnkbkuavvp.supabase.co';"), 'supabase url');
 assert.ok(!html.includes('lvaglmztnlnsrhlluayz'), 'abandoned project ref must not appear');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
@@ -50,8 +50,7 @@ const payload = JSON.parse(Buffer.from(keyConst.split('.')[1], 'base64').toStrin
 assert.strictEqual(payload.role, 'anon');
 assert.strictEqual(payload.ref, 'zealkptwgifnkbkuavvp');
 
-const warm = extractFn(html, 'function warmUpSheets()');
-assert.ok(warm && !/supabase/i.test(warm), 'warm path must not touch supabase');
+assert.ok(!html.includes('function warmUpSheets('), 'warm-up does not run');
 const afterLogin = extractFn(html, 'function afterLogin(opts)');
 assert.ok(afterLogin && !/supabase/i.test(afterLogin) && !afterLogin.includes('softSbDualVerify'), 'home path must not call supabase');
 const schedule = extractFn(html, 'function scheduleHomeBackgroundLoads()');
@@ -65,13 +64,11 @@ assert.ok(!login.includes('softSbDualVerify'), 'sign-in does not dual-verify');
 assert.strictEqual((html.match(/\/auth\/v1\/token\?grant_type=password/g) || []).length, 2, 'real login and setup recheck');
 assert.strictEqual((html.match(/\/rest\/v1\/rpc\/aide_login_email/g) || []).length, 1, 'login email rpc is one anon call');
 assert.ok(!html.includes('resolve_' + 'username_email'), 'old username email rpc is gone');
-assert.ok(login.includes("action:'login'"), 'emergency sheets login stays');
-assert.ok(login.indexOf('await loginAideWithSupabase(user,pass)') < login.indexOf("action:'login'"), 'default auth runs instead of sheets login');
-const sheetsBranch = login.slice(login.indexOf("action:'login'"));
-assert.ok(sheetsBranch.indexOf('startCgSession(') >= 0 && sheetsBranch.indexOf('afterLogin({freshLogin:true})') > sheetsBranch.indexOf('startCgSession('), 'sheets success still opens home');
-assert.ok(sheetsBranch.includes('data.mustChangePassword') && sheetsBranch.includes('data.needsEmail'), 'sheets login still captures setup flags');
-assert.ok(!sheetsBranch.includes('aide_login_email'), 'emergency sheets login does not call Supabase');
-assert.ok(!login.includes('data.email,pass'), 'do not map sheets email into a supabase grant');
+assert.ok(!login.includes("action:'login'"), 'sign-in does not post Apps Script');
+assert.ok(login.includes('await loginAideWithSupabase(user,pass)'), 'sign-in uses Supabase');
+assert.ok(!login.includes('releaseStuckSheetsRollback()'), 'sign-in does not clear a sheets flag');
+assert.ok(login.includes('afterLogin({freshLogin:true})'), 'sign-in still opens home');
+assert.ok(!login.includes('data.email,pass'), 'do not map a sheets email into a supabase grant');
 
 function runFlag(opts){
   const mem = Object.assign({}, opts.storage || {});
@@ -91,13 +88,13 @@ assert.strictEqual(runFlag({search:'?sb=1'}), true, 'old ?sb=1 is not required')
 assert.strictEqual(runFlag({search:'?sb=0'}), true, 'sb=0 does not fall through to sheets');
 assert.strictEqual(runFlag({storage:{evercare_sb:'1'}}), true, 'evercare_sb=1 is not the cut switch');
 assert.strictEqual(runFlag({storage:{evercare_sb:'0'}}), true, 'evercare_sb=0 does not force sheets');
-assert.strictEqual(runFlag({search:'?sheets=1'}), false, 'query rollback forces sheets');
-assert.strictEqual(runFlag({search:'?v=sbcut1&sheets=1'}), false, 'sheets=1 among other params');
-assert.strictEqual(runFlag({search:'?sheets=1&x=2'}), false, 'sheets=1 with a trailing param');
-assert.strictEqual(runFlag({search:'?sheets=10'}), true, 'sheets=10 is not the rollback');
-assert.strictEqual(runFlag({storage:{evercare_sheets:'1'}}), false, 'stored rollback forces sheets');
-assert.strictEqual(runFlag({search:'?sb=1', storage:{evercare_sheets:'1'}}), false, 'emergency sheets wins over the old opt-in');
-assert.strictEqual(runFlag({search:'?sheets=0', storage:{evercare_sheets:'0'}}), true, 'sheets=0 does not force sheets');
+assert.strictEqual(runFlag({search:'?sheets=1'}), true, 'a leftover sheets query stays on Supabase');
+assert.strictEqual(runFlag({search:'?v=sbcut1&sheets=1'}), true, 'sheets=1 among other params stays on Supabase');
+assert.strictEqual(runFlag({search:'?sheets=1&x=2'}), true, 'sheets=1 with a trailing param stays on Supabase');
+assert.strictEqual(runFlag({search:'?sheets=10'}), true, 'sheets=10 stays on Supabase');
+assert.strictEqual(runFlag({storage:{evercare_sheets:'1'}}), true, 'a stored sheets flag stays on Supabase');
+assert.strictEqual(runFlag({search:'?sb=1', storage:{evercare_sheets:'1'}}), true, 'old flags do not select Sheets');
+assert.strictEqual(runFlag({search:'?sheets=0', storage:{evercare_sheets:'0'}}), true, 'sheets=0 stays on Supabase');
 
 console.log('caregiver-sb-dual static checks ok');
 runBrowser().catch(function(err){
@@ -328,15 +325,17 @@ async function runBrowser(){
 
   sheetsLogin={success:true,name:'Test Aide',mustChangePassword:false,needsEmail:false,email:'sheets@example.com'};
   rpcMode='email';
+  authMode='ok';
+  aideMode='ok';
   holdSb=null;
   await openFresh(base+'?sheets=1');
-  assert.strictEqual(sbCalls.length,0,'sheets rollback makes no supabase call before sign-in');
-  assert.ok(sheetsActions.indexOf('ping')>=0,'warm /exec ping still runs');
+  assert.strictEqual(sbCalls.length,0,'page load makes no supabase call before sign-in');
+  assert.ok(sheetsActions.indexOf('ping')<0,'page load does not warm-ping Apps Script');
   await signIn();
   await page.waitForFunction(function(){return document.getElementById('caregiverScreen').classList.contains('active');},{timeout:5000});
   await new Promise(function(r){setTimeout(r,350);});
-  assert.strictEqual(sbCalls.length,0,'sheets rollback stays at zero supabase calls after login');
-  assert.ok(sheetsActions.indexOf('login')>=0,'sheets login still runs');
+  assert.ok(sbCalls.some(function(c){return c.url.indexOf('aide_login_email')>=0;}), 'sheets=1 still signs in through Supabase');
+  assert.ok(sheetsActions.indexOf('login')<0,'sheets=1 does not post Apps Script login');
 
   rpcMode='email';
   authMode='ok';
@@ -488,8 +487,8 @@ async function runBrowser(){
   await page.$eval('#l_pass',function(el, value){el.value=value;}, testPw);
   await page.click('#loginBtn');
   await page.waitForFunction(function(){return document.getElementById('caregiverScreen').classList.contains('active');},{timeout:5000});
-  assert.ok(sheetsActions.indexOf('login')>=0,'stored evercare_sheets=1 uses Sheets login');
-  assert.ok(!sbCalls.some(function(c){return c.url.indexOf('aide_login_email')>=0;}),'stored rollback does not dual-verify');
+  assert.ok(sheetsActions.indexOf('login')<0,'a stored sheets flag does not post Apps Script login');
+  assert.ok(sbCalls.some(function(c){return c.url.indexOf('aide_login_email')>=0;}),'a stored sheets flag still signs in through Supabase');
 
   rpcMode='email';
   authMode='ok';

@@ -50,7 +50,6 @@ const readFn = extractFn(html, 'function readRememberedUsername()');
 const paintFn = extractFn(html, 'function paintSignInForm()');
 const blankFn = extractFn(html, 'function blankSignInPassword()');
 const logoutFn = extractFn(html, 'function caregiverLogout()');
-const switchFn = extractFn(html, 'function switchTab(tab)');
 const loginFn = extractFn(html, 'async function doLogin()');
 const signupFn = extractFn(html, 'async function doSignup()');
 const forgotFn = extractFn(html, 'function showResetModal()');
@@ -68,9 +67,8 @@ assert.ok(logoutFn.includes("store.del('cg_session')"), 'logout still clears the
 assert.ok(!logoutFn.includes("store.del('cg_last_username'") && !logoutFn.includes('cg_last_username'), 'logout does not delete the remembered username');
 assert.ok(logoutFn.indexOf('rememberSignInUsername(') < logoutFn.indexOf("store.del('cg_session')"), 'logout keeps the username before the session is removed');
 assert.ok(logoutFn.includes("showScreen('authScreen')"), 'logout still returns to sign in');
-assert.ok(switchFn.includes("if(tab==='login'&&typeof paintSignInForm==='function')paintSignInForm()"), 'opening Sign In prefills');
-assert.ok(!switchFn.includes('s_user'), 'switching tabs does not copy into sign up');
-assert.strictEqual((loginFn.match(/rememberSignInUsername\(user\)/g) || []).length, 3, 'each successful sign-in path stores the username');
+assert.ok(!html.includes('function switchTab('), 'the signup tab switch is gone');
+assert.strictEqual((loginFn.match(/rememberSignInUsername\(user\)/g) || []).length, 1, 'sign-in stores the username once');
 assert.ok(!loginFn.includes('rememberSignInUsername(pass)') && !loginFn.includes('rememberSignInUsername(password)'), 'sign-in does not store the password');
 assert.ok(!signupFn.includes('rememberSignInUsername'), 'sign-up does not write the remembered username');
 assert.ok(forgotFn.includes("getElementById('reset_email')"), 'forgot password still clears the email');
@@ -93,8 +91,7 @@ const src = [
   readFn,
   blankFn,
   paintFn,
-  logoutFn,
-  switchFn
+  logoutFn
 ].join('\n');
 
 function memoryStorage(){
@@ -144,7 +141,7 @@ function run(setup){
   };
   context.window = context;
   vm.createContext(context);
-  vm.runInContext(src + '\nthis.paintSignInForm=paintSignInForm;this.rememberSignInUsername=rememberSignInUsername;this.readRememberedUsername=readRememberedUsername;this.caregiverLogout=caregiverLogout;this.switchTab=switchTab;this.store=store;', context);
+  vm.runInContext(src + '\nthis.paintSignInForm=paintSignInForm;this.rememberSignInUsername=rememberSignInUsername;this.readRememberedUsername=readRememberedUsername;this.caregiverLogout=caregiverLogout;this.store=store;', context);
   if(setup)setup(context, els, localStorage);
   return {context, els, localStorage, sessionStorage, screens};
 }
@@ -205,13 +202,10 @@ function run(setup){
   els.l_user.value = '';
   els.l_pass.value = 'nope';
   els.s_user.value = '';
-  context.switchTab('signup');
-  assert.strictEqual(els.s_user.value, '', 'sign-up tab is not prefilled');
-  assert.strictEqual(els.l_pass.value, 'nope', 'leaving sign-in does not need to invent a password write');
-  context.switchTab('login');
+  context.paintSignInForm();
+  assert.strictEqual(els.s_user.value, '', 'sign-up is not on this screen');
   assert.strictEqual(els.l_user.value, 'kept.user');
-  assert.strictEqual(els.l_pass.value, '', 'returning to sign-in clears the password');
-  assert.strictEqual(els.s_user.value, '');
+  assert.strictEqual(els.l_pass.value, '', 'painting sign-in clears the password');
 }
 
 console.log('cguser1 remember username checks ok');

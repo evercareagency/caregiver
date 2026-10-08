@@ -54,7 +54,8 @@ assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-sb-sea
 assert.ok(html.includes('<!-- caregiver-build: 2026-09-24-offline-save v=offline1 —'), 'offline build marker');
 assert.ok(html.includes('v=offline1'), 'probe marker');
 assert.ok(html.includes('<meta name="caregiver-build" content="2026-09-24-offline-save">'), 'offline build meta');
-assert.ok(html.includes('Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf'), 'emergency sheets pdf path is documented');
+assert.ok(html.includes('Timesheet PDF is the client blank-letter overlay only'), 'timesheet PDF stays on the client overlay');
+assert.ok(!html.includes('sbPullSheetsTimesheetPdf') && !html.includes('render_timesheet_pdf'), 'server PDF pull is gone');
 assert.ok(!/service_role/i.test(html), 'service_role must not be embedded');
 assert.ok(html.includes("const SB_PDF_BUCKET='evercare-pdfs'"), 'bucket is evercare-pdfs');
 assert.ok(html.includes('assets/blank-letter.png?v=a713ovl'), 'paper form blank');
@@ -65,14 +66,10 @@ assert.ok(!html.includes('pdf_link'), 'do not read or clear Sheet PdfLink');
 assert.ok(!html.includes('sbFallbackTimesheetPdf'), 'text-stub PDF fallback is gone');
 assert.ok(!html.includes('/functions/v1'), 'no Edge function for PDF bytes');
 const writeFn = extractFn(html, 'async function sbWriteTimesheetPdf(timesheetId,record)');
-const pullFn = extractFn(html, 'async function sbPullSheetsTimesheetPdf(record)');
-assert.ok(writeFn.indexOf('renderTimesheetPdfBlob') < writeFn.indexOf('sbPullSheetsTimesheetPdf'), 'overlay runs before the sheets pull');
-assert.ok(writeFn.includes('!evercareSbEnabled()'), 'sheets PDF bytes only when emergency sheets is forced');
+assert.ok(writeFn.includes('renderTimesheetPdfBlob'), 'save uses the client overlay');
+assert.ok(!writeFn.includes('sbPullSheetsTimesheetPdf') && !writeFn.includes('fetch('), 'save does not pull a server PDF');
 assert.ok(writeFn.includes('sbPdfSize(bytes)<1024'), 'upload requires at least 1KiB');
 assert.ok(!/rpc\//.test(writeFn) && !/functions\/v1/.test(writeFn), 'write path has no render RPC');
-assert.ok(pullFn.includes('SHEETS_URL'), 'fallback reads Sheets /exec');
-assert.ok(pullFn.includes("action:'render_timesheet_pdf'"), 'sheets action is the archive render');
-assert.ok(!/rpc\//.test(pullFn) && !/functions\/v1/.test(pullFn), 'sheets pull is not an Edge call');
 assert.ok(html.includes('nameX:110') && html.includes('dayY0:172.5') && html.includes('commentsY:610'), 'Ace FORM overlay coordinates');
 assert.ok(html.includes('const SB_PDF_MAX_BYTES=25*1024*1024'), 'client upload guard is 25*1024*1024');
 assert.ok(html.includes('const SB_PDF_TARGET_BYTES=2*1024*1024'), 'overlay ceiling is 2 MiB');
@@ -118,10 +115,10 @@ assert.ok(sync.includes('sbRefreshTimesheetPdf(row.id)'), 'Save Day refresh runs
 assert.ok(sync.includes('sbUpsertTimesheet'), 'Save Day still upserts the backup row');
 assert.ok(sync.indexOf('sbUpsertTimesheet') < sync.indexOf('sbRefreshTimesheetPdf'), 'refresh follows the upsert');
 const fin = extractFn(html, 'async function doFinalSubmit()');
-assert.ok(fin.includes("action:'submit'"), 'flag off submit stays on /exec');
+assert.ok(!fin.includes("action:'submit'"), 'submit does not post Apps Script');
 assert.ok(fin.includes('sbRefreshTimesheetPdf(row.id,weekData)'), 'soft submit refreshes the PDF');
 assert.ok(fin.indexOf('evercareSbEnabled()') < fin.indexOf('sbRefreshTimesheetPdf'));
-assert.ok(fin.indexOf('sbRefreshTimesheetPdf') < fin.indexOf("action:'submit'"), 'sheets submit is the flag-off branch');
+assert.ok(fin.includes("showTempMsg(sheetsOffMessage()"), 'a blocked submit keeps the form');
 
 const urlConst = (html.match(/const SUPABASE_URL='([^']+)'/) || [])[1];
 const keyConst = (html.match(/const SUPABASE_ANON_KEY='([^']+)'/) || [])[1];
@@ -149,6 +146,7 @@ const src = [
   extractFn(html, 'async function sbRest(path,opts)'),
   extractFn(html, 'async function sbEnsureOrgId()'),
   extractFn(html, 'function sbDayWire(day)'),
+  extractFn(html, 'function civilWeekSunday(ymd)'),
   extractFn(html, 'function sbWeekSunday(value)'),
   extractFn(html, 'function sbDayIndex(key)'),
   extractFn(html, 'function sbNormalizeDays(days)'),
@@ -425,15 +423,10 @@ function settle(){
 
   const emergency = run({search:'?sheets=1'});
   const emergencyOk = await vm.runInContext('sbWriteTimesheetPdf("ts-9",{clientName:"Ada Client",empName:"Aide One",username:"aide.one",weekStart:"2026-09-20",totalHrs:"4:00",days:{"1":{tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Bathing"]}}})', emergency);
-  assert.strictEqual(emergencyOk, true, 'emergency sheets force may upload /exec PDF bytes');
-  const emergSheets = emergency.calls.filter(function(c){return c.url === sheetsUrl;});
-  assert.strictEqual(emergSheets.length, 1, 'emergency overlay miss pulls Sheets /exec once');
-  const emergBody = JSON.parse(emergSheets[0].init.body);
-  assert.strictEqual(emergBody.action, 'render_timesheet_pdf');
-  assert.strictEqual(emergBody.client_name, 'Ada Client');
+  assert.strictEqual(emergencyOk, false, 'sheets mode does not upload Apps Script PDF bytes');
+  assert.ok(!emergency.calls.some(function(c){return c.url === sheetsUrl || c.url.indexOf('script.google.com') >= 0;}), 'sheets mode does not call Apps Script');
   const emergStorage = emergency.calls.filter(function(c){return c.url.indexOf('/storage/v1/object/') >= 0;});
-  assert.strictEqual(emergStorage.length, 1);
-  assert.strictEqual(bytesToString(emergStorage[0].init.body), sheetsPdfBytes());
+  assert.strictEqual(emergStorage.length, 0);
 
   const fat = run({});
   fat.sbEnsurePdfLibs = async function(){return true;};
