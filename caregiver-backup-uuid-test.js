@@ -68,6 +68,7 @@ const src = [
   extractFn(html, 'function askCloudBackup()'),
   extractFn(html, 'async function doCloudBackup()'),
   extractFn(html, 'function sbDayWire(day)'),
+  extractFn(html, 'function civilWeekSunday(ymd)'),
   extractFn(html, 'function sbWeekSunday(value)'),
   extractFn(html, 'function sbDayIndex(key)'),
   extractFn(html, 'function sbNormalizeDays(days)'),

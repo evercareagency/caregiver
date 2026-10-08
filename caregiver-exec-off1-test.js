@@ -29,6 +29,11 @@ function count(re){
 
 assert.strictEqual(count(/script\.google\.com/g), 0, 'script.google.com count');
 assert.strictEqual(count(/script\.google\.com\/macros|AKfycb|SHEETS_URL/g), 0, 'P2 sheets url count');
+assert.strictEqual(count(/\/exec/g), 0, '/exec count');
+assert.strictEqual(count(/sheets=1/g), 0, 'sheets=1 count');
+assert.strictEqual(count(/Apps Script/g), 0, 'Apps Script count');
+assert.strictEqual(count(/warmkeep/g), 0, 'warmkeep count');
+assert.strictEqual(count(/Sheets/g), 0, 'Sheets count');
 assert.strictEqual(count(/warmUpSheets|aceExecSoft/g), 0, 'warm-up count');
 assert.strictEqual(count(/sbPullSheetsTimesheetPdf|render_timesheet_pdf/g), 0, 'server pdf count');
 assert.strictEqual(count(/fetch\(SHEETS_URL/g), 0, 'fetch SHEETS_URL count');
@@ -56,8 +61,11 @@ assert.ok(!correction.includes('fetch('), 'corrections do not fetch Apps Script'
 assert.ok(correction.includes('emptyCorrection'), 'a failed correction load is an empty state');
 
 const submit = extractFn(html, 'async function doFinalSubmit()');
-assert.ok(submit.includes('sheetsOffMessage()') && submit.includes('still on this screen'), 'a failed submit names the office and keeps the form');
-assert.ok(submit.indexOf('still on this screen') < submit.indexOf('currentTS=null'), 'the form is cleared only after a successful save');
+const offMsg = extractFn(html, 'function sheetsOffMessage(kind)');
+assert.ok(offMsg.includes('still here') && offMsg.includes('(216) 377-5991'), 'save copy names the office and keeps the entries');
+assert.ok(submit.includes('sheetsOffMessage()'), 'a failed submit names the office and keeps the form');
+assert.ok(submit.indexOf('sheetsOffMessage()') < submit.indexOf('currentTS=null'), 'the form is cleared only after a successful save');
+assert.ok(!submit.includes('e.message'), 'a failed submit does not show the raw error');
 assert.ok(!submit.includes("action:'submit'") && !submit.includes("action:'resubmit'"), 'submit does not post Apps Script');
 
 const sw = fs.readFileSync(path.join(__dirname, 'caregiver-push-sw.js'), 'utf8');
@@ -182,8 +190,14 @@ function boot(opts){
     extractFn(html, 'async function sbRead(res)'),
     extractFn(html, 'function sbErrMsg(pack,fallback)'),
     extractFn(html, 'async function sbRest(path,opts)'),
+    extractFn(html, 'function nyCivilYmd(date)'),
+    extractFn(html, 'function civilWeekSunday(ymd)'),
+    extractFn(html, 'function currentWeekSunday()'),
     extractFn(html, 'function formatWeekOfLabel(val)'),
-    extractFn(html, 'function sheetsOffMessage()'),
+    extractFn(html, 'function correctionNoteText(note)'),
+    extractFn(html, 'function paintCorrectionBanner(banner, data)'),
+    extractFn(html, 'function sheetsOffMessage(kind)'),
+    extractFn(html, 'function cgWarnRaw(where, err)'),
     extractFn(html, 'function syncCorrectionsFromAdmin(rows)'),
     correction,
     extractFn(html, 'function showScreen(id)')
@@ -217,6 +231,7 @@ function boot(opts){
   assert.ok(painted.nodes.correctionBanner.classList.contains('show'), 'banner shows');
   assert.ok(painted.nodes.correctionBanner.textContent.indexOf('Week of 09/20/2026') >= 0, painted.nodes.correctionBanner.textContent);
   assert.ok(painted.nodes.correctionBanner.textContent.indexOf('needs corrections') >= 0);
+  assert.ok(painted.nodes.correctionBanner.textContent.indexOf('Fix Monday') >= 0, 'the office note is on the banner');
   assert.strictEqual(painted.correctionData.clientName, 'Ada Client');
   assert.deepStrictEqual(painted.correctionData.correctionDays, [1]);
   assert.strictEqual(painted.list.length, 1, 'home list keeps the request');
@@ -255,7 +270,7 @@ function boot(opts){
   const before = failed.currentTS;
   await failed.doFinalSubmit();
   assert.strictEqual(failed.currentTS, before, 'a failed submit keeps the open timesheet');
-  assert.ok(failed.msgs.some(function(m){return m.indexOf('(216) 377-5991') >= 0 && m.indexOf('still on this screen') >= 0;}), failed.msgs.join(' | '));
+  assert.ok(failed.msgs.some(function(m){return m.indexOf('(216) 377-5991') >= 0 && m.indexOf('still here') >= 0 && m.indexOf('save failed') < 0;}), failed.msgs.join(' | '));
   assert.ok(!failed.calls.some(function(c){return /script\.google\.com|\/exec/.test(c.url);}), 'submit failure does not call Apps Script');
 
   console.log('caregiver-exec-off1 checks ok');

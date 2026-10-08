@@ -118,7 +118,7 @@ const fin = extractFn(html, 'async function doFinalSubmit()');
 assert.ok(!fin.includes("action:'submit'"), 'submit does not post Apps Script');
 assert.ok(fin.includes('sbRefreshTimesheetPdf(row.id,weekData)'), 'soft submit refreshes the PDF');
 assert.ok(fin.indexOf('evercareSbEnabled()') < fin.indexOf('sbRefreshTimesheetPdf'));
-assert.ok(fin.includes('still on this screen'), 'a blocked submit keeps the form');
+assert.ok(fin.includes("showTempMsg(sheetsOffMessage()"), 'a blocked submit keeps the form');
 
 const urlConst = (html.match(/const SUPABASE_URL='([^']+)'/) || [])[1];
 const keyConst = (html.match(/const SUPABASE_ANON_KEY='([^']+)'/) || [])[1];
@@ -146,6 +146,7 @@ const src = [
   extractFn(html, 'async function sbRest(path,opts)'),
   extractFn(html, 'async function sbEnsureOrgId()'),
   extractFn(html, 'function sbDayWire(day)'),
+  extractFn(html, 'function civilWeekSunday(ymd)'),
   extractFn(html, 'function sbWeekSunday(value)'),
   extractFn(html, 'function sbDayIndex(key)'),
   extractFn(html, 'function sbNormalizeDays(days)'),

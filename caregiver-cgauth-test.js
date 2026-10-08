@@ -81,7 +81,7 @@ const userId = '11111111-1111-1111-1111-111111111111';
 
 const src = [
   'const SUPABASE_URL=' + JSON.stringify(urlConst) + ';',
-  extractFn(html, 'function sheetsOffMessage()'),
+  extractFn(html, 'function sheetsOffMessage(kind)'),
   'const SUPABASE_ANON_KEY=' + JSON.stringify(keyConst) + ';',
   extractFn(html, 'function evercareSbEnabled()'),
   extractFn(html, 'function sbAnonHeaders()'),

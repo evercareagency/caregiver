@@ -460,7 +460,7 @@ async function runBrowser(){
         build:(document.querySelector('meta[name="caregiver-build"]')||{}).content
       };
     });
-    assert.strictEqual(result.build, '2026-10-08-sec1-cg2', 'first build meta is the cache token');
+    assert.strictEqual(result.build, '2026-10-08-exec-off1', 'first build meta is the cache token');
     assert.strictEqual(result.marker, 'v=care-msg-send1');
     assert.strictEqual(result.cache, '?v=care-msg-send1');
     assert.strictEqual(result.afterSend.fail, false, 'the screen does not say the message did not send');

@@ -55,6 +55,7 @@ const src = [
   extractFn(html, 'function sbMergeDays(base,incoming)'),
   extractFn(html, 'function sbMergeDaysReplace(base,incoming)'),
   extractFn(html, 'function sbKeepSubmitted(existing,status)'),
+  extractFn(html, 'function civilWeekSunday(ymd)'),
   extractFn(html, 'function sbWeekSunday(value)'),
   extractFn(html, 'function sbDayIndex(key)'),
   extractFn(html, 'function sbNormalizeDays(days)'),
@@ -321,20 +322,20 @@ function run(opts){
 
   const submitIs = extractFn(html, 'async function submitInservice()');
   assert.ok(!submitIs.includes("action:'submit_inservice'") && !submitIs.includes('SHEETS_URL'), 'inservice does not post Apps Script');
-  assert.ok(submitIs.includes('sheetsOffMessage()'), 'sheets-mode inservice tells the aide');
+  assert.ok(submitIs.includes("sheetsOffMessage('inservice')"), 'sheets-mode inservice tells the aide');
   assert.ok(submitIs.includes('sbSubmitInservice('), 'flag on inserts inservice_results');
   const delFn = extractFn(html, 'async function deleteTimesheetBackup(id)');
   assert.ok(!delFn.includes("action:'delete_timesheet_backup'"), 'delete does not post Apps Script');
-  assert.ok(delFn.includes('sheetsOffMessage()'));
+  assert.ok(delFn.includes("sheetsOffMessage('backup')"));
   assert.ok(delFn.includes('sbSoftDeleteBackup(id)'));
   const saveDay = extractFn(html, 'function saveDayData(i,dayObj)');
   assert.ok(saveDay.includes('sbSyncSavedDay'), 'flag on Save Day syncs the open day');
   const fin = extractFn(html, 'async function doFinalSubmit()');
   assert.ok(!fin.includes("action:'submit'") && !fin.includes("action:'resubmit'"), 'submit does not post Apps Script');
-  assert.ok(fin.includes('sheetsOffMessage()') && fin.includes('still on this screen'), 'a blocked submit keeps the form and says so');
+  assert.ok(fin.includes('sheetsOffMessage()') && extractFn(html, 'function sheetsOffMessage(kind)').includes('still here'), 'a blocked submit keeps the form and says so');
   const sheetsBackup = extractFn(html, 'async function doCloudBackup()');
   assert.ok(!sheetsBackup.includes("action:'save_timesheet_backup'"));
-  assert.ok(sheetsBackup.includes('sheetsOffMessage()'));
+  assert.ok(sheetsBackup.includes("sheetsOffMessage('backup')"));
   const loc = extractFn(html, 'function saveLocationStatus(status)');
   assert.ok(!loc.includes("action:'save_location_status'") && !loc.includes('SHEETS_URL'), 'location status does not post Apps Script');
 

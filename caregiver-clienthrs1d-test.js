@@ -359,18 +359,34 @@ async function runBrowser(){
         };
       }
     });
+    await page.evaluateOnNewDocument(function(){
+      const orig = window.fetch.bind(window);
+      window.fetch = function(input, init){
+        let mode = '';
+        try{mode = sessionStorage.getItem('__cgNet') || '';}catch(e){}
+        const url = String(input && input.url || input || '');
+        if(mode && /supabase\.co/.test(url)){
+          return Promise.resolve(new Response('[]', {status:200, headers:{'Content-Type':'application/json'}}));
+        }
+        return orig(input, init);
+      };
+    });
     await page.setViewport({width:390, height:844, isMobile:true, hasTouch:true, deviceScaleFactor:2});
-    await page.goto('http://127.0.0.1:'+port+'/index.html?sheets=1', {waitUntil:'domcontentloaded', timeout:20000});
+    await page.goto('http://127.0.0.1:'+port+'/index.html', {waitUntil:'domcontentloaded', timeout:20000});
     await page.evaluate(function(){
       localStorage.setItem('cg_session', JSON.stringify({
         username:'sara',
         name:'Sara',
         loginAt:Date.now()-60*60*1000,
         mustChangePassword:false,
-        needsEmail:false
+        needsEmail:false,
+        sbAccessToken:'jwt-test',
+        sbRefreshToken:'refresh-test',
+        sbExpiresAt:Date.now()+60*60*1000
       }));
       sessionStorage.setItem('sandata_ack_session','1');
       sessionStorage.setItem('notice_ack_sara','1');
+      sessionStorage.setItem('__cgNet','stub');
     });
     await page.reload({waitUntil:'domcontentloaded', timeout:20000});
     await page.waitForFunction(function(){
@@ -468,6 +484,7 @@ async function runBrowser(){
       raw.sbAccessToken = 'test-jwt';
       localStorage.setItem('cg_session', JSON.stringify(raw));
       localStorage.removeItem('evercare_sheets');
+      sessionStorage.removeItem('__cgNet');
       sessionStorage.setItem('sandata_ack_session','1');
       sessionStorage.setItem('notice_ack_sara','1');
     });

@@ -163,7 +163,7 @@ function cgShellBoot(){
 // end v=pages-cache-fresh1
 cgShellBoot();
 </script>
-<!-- caregiver-build: 2026-10-08-exec-off1 v=exec-off1 ?v=exec-off1 EXEC_OFF1 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Quiet Mo. Supabase is the system of record. The aide portal does not call the legacy Apps Script web app on page load, warm-up, timers, sign-in, home, timesheet fill, submit, resubmit, corrections, PDF, backups, location status, in-services, or messages. The old sheets rollback is deleted. A save that cannot reach the office shows (216) 377-5991 and keeps timesheet entries on the screen. Corrections read timesheets with status correction_requested. Save and print use the client overlay. Save and print stay one US Letter page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on page 1. Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. SEC1_CG2 sign-in stays aide_login_email. Login look stays. Cache bust ?v=exec-off1. v=sec1-cg2 and earlier tips unchanged. -->
+<!-- caregiver-build: 2026-10-08-exec-off1 v=exec-off1 ?v=exec-off1 EXEC_OFF1 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Quiet Mo. Supabase is the system of record. The aide portal does not call the legacy the old web app web app on page load, warm-up, timers, sign-in, home, timesheet fill, submit, resubmit, corrections, PDF, backups, location status, in-services, or messages. The old sheets rollback is deleted. A save that cannot reach the office shows (216) 377-5991 and keeps timesheet entries on the screen. Corrections read timesheets with status correction_requested. Save and print use the client overlay. Save and print stay one US Letter page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on page 1. Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. SEC1_CG2 sign-in stays aide_login_email. Login look stays. Cache bust ?v=exec-off1. v=sec1-cg2 and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-10-08-sec1-cg2 v=sec1-cg2 ?v=sec1-cg2 SEC1_CG2 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Aides are created only by the office. The login screen has no Sign Up tab, no sign-up control, and no office-code field. doSignup always shows Accounts are created by the office. Contact your manager. It does not call the network and does not write a local user. Forgot password has no Username field. It still posts the typed email to /auth/v1/recover and shows the same neutral message with the office line (216) 377-5991. Too many login attempts says 15 minutes. The Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. Sign-in stays aide_login_email. Login look, remember-username, and the 1-Letter-page timesheet PDF stay. Cache bust ?v=sec1-cg2. v=sec1-ui-h2 and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-10-08-sec1-ui-h2 v=sec1-ui-h2 ?v=sec1-ui-h2 SEC1_UI_H2 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Sign-in posts aide_login_email with the username, password, and org evercare on the anon key, then the password grant. A null result shows Incorrect username or password. HTTP 400 too many login attempts shows a wait message. Forgot password posts the typed email to /auth/v1/recover with redirect_to this page and always shows the same office message. The Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. Login look, remember-username, and the timesheet PDF layout stay. Cache bust ?v=sec1-ui-h2. v=sec1-ui and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-10-08-sec1-ui v=sec1-ui ?v=sec1-ui SEC1_UI — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Pure UI. Ace NO CALLABLE. No new Ace patch. No new SQL. No Auth. No Quo. No SMS. SEC1_UI pins every cdnjs script on this page (html2canvas 1.4.1 and jspdf 2.5.1) with integrity sha384 from the exact file, crossorigin anonymous, and referrerpolicy no-referrer. #sec1UiCdnjs holds those tags. sbLoadScript copies them onto the script it appends and will not load a cdnjs URL that lacks the pin. The Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. Login, the messages composer, and the timesheet PDF layout stay. Cache bust ?v=sec1-ui. v=msg-composer-rect1, pwa-install-copy1, care-msg-send1, aide-notif-done-hide1, pages-cache-fresh1, and earlier tips unchanged. -->
@@ -179,7 +179,7 @@ cgShellBoot();
 <!-- caregiver-build: 2026-09-27-care-msg-tab1 v=care-msg-tab1 — Sunday 2026-09-27. MERGE HOLD. Do not claim LIVE. GHOST-CARE-MSG-TAB1-CONTRACT-v1. Caregiver bottom nav is five tabs in this order: Home, Timesheet, Messages, Inservices, More. The Messages tab calls openAideMessages() and opens #messagesScreen, the same screen the old Home card opened. Deep links #messages, #caregiver/messages, and ?open=messages stay valid. Home no longer shows #aideChatHomeCard. #callOffHomeCard stays. #msgNavBadge uses the same red .bn-badge as #isNavBadge (background #ff3b30). It shows when aide_list_office_messages returns office or Remi messages that still lack read_by_aide_at, or an equivalent unread field already on that list, and the count is greater than 0. It hides at 0. The badge is decorative (pointer-events none) and the Messages tab stays the control. The count refreshes on Home open, the login schedule (scheduleHomeBackgroundLoads), pageshow, and visibilitychange. After aide_mark_office_messages_read succeeds on Messages open, the badge clears. A missing list RPC hides the badge and does not invent a count. No new Ace RPC. No SQL. No Admin. No Auth reseal. No Quo. No SMS. v=vapid1, clienthrs1d, aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-vapid1 v=vapid1 — Sunday GO 2026-09-27. Ace set get_vapid_public_key to configured true with a non-empty vapidPublicKey. GHOST-VAPID1-CONTRACT-v1 is CALLABLE. Account Allow notifications and the Remi reminders and office chat push switches POST /rest/v1/rpc/get_vapid_public_key {} before PushManager.subscribe. When configured is true and vapidPublicKey is non-empty, subscribe uses that public key as applicationServerKey through urlB64ToUint8Array, then POSTs /rest/v1/rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}. When configured is false, null, or the key is empty, PushManager stays off, a later note shows, and the reminder choices still save. If configured flips false later, that same soft path runs and the page does not throw. Not now, or both switches off, still POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {}. Only the public key is used on this page. No Quo. No SMS sender. No Auth. v=clienthrs1d roster prefs, Messages, schedule-send, chat display names, and Remi-never-full-page stay. v=aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-clienthrs1d v=clienthrs1d — Sunday GO 2026-09-27. Account (#moreScreen #clienthrsPushCard) turns on Remi reminders and office chat push. GHOST-CLIENTHRS1D-CONTRACT-v1 is CALLABLE. POST /rest/v1/rpc/aide_get_notification_prefs {}. POST /rest/v1/rpc/aide_save_notification_prefs {p_remi_reminders, p_office_chat_push, p_timesheet_location_permission allowed or denied or never_asked}. The browser reports timesheet location (granted is allowed, denied is denied, otherwise never_asked). Before PushManager.subscribe the page POSTs /rest/v1/rpc/get_vapid_public_key {}. If configured is false, PushManager stays off and a later note shows; the prefs still save. Allow with configured true subscribes and POSTs /rest/v1/rpc/aide_upsert_web_push_subscription {p_endpoint, p_p256dh, p_auth, p_user_agent}. Not now, or both switches off, POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {} so a null endpoint revokes this aide. aide_list_office_messages display_name and display_names label Remi and office bubbles. The aide’s own bubbles stay You. A push tap opens this same Messages thread (#messages, #caregiver/messages, or ?open=messages). Remi stays in that thread and is never a full page. No Quo. No SMS sender. No Auth. v=aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
-<!-- caregiver-build: 2026-09-25-aidechat1 v=aidechat1 — Saturday GO 2026-09-26. Aide Messages is one thread with the office (#messagesScreen from #aideChatHomeBtn). Compose plus history. Bubbles are labeled You, Office, and Remi. Shift status, call-off, and pay questions fill the composer; the aide still taps Send. This screen does not decide a call-off. Any office or call-off phone shown is exactly (216) 377-5991 and a tappable tel:+12163775991 link. No other number is shown. GHOST-AIDECHAT1-CONTRACT-v1 is LIVE on Supabase. POST /rest/v1/rpc/aide_get_or_create_office_thread {}. POST /rest/v1/rpc/aide_list_office_messages {p_limit, p_before}. POST /rest/v1/rpc/aide_send_office_message {p_body, p_escalate_kind call_off or pay_question; shift status omits p_escalate_kind}. POST /rest/v1/rpc/aide_mark_office_messages_read {p_before} when the aide opens Messages; p_before is the newest message time, or omitted when the thread has no time. aide_chat_remi_context(p_on_date) stays Admin-side; this screen does not call it. Aide JWT. A missing function (HTTP 404, PGRST202, 42883, or Could not find the function) uses the phone stub evercare_aidechat1_ plus username and does not invent an Office or Remi reply. A missing mark-read does not invent a reply either. No SMS. No email. No /exec. No Auth reseal. Bottom nav stays Home, Timesheet, Inservices, More. v=cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-25-aidechat1 v=aidechat1 — Saturday GO 2026-09-26. Aide Messages is one thread with the office (#messagesScreen from #aideChatHomeBtn). Compose plus history. Bubbles are labeled You, Office, and Remi. Shift status, call-off, and pay questions fill the composer; the aide still taps Send. This screen does not decide a call-off. Any office or call-off phone shown is exactly (216) 377-5991 and a tappable tel:+12163775991 link. No other number is shown. GHOST-AIDECHAT1-CONTRACT-v1 is LIVE on Supabase. POST /rest/v1/rpc/aide_get_or_create_office_thread {}. POST /rest/v1/rpc/aide_list_office_messages {p_limit, p_before}. POST /rest/v1/rpc/aide_send_office_message {p_body, p_escalate_kind call_off or pay_question; shift status omits p_escalate_kind}. POST /rest/v1/rpc/aide_mark_office_messages_read {p_before} when the aide opens Messages; p_before is the newest message time, or omitted when the thread has no time. aide_chat_remi_context(p_on_date) stays Admin-side; this screen does not call it. Aide JWT. A missing function (HTTP 404, PGRST202, 42883, or Could not find the function) uses the phone stub evercare_aidechat1_ plus username and does not invent an Office or Remi reply. A missing mark-read does not invent a reply either. No SMS. No email. No the old link. No Auth reseal. Bottom nav stays Home, Timesheet, Inservices, More. v=cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigfit1 v=cgsigfit1 — Friday GO 2026-09-25. Phone-pad scribbles are scaled and thinned into the timesheet boxes. Top CLIENT and CAREGIVER/HHA images and each day-row HHA and Client image stay the real strokes and sit inside the cell instead of filling it into a blob. TS_SIG_FIT is the inset (day 84×7.8pt, top 136×11.2pt) on the measured blank-letter cells. sbThinSigPixels peels only the outer pixels of a fat stroke and keeps the ridge, so the scribble is not replaced with a line or dashes. Capture hides the overlay images and sbStampTimesheetSigs paints that fitted ink once. Pad lock and Redo Are you sure? unlock stay v=cgsigs2. Saved PDF is one US Letter page and print of the open timesheet is one page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on that page. v=cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgsigs2 v=cgsigs2 — Friday GO 2026-09-25. Folds cgsiglock into the signature PDF tip. Audit of LIVE: Save Day PDF already paints every saved day's HHA and Client scribble on that row (v=cgsigs1), and the top CLIENT and CAREGIVER/HHA boxes from the latest day with both. Pads already lock after Confirm and Save Day (pointer-events:none, touch-action:auto) so a phone scroll does not draw (v=cgsiglock1). Saved PDF is one US Letter page and print of the open timesheet is one page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on that page. Residual: Redo on a locked pad asks "Are you sure?" and the pad stays locked until Yes, redo. Go back leaves the lock. v=cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cguser1 v=cguser1 — Friday GO 2026-09-25. Sign In pre-fills the last username used on this device after Logout and on a cold open of Sign In. The key is cg_last_username (username only). The password field is cleared and the password is never written to storage. Sign Up and Forgot password stay blank. No Auth password reseal. After Forgot/recover Save password and Finish-account, Password saved and Open Caregiver still do not auto-login (v=cghome1b). v=cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -194,25 +194,25 @@ cgShellBoot();
 <!-- caregiver-build: 2026-09-25-cgquizlet1 v=cgquizlet1 — Friday GO 2026-09-25. Aide take-quiz (#isOptions) shows every choice with its index letter: 0→A, 1→B, and on through F when a question has six choices. Example: “B. medical emergency”. A letter already stored on the choice text is not repeated. answerQ still stores the numeric index, and Submit Inservice still posts that index list. v=loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-loginkb1 v=loginkb1 — Friday GO 2026-09-25. Phone Sign In: focusing username or password sizes #authScreen to the visual viewport and scrolls that field and #loginBtn above the keyboard. The form stays a scrollport so Forgot password can move into view. No window.scrollTo. Desktop width does not take this path. doLogin and the Auth soft path are unchanged. v=cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-25-cgisbadge1 v=cgisbadge1 — Friday GO 2026-09-25. Bottom-nav Inservices shows a red due-count badge on the books icon. The count is the same assigned-incomplete set as the home #isNotifBanner (dueInserviceCount). Count > 0 keeps that banner and shows the badge; 0 hides both. The badge is decorative (pointer-events none) and the Inservices tab stays the control. Phone and desktop use this same bottom nav. v=cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
-<!-- caregiver-build: 2026-09-25-cghome1 v=cghome1 — Friday GO 2026-09-25. Forgot no longer stops on “Username and email do not match.” before /auth/v1/recover. The username email lookup for mossier already returns the Auth email, so that line was the Sheets verify_reset branch when evercareSbEnabled() is false (?sheets=1 or localStorage.evercare_sheets=1), or aideEmailsMatch rejecting an empty or autofilled email. Forgot clears that flag, strips sheets=1, and recovers to the resolved Auth email when the username resolves. An unknown username does not send mail and the screen does not show the Auth address. The email field stays optional. After Save password and after Finish-account, the primary button says “Open Caregiver”. Standalone (display-mode or iOS navigator.standalone) assigns a same-tab relative URL (./ or index.html). Otherwise it assigns https://evercareagency.github.io/caregiver/ or this page’s origin+path, same tab, no target=_blank. Auth PUT /auth/v1/user is unchanged. v=cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
-<!-- caregiver-build: 2026-09-24-cgauth1 v=cgauth1 — Friday GO 2026-09-24. Default cut password lifecycle stays Auth-only. Login is the username email lookup then the password grant. Forgot is GoTrue recover then PUT /auth/v1/user. Finish-account (must_change) always calls that same Auth update and clears aides.must_change_password; a missing JWT does not fall through to Sheets complete_aide_setup or set_password. Signup on the cut still does not create an Auth user and does not write a Sheets password. Forgot-password inputs on #resetModal are 48px so the link form stays usable at about 390px. Sheets login, signup, verify_reset, reset_password, and set_password run only when evercareSbEnabled() is false (?sheets=1 or localStorage.evercare_sheets=1). v=bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
-<!-- caregiver-build: 2026-09-24-bcast1b v=bcast1b — Friday GO 2026-09-24. Home #broadcastBanner unwraps the Ace get_active_broadcast envelope {success,data} (or ok/data) before reading data.message, same as Admin bcastActiveFromRpc. data null, empty message, or success/ok false hides the banner. Array singleton and a string payload still paint. Cut stays aide-JWT POST /rest/v1/rpc/get_active_broadcast {} only. Caregiver never calls send_broadcast or clear_broadcast. If the JWT is missing at home paint and appears within about 2s, the banner load retries once. Rollback ?sheets=1 OR localStorage.evercare_sheets=1 still reads store broadcast_msg only. v=bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
-<!-- caregiver-build: 2026-09-24-bcast1 v=bcast1 — Friday GO 2026-09-24. Home #broadcastBanner / .broadcast-banner on the Supabase cut reads aide-JWT POST /rest/v1/rpc/get_active_broadcast {} only (GHOST-BROADCAST-CONTRACT-v1). If data.message is set, show it; if data is null or empty, hide. Caregiver never calls send_broadcast or clear_broadcast. Rollback ?sheets=1 OR localStorage.evercare_sheets=1 restores the localStorage/store key broadcast_msg read path and does not invent Sheets /exec. v=warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
-<!-- caregiver-build: 2026-09-24-warm-off v=warmoff1 — Friday GO 2026-09-24. Supabase cut does not fire Sheets warmkeep /exec beacons (POST ping and GET) when the login page loads, so first paint is not blocked on Apps Script. Rollback ?sheets=1 or localStorage.evercare_sheets=1 still warms /exec as soon as this script runs. v=cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-25-cghome1 v=cghome1 — Friday GO 2026-09-25. Forgot no longer stops on “Username and email do not match.” before /auth/v1/recover. The username email lookup for mossier already returns the Auth email, so that line was the office verify_reset branch when evercareSbEnabled() is false (?the old query or localStorage.evercare_the old query), or aideEmailsMatch rejecting an empty or autofilled email. Forgot clears that flag, strips the old query, and recovers to the resolved Auth email when the username resolves. An unknown username does not send mail and the screen does not show the Auth address. The email field stays optional. After Save password and after Finish-account, the primary button says “Open Caregiver”. Standalone (display-mode or iOS navigator.standalone) assigns a same-tab relative URL (./ or index.html). Otherwise it assigns https://evercareagency.github.io/caregiver/ or this page’s origin+path, same tab, no target=_blank. Auth PUT /auth/v1/user is unchanged. v=cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-24-cgauth1 v=cgauth1 — Friday GO 2026-09-24. Default cut password lifecycle stays Auth-only. Login is the username email lookup then the password grant. Forgot is GoTrue recover then PUT /auth/v1/user. Finish-account (must_change) always calls that same Auth update and clears aides.must_change_password; a missing JWT does not fall through to office complete_aide_setup or set_password. Signup on the cut still does not create an Auth user and does not write a office password. Forgot-password inputs on #resetModal are 48px so the link form stays usable at about 390px. office login, signup, verify_reset, reset_password, and set_password run only when evercareSbEnabled() is false (?the old query or localStorage.evercare_the old query). v=bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-24-bcast1b v=bcast1b — Friday GO 2026-09-24. Home #broadcastBanner unwraps the Ace get_active_broadcast envelope {success,data} (or ok/data) before reading data.message, same as Admin bcastActiveFromRpc. data null, empty message, or success/ok false hides the banner. Array singleton and a string payload still paint. Cut stays aide-JWT POST /rest/v1/rpc/get_active_broadcast {} only. Caregiver never calls send_broadcast or clear_broadcast. If the JWT is missing at home paint and appears within about 2s, the banner load retries once. Rollback ?the old query OR localStorage.evercare_the old query still reads store broadcast_msg only. v=bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-24-bcast1 v=bcast1 — Friday GO 2026-09-24. Home #broadcastBanner / .broadcast-banner on the Supabase cut reads aide-JWT POST /rest/v1/rpc/get_active_broadcast {} only (GHOST-BROADCAST-CONTRACT-v1). If data.message is set, show it; if data is null or empty, hide. Caregiver never calls send_broadcast or clear_broadcast. Rollback ?the old query OR localStorage.evercare_the old query restores the localStorage/store key broadcast_msg read path and does not invent office the old link. v=warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-24-warm-off v=warmoff1 — Friday GO 2026-09-24. Supabase cut does not fire office the old ping the old link beacons (POST ping and GET) when the login page loads, so first paint is not blocked on the old web app. Rollback ?the old query or localStorage.evercare_the old query still warms the old link as soon as this script runs. v=cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-pdf-1page-print v=cgpdf1p2 — Friday GO 2026-09-24. Saved timesheet PDF and browser/iOS Letter print are one page. The blank form is inset by TS_PDF_PAGE_SLACK_PT (72) so 5510 Pearl Rd stays on page 1 at 100% scale. Print of the open timesheet shows that sheet only. v=norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-no-rm-backup v=norbkup1 — Friday GO 2026-09-24. More no longer offers a control that deletes the office copy of a draft, and that confirm is gone. Back up this week's draft, Log out, and the 8-hour stay-signed-in note stay. v=pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-pw-reset-ux v=pwreset1 — Friday GO 2026-09-24. After the email link saves a new password (PUT /auth/v1/user on the recovery session), the reset page stays on “Password saved”. Primary button “Open ECA Aide Portal” goes to the LIVE Pages login https://evercareagency.github.io/caregiver/ . On caregiver Pages, including a tip preview, that button uses location.origin+pathname instead, so the preview login still opens. Forgot redirect_to stays location.origin+pathname (LIVE host, not a localhost redirect). The page follows that login after about 3 seconds. Soft copy: if you use the app icon on your phone, open it from there after this. No Universal Links. v=portal1 and the Ace Auth recovery path stay. -->
-<!-- caregiver-build: 2026-09-24-is-assign-unlock v=isassign1 — Friday GO 2026-09-24. My Inservices unlock and the home due-this-month banner read aide-JWT POST /rest/v1/rpc/my_inservice_topics (a set of topic_id strings). A topic in that set with no Active completion is startable. Completed still hydrates from inservice_results (v=ishydr1). Sheets get_assigned_topic and get_is_reminder are not on the unlock path. Aides still have no Print or View Certificate. v=portal1, ishydr1, cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-24-is-assign-unlock v=isassign1 — Friday GO 2026-09-24. My Inservices unlock and the home due-this-month banner read aide-JWT POST /rest/v1/rpc/my_inservice_topics (a set of topic_id strings). A topic in that set with no Active completion is startable. Completed still hydrates from inservice_results (v=ishydr1). office get_assigned_topic and get_is_reminder are not on the unlock path. Aides still have no Print or View Certificate. v=portal1, ishydr1, cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-aide-portal v=portal1 — Friday GO 2026-09-24. Visible chrome is ECA Aide Portal (title, login headers, home header, PWA name and short_name). Bottom nav is Home, Timesheet, Inservices, More. Clients stay on Home only. Deleting a draft asks first. Client and aide signatures use Confirm and Redo, and each one asks before it keeps or clears the ink. Stay-logged-in TTL is CG_SESSION_MS (8 hours from loginAt). A foreground check clears the session and returns to login when that window ends. Icons A defaults: PORTAL_MARK_HANDS (teal hands+heart) and PORTAL_MARK_CLIPBOARD (navy clipboard). Same drawings live in brand/eca-hands-heart.svg and brand/eca-clipboard.svg for a later pass. The login photo is unchanged. v=cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-is-hydrate v=ishydr1 — Friday GO 2026-09-24. My Inservices hydrates Completed from inservice_results with the aide JWT (username + topic_id) before the list paints. Badge and date come from that row when the office has one. The phone store stays as a cache and in-progress answers are kept. Aides still have no Print or View Certificate. v=cgpdfv1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cg-pdf-view v=cgpdfv1 — Friday GO 2026-09-24. After Save Day, View PDF opens the 1-page US Letter timesheet (blank-letter overlay, 14pt slack, address on page 1). The button is on the open timesheet once a day is saved, not on Home cards. Save Day still uploads that PDF. bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
-<!-- caregiver-build: 2026-09-24-backup-uuid v=bakuuid1 — Friday GO 2026-09-24. Backup and the offline Save Day flush send only Supabase UUIDs for timesheets.id, org_id, aide_id, and client_id. INSERT omits id (the server generates it). A draft with no assigned client UUID is blocked with “Pick a client first.” and is not posted. Home cards take the client name from assignments. A Sheets or phone millisecond id may be stored only as legacy_id. Letter PDF v=cgpdf1, Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-24-backup-uuid v=bakuuid1 — Friday GO 2026-09-24. Backup and the offline Save Day flush send only Supabase UUIDs for timesheets.id, org_id, aide_id, and client_id. INSERT omits id (the server generates it). A draft with no assigned client UUID is blocked with “Pick a client first.” and is not posted. Home cards take the client name from assignments. A office or phone millisecond id may be stored only as legacy_id. Letter PDF v=cgpdf1, Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-cg-pdf-1page v=cgpdf1 — Timesheet View PDF / print / Save Day PDF is one US Letter page at 100% scale. The blank-letter overlay stays the paper form; jsPDF insets it by TS_PDF_PAGE_SLACK_PT so the office address stays on page 1. Print CSS uses @page{size:letter;margin:0} and hides the site footer. Save Day home v=home1, inservice nocert v=nocert1, Auth seal v=sbseal1, and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-save-home v=home1 — Friday GO 2026-09-24. Save Day stays on the timesheet. Successful full-week submit returns to Caregiver Home. Aide list is a client-filter (Ace: no query this slice): drafts and sent-back always, fully submitted limited to the 2 most recent week_start values. Offline queue flush, Auth seal v=sbseal1, and inservice nocert v=nocert1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-inservice-nocert v=nocert1 — Friday GO 2026-09-24. Caregiver My Inservices completed cards show a Completed badge and completion date only. Aides have no Print or View Certificate. Auth seal v=sbseal1 and Offline Save Day v=offline1 unchanged. -->
-<!-- caregiver-build: 2026-09-24-sb-seal v=sbseal1 — Friday GO 2026-09-24. No new Ace RPC. Cut forgot-password: the username email lookup, then GoTrue recover to this page, then PUT /auth/v1/user on the recovery session. Logged-in setup stays PUT /auth/v1/user. Signup on the cut does not write Sheets and does not call Auth signup. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 keeps Sheets signup, verify_reset, and reset_password. -->
-<!-- caregiver-build: 2026-09-24-offline-save v=offline1 — Offline Save Day queue. Default Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Save Day and Submit queue on the phone when offline and flush through the existing Supabase upsert then PDF upload when a caregiver JWT is valid. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec for those surfaces. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds; PDF re-queues only), bucket evercare-pdfs, SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Timesheet PDF is the client blank-letter overlay only. Unmigrated sheet reads are not called. Corrections read the aide's own timesheets. Broadcast on the cut is get_active_broadcast (v=bcast1); sheets rollback keeps store broadcast_msg only (no /exec invent). save_location_status posts to /exec only under the sheets rollback. -->
-<!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
+<!-- caregiver-build: 2026-09-24-sb-seal v=sbseal1 — Friday GO 2026-09-24. No new Ace RPC. Cut forgot-password: the username email lookup, then GoTrue recover to this page, then PUT /auth/v1/user on the recovery session. Logged-in setup stays PUT /auth/v1/user. Signup on the cut does not write office and does not call Auth signup. Rollback: ?the old query OR localStorage.evercare_the old query keeps office signup, verify_reset, and reset_password. -->
+<!-- caregiver-build: 2026-09-24-offline-save v=offline1 — Offline Save Day queue. Default Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent the old link dual-write on those paths. Save Day and Submit queue on the phone when offline and flush through the existing Supabase upsert then PDF upload when a caregiver JWT is valid. Rollback: ?the old query OR localStorage.evercare_the old query forces the old link for those surfaces. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds; PDF re-queues only), bucket evercare-pdfs, SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Timesheet PDF is the client blank-letter overlay only. Unmigrated sheet reads are not called. Corrections read the aide's own timesheets. Broadcast on the cut is get_active_broadcast (v=bcast1); sheets rollback keeps store broadcast_msg only (no the old link invent). save_location_status posts to the old link only under the sheets rollback. -->
+<!-- caregiver-build: 2026-09-22-login-feel — warm the old link ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content, viewport-fit=cover">
@@ -286,8 +286,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);color:var(--text);ma
 #homeAddrContinue{min-height:52px;font-size:1.05rem;border-radius:12px;margin-top:6px;}
 body.homeaddr-gate footer{display:none !important;}
 /* CORRECTION */
-.correction-banner{background:var(--warn);color:white;padding:12px 16px;border-radius:8px;font-size:0.82rem;font-weight:500;margin-bottom:14px;cursor:pointer;display:none;}
+.correction-banner{background:var(--warn);color:white;padding:12px 16px;border-radius:8px;font-size:0.82rem;font-weight:500;margin-bottom:14px;cursor:pointer;display:none;overflow-wrap:anywhere;word-break:break-word;max-width:100%;}
 .correction-banner.show{display:block;}
+.correction-banner .correction-note{display:block;margin-top:6px;font-weight:400;line-height:1.35;overflow-wrap:anywhere;white-space:pre-wrap;}
+.day-fix-note{margin:0 12px 8px;padding:8px 10px;border-radius:8px;background:#fff6e8;color:#6b3e00;font-size:0.78rem;line-height:1.35;overflow-wrap:anywhere;white-space:pre-wrap;}
 /* SANDATA */
 .sandata-hint{font-size:0.68rem;color:var(--warn);font-weight:600;margin-top:3px;display:flex;align-items:center;gap:4px;}
 /* COMMON */
@@ -1575,7 +1577,8 @@ function restoreCgSession(){
 function enforceCgSessionTimeout(){
   const sess=backfillCgSessionLoginAt(store.get('cg_session')||currentUser);
   if(!sess||!sess.username)return;
-  if(isCgSessionExpired(sess))caregiverLogout();
+  if(isCgSessionExpired(sess)){caregiverLogout();return;}
+  if(typeof cgRefreshAccessToken==='function')cgRefreshAccessToken();
 }
 function armCgSessionWatch(){
   if(window._cgSessionWatch)return;
@@ -1618,10 +1621,18 @@ function formatWeekOfLabel(val){
 }
 
 
-// exec-off1: warm-up ping, the GET beacon, and the Apps Script helper are gone. Page load does not call out.
+// exec-off1: the warm-up ping and the old web-app helper are gone. Page load does not call out.
 
-function sheetsOffMessage(){
-  return 'The office copy is unavailable. Call the office at (216) 377-5991.';
+function sheetsOffMessage(kind){
+  const again='Please try again, or call the office at (216) 377-5991 if it keeps happening.';
+  if(kind==='backup')return 'Couldn\'t back up right now. Your entries are still here. '+again;
+  if(kind==='inservice')return 'Couldn\'t save this in-service right now. '+again;
+  if(kind==='signin')return 'Please sign in again. Your entries are still on this phone. Call the office at (216) 377-5991 if it keeps happening.';
+  if(kind==='queued')return 'Saved on this phone — will upload when you\'re back online. This week is queued and will retry. Call the office at (216) 377-5991 if it keeps happening.';
+  return 'Couldn\'t save right now. Your entries are still here. '+again;
+}
+function cgWarnRaw(where, err){
+  try{console.warn(where, err);}catch(e){}
 }
 
 function syncStorage(){for(let i=0;i<sessionStorage.length;i++){const k=sessionStorage.key(i);if(!localStorage.getItem(k))localStorage.setItem(k,sessionStorage.getItem(k));}}
@@ -1900,7 +1911,7 @@ bindLoginKeyboard();
 // Letter PDF is one page (v=cgpdf1). Print inset keeps Pearl Rd on that page (v=cgpdf1p2).
 // View PDF after Save Day (v=cgpdfv1). Shown once a day is saved. Not gated on cloudBackupId or pdf_storage_path.
 // Inservice Completed hydrates from inservice_results (v=ishydr1). No aide certificate.
-// Assigned unlock and the home due banner read rpc my_inservice_topics (v=isassign1). No Sheets get_assigned_topic.
+// Assigned unlock and the home due banner read rpc my_inservice_topics (v=isassign1). No office get_assigned_topic.
 // Backup UUID guard (v=bakuuid1). Phone Date.now / ts_* ids never enter uuid columns.
 // More has no office-backup delete control (v=norbkup1). Backup, Log out, and the 8h note stay.
 // exec-off1: Supabase is always on. The old sheets rollback is deleted, so a leftover
@@ -2338,7 +2349,7 @@ async function submitAideSetup(){
   if(newPassword===currentPassword){showErr('New password must be different from the current password.');return;}
   if(btn){btn.disabled=true;btn.textContent='Saving...';}
   try{
-    // Default cut: Auth updateUser only. A missing JWT must not fall through to Sheets set_password.
+    // Default cut: Auth updateUser only. A missing JWT must not fall through to office set_password.
     if(evercareSbEnabled()){
       await completeAideSetupSupabase(currentPassword,newPassword,email);
       window._aceLoginOk=true;
@@ -2964,8 +2975,7 @@ function loadCaregiverScreen(){
   buildDayBlocks();
   loadSavedWeek();
   if(!document.getElementById('cg_weekstart').value){
-    const d=new Date();d.setDate(d.getDate()-d.getDay());
-    document.getElementById('cg_weekstart').value=d.toISOString().split('T')[0];
+    document.getElementById('cg_weekstart').value=currentWeekSunday();
     fillDates();
   }
   scheduleHomeBackgroundLoads();
@@ -2991,6 +3001,7 @@ function syncCorrectionsFromAdmin(rows){
       weekStart:c.weekStart||'',
       status:'correction_requested',
       correctionDays:c.correctionDays||[],
+      correctionNote:c.correctionNote||'',
       correctionId:c.id,
       created:new Date().toLocaleDateString()
     };
@@ -3022,18 +3033,14 @@ async function checkForCorrection(){
         totalHrs:r.total_hours||'',
         notes:r.notes||'',
         days:r.days||{},
-        correctionDays:r.correction_days||[],
-        correctionNote:r.correction_note||''
+        correctionDays:r.correction_days||r.correctionDays||[],
+        correctionNote:r.correction_note||r.correctionNote||''
       };
     });
     syncCorrectionsFromAdmin(mapped);
     if(mapped.length>0){
       correctionData=mapped[0];
-      if(banner){
-        banner.textContent='⚠️ Your timesheet for '+formatWeekOfLabel(correctionData.weekStart)+' needs corrections. Tap here to fix it.';
-        banner.classList.add('show');
-        banner.style.display='';
-      }
+      paintCorrectionBanner(banner, correctionData);
     }else emptyCorrection();
     renderTSHome();
   }catch(e){
@@ -3041,6 +3048,31 @@ async function checkForCorrection(){
   }
 }
 
+function correctionNoteText(note){
+  const text=String(note==null?'':note).replace(/[\u0000-\u001F]+/g,' ').trim();
+  if(!text)return 'The office asked for a correction on this day. Call (216) 377-5991 with questions.';
+  return text;
+}
+function paintCorrectionBanner(banner, data){
+  if(!banner||!data)return;
+  const lead='⚠️ Your timesheet for '+formatWeekOfLabel(data.weekStart)+' needs corrections. Tap here to fix it.';
+  const note=correctionNoteText(data.correctionNote);
+  if(typeof document!=='undefined'&&document.createElement&&typeof banner.appendChild==='function'){
+    while(banner.firstChild)banner.removeChild(banner.firstChild);
+    const leadEl=document.createElement('div');
+    leadEl.className='correction-lead';
+    leadEl.textContent=lead;
+    const noteEl=document.createElement('div');
+    noteEl.className='correction-note';
+    noteEl.textContent=note;
+    banner.appendChild(leadEl);
+    banner.appendChild(noteEl);
+  }else{
+    banner.textContent=lead+' '+note;
+  }
+  banner.classList.add('show');
+  banner.style.display='';
+}
 function loadCorrectionMode(){
   if(!requireAideSetup())return;
   if(!requireSandataAck())return;
@@ -3055,12 +3087,13 @@ function loadCorrectionMode(){
       weekStart:correctionData.weekStart||'',
       status:'correction_requested',
       correctionDays:correctionData.correctionDays||[],
+      correctionNote:correctionData.correctionNote||'',
       correctionId:correctionData.id,
       created:new Date().toLocaleDateString()
     });
     saveAllTimesheets(list);
   }else{
-    updateTSMeta(currentTS,{status:'correction_requested',clientName:correctionData.clientName||'',weekStart:correctionData.weekStart||'',correctionDays:correctionData.correctionDays||[],correctionId:correctionData.id});
+    updateTSMeta(currentTS,{status:'correction_requested',clientName:correctionData.clientName||'',weekStart:correctionData.weekStart||'',correctionDays:correctionData.correctionDays||[],correctionNote:correctionData.correctionNote||'',correctionId:correctionData.id});
   }
   document.getElementById('cgHomeView').style.display='none';
   document.getElementById('cgFormView').style.display='block';
@@ -3143,6 +3176,14 @@ function buildDayBlocks(fixDays=[]){
           <div><div class="sig-lbl">Client Signature</div><div class="sig-wrap"><canvas class="sigpad" id="sp_client_${i}" height="110"></canvas></div><div class="sig-hint" id="hint_sp_client_${i}">Tap to sign</div><div class="sig-actions"><button type="button" class="sig-act sig-act-confirm" onclick="askConfirmSig('sp_client_${i}')">Confirm</button><button type="button" class="sig-act sig-act-redo" onclick="askRedoSig('sp_client_${i}')">Redo</button></div></div>
         </div>
       </div>`;
+    if(needsFix){
+      const note=document.createElement('div');
+      note.className='day-fix-note';
+      note.textContent=correctionNoteText(correctionData&&correctionData.correctionNote);
+      const hdr=div.querySelector('.day-hdr');
+      if(hdr&&hdr.nextSibling)div.insertBefore(note, hdr.nextSibling);
+      else div.appendChild(note);
+    }
     container.appendChild(div);
   });
   DAYS.forEach((_,i)=>{initSig(`sp_aide_${i}`);initSig(`sp_client_${i}`);});
@@ -3294,14 +3335,19 @@ function updateDayName(i){
 }
 
 function recalcWeekStart(){
-  // Auto-compute the earliest picked date across all days, for internal record-keeping
+  // Week key is the America/New_York Sunday of the earliest picked day.
   let earliest=null;
   DAYS.forEach((_,i)=>{
     const v=document.getElementById(`d${i}_date`)?.value;
     if(v&&(!earliest||v<earliest))earliest=v;
   });
   const hidden=document.getElementById('cg_weekstart');
-  if(hidden)hidden.value=earliest||'';
+  if(!hidden)return;
+  if(!earliest){
+    if(!hidden.value)hidden.value=currentWeekSunday();
+    return;
+  }
+  hidden.value=civilWeekSunday(earliest);
 }
 
 function calcDay(i){
@@ -3477,7 +3523,10 @@ function previewDay(i){
   const client=getSelectedClient();
   const clientName=client?client.name:'';
   // Save client info to ts meta
-  updateTSMeta(currentTS,{clientName,clientId:client?.id,clientLat:client?.lat,clientLng:client?.lng,weekStart:document.getElementById('cg_weekstart').value});
+  const weekHidden=document.getElementById('cg_weekstart');
+  const weekYmd=civilWeekSunday((weekHidden&&weekHidden.value)||currentWeekSunday());
+  if(weekHidden)weekHidden.value=weekYmd;
+  updateTSMeta(currentTS,{clientName,clientId:client?.id,clientLat:client?.lat,clientLng:client?.lng,weekStart:weekYmd});
   const _previewDay=i;
   const stored=(typeof getUserWeekData==='function'?(getUserWeekData()[i]||{}):{});
   const date=dayFieldVal(`d${i}_date`,stored.date),tin=dayFieldVal(`d${i}_in`,stored.tin||stored.in),tout=dayFieldVal(`d${i}_out`,stored.tout||stored.out),hrs=dayFieldVal(`d${i}_hrs`,stored.hrs),svcs=getCheckedSvcs(i);
@@ -3811,9 +3860,8 @@ function requirePaperSignatures(){
   return true;
 }
 function aceRejectMessage(data){
-  if(!data||typeof data!=='object')return 'Submit rejected.';
-  const s=[data.error,data.message,data.reason].find(v=>v!=null&&String(v).trim());
-  return s?String(s).trim():'Submit rejected.';
+  cgWarnRaw('submit rejected', data);
+  return sheetsOffMessage();
 }
 async function askFinalSubmit(){
   if(!requireClientSelected())return;
@@ -3877,7 +3925,8 @@ async function doFinalSubmit(){
   const clientSel=document.getElementById('cg_client');
   const clientName=clientSel.options[clientSel.selectedIndex]?.text||'(not provided)';
   const svcType=document.getElementById('cg_svctype').value;
-  const weekStart=document.getElementById('cg_weekstart').value;
+  const weekStart=civilWeekSunday(document.getElementById('cg_weekstart').value||currentWeekSunday());
+  document.getElementById('cg_weekstart').value=weekStart;
   const totalHrs=document.getElementById('cg_total').textContent;
   const notes=document.getElementById('cg_notes').value||'';
   const hdr=captureHdrSigs();
@@ -3930,6 +3979,7 @@ async function doFinalSubmit(){
       }
     }
   }catch(e){
+    cgWarnRaw('submit', e);
     if(evercareSbEnabled()&&offlineSubmit&&(cgIsNetErr(e)||cgIsAuthErr(e))){
       try{cgEnqueueSubmit(offlineSubmit);}catch(q){}
       if(cgIsNetErr(e)&&!cgIsAuthErr(e)){
@@ -3938,12 +3988,14 @@ async function doFinalSubmit(){
         try{cgPaintOfflineQueue();}catch(p){}
       }else{
         try{window._cgQueuePhase='error';cgPaintOfflineQueue();}catch(p){}
-        showTempMsg((e&&e.message)||'Couldn\'t upload — tap to retry','var(--danger)');
+        cgWarnRaw('submit', e);
+        showTempMsg(sheetsOffMessage('signin'),'var(--danger)');
         window._cgSubmitInFlight=false;
         return;
       }
     }else{
-      showTempMsg(((e&&e.message)?(e.message+' '):'')+sheetsOffMessage()+' Your entries are still on this screen.','var(--danger)');
+      cgWarnRaw('submit', e);
+      showTempMsg(sheetsOffMessage(),'var(--danger)');
       window._cgSubmitInFlight=false;
       return;
     }
@@ -3967,7 +4019,7 @@ async function doFinalSubmit(){
   currentTS=null;
   window._cgSubmitInFlight=false;
   showCaregiverHome();
-  if(data&&data.queued)showTempMsg('Saved on this phone — will upload when you\'re back online','var(--teal)');
+  if(data&&data.queued)showTempMsg(sheetsOffMessage('queued'),'var(--teal)');
   else showTempMsg('Timesheet submitted.','var(--success)');
   window.scrollTo(0,0);
   setTimeout(()=>window.scrollTo(0,0),50);
@@ -4315,7 +4367,7 @@ function restoreHdrSigs(ts){
 // (resetPasswordForEmail) with redirect_to this page. The recovery session PUT /auth/v1/user.
 // Logged-in setup also uses that user update only. Office temp-password reset is not called.
 // The screen always shows the same message and does not say whether the account exists.
-// Sheets reset_password stays on the emergency setter.
+// office reset_password stays on the emergency setter.
 function aideEmailsMatch(resolved,entered){
   const got=String(resolved||'').trim().toLowerCase();
   const want=String(entered||'').trim().toLowerCase();
@@ -5148,9 +5200,21 @@ function sweepSubmittedLeftovers(){
   });
   if(changed)saveAllTimesheets(list);
 }
+function nyCivilYmd(date){
+  const d=date instanceof Date?date:new Date(date==null?Date.now():date);
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);
+  const get=function(t){const p=parts.find(function(x){return x.type===t;});return p&&p.value?p.value:'';};
+  return get('year')+'-'+get('month')+'-'+get('day');
+}
+function civilWeekSunday(ymd){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd||'').trim().slice(0,10));
+  if(!m)return String(ymd||'').trim().slice(0,10);
+  const utc=Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3]));
+  const sun=new Date(utc-new Date(utc).getUTCDay()*86400000);
+  return sun.getUTCFullYear()+'-'+String(sun.getUTCMonth()+1).padStart(2,'0')+'-'+String(sun.getUTCDate()).padStart(2,'0');
+}
 function currentWeekSunday(){
-  const d=new Date();d.setDate(d.getDate()-d.getDay());
-  return d.toISOString().split('T')[0];
+  return civilWeekSunday(nyCivilYmd(new Date()));
 }
 function clearHeaderSigPads(){
   ['sp_hdr_aide','sp_hdr_client'].forEach(id=>{
@@ -5301,7 +5365,7 @@ async function doCloudBackup(){
   const office=evercareSbEnabled()?draftOfficeClient(ts):null;
   const clientName=(office&&office.name)||ts.clientName||'';
   const clientId=(office&&office.id)||(evercareSbEnabled()?'':(ts.clientId||''));
-  const weekStart=ts.weekStart||'';
+  const weekStart=/^\d{4}-\d{2}-\d{2}/.test(String(ts.weekStart||''))?civilWeekSunday(ts.weekStart):(ts.weekStart||'');
   const notes=ts.notes||'';
   const svcType=ts.svcType||'Personal Care/Home Making';
   const totalHrs=totalHoursFromWeekData(weekData);
@@ -5334,7 +5398,8 @@ async function doCloudBackup(){
       renderTSHome();
       return;
     }catch(e){
-      showTempMsg(((e&&e.message)?(e.message+' '):'')+sheetsOffMessage(),'var(--danger)');
+      cgWarnRaw('backup', e);
+      showTempMsg(sheetsOffMessage('backup'),'var(--danger)');
       return;
     }
   }
@@ -5342,7 +5407,7 @@ async function doCloudBackup(){
 
 async function deleteTimesheetBackup(id){
   if(id==null||String(id).trim()==='')throw new Error('Backup id missing.');
-  if(!sbDataEnabled())throw new Error(sheetsOffMessage());
+  if(!sbDataEnabled())throw new Error(sheetsOffMessage('backup'));
   return sbSoftDeleteBackup(id);
 }
 
@@ -5415,7 +5480,7 @@ async function restoreCloudBackups(){
     if(typeof isDraftBackupTombstoned==='function'&&isDraftBackupTombstoned(cloudId))return;
     const days=_normalizeBackupDays(bak.days||{});
     const clientName=bak.clientName||'';
-    const weekStart=bak.weekStart||'';
+    const weekStart=/^\d{4}-\d{2}-\d{2}/.test(String(bak.weekStart||''))?civilWeekSunday(bak.weekStart):(bak.weekStart||'');
     // Already linked to this cloud backup with local data → keep
     const byCloud=list.find(t=>String(t.cloudBackupId)===String(cloudId));
     if(byCloud){
@@ -5514,11 +5579,12 @@ function renderTSHome(){
     const sentBack=isSentBackWeek(ts);
     const submitted=isFullySubmittedWeek(ts);
     const border=sentBack?'var(--warn)':(submitted?'var(--border)':'var(--teal)');
+    const weekShown=/^\d{4}-\d{2}-\d{2}/.test(String(ts.weekStart||''))?civilWeekSunday(ts.weekStart):(ts.weekStart||'Not set');
     const sub=sentBack
-      ? formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; Office sent back — tap to fix'
+      ? formatWeekOfLabel(weekShown)+' &nbsp;&#183;&nbsp; Office sent back — tap to fix'
       : submitted
-        ? formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; Submitted'
-        : formatWeekOfLabel(ts.weekStart||'Not set')+' &nbsp;&#183;&nbsp; '+daysSaved+' day'+(daysSaved!==1?'s':'')+' saved';
+        ? formatWeekOfLabel(weekShown)+' &nbsp;&#183;&nbsp; Submitted'
+        : formatWeekOfLabel(weekShown)+' &nbsp;&#183;&nbsp; '+daysSaved+' day'+(daysSaved!==1?'s':'')+' saved';
     const open=submitted?'':' onclick="openTS(&quot;'+ts.id+'&quot;)"';
     const del=isUnfinishedDraft(ts)
       ? '<button type="button" class="draft-del" data-draft-id="'+String(ts.id).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();askDeleteDraft(this)">Delete</button>'
@@ -5710,12 +5776,8 @@ function sbDayWire(day){
 }
 function sbWeekSunday(value){
   const s=String(value||'').trim().slice(0,10);
-  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-  if(!m)return s;
-  const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));
-  if(isNaN(d.getTime()))return s;
-  d.setDate(d.getDate()-d.getDay());
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  if(!/^(\d{4})-(\d{2})-(\d{2})$/.test(s))return s;
+  return civilWeekSunday(s);
 }
 function sbDayIndex(key){
   const nameToIdx={sun:0,sunday:0,mon:1,monday:1,tue:2,tues:2,tuesday:2,wed:3,wednesday:3,thu:4,thur:4,thurs:4,thursday:4,fri:5,friday:5,sat:6,saturday:6};
@@ -5923,7 +5985,7 @@ function sbSyncSavedDay(i,dayObj){
 // client_op_id stays on the phone. Idempotency is the week natural key on REST.
 // PDF bytes live in a separate blob store. Flush PDF only after timesheet_id is known.
 // Ghost owns online detect and backoff (1s, then double, cap 60s). Ace Sunday is catch-up only.
-// Per week: save_day and submit first, then pdf_upload. Sheets rollback does not queue.
+// Per week: save_day and submit first, then pdf_upload. office rollback does not queue.
 const CG_OFFLINE_QUEUE_KEY='evercare_offline_ops';
 const CG_QUEUE_FIELDS=['local_id','client_op_id','kind','created_at','attempt_count','last_error','status','org_id','aide_id','client_id','week_start','day_index','day_patch','days','header','timesheet_id','next_attempt_at'];
 function cgNetOnline(){
@@ -5996,7 +6058,7 @@ function cgBackoffMs(attemptCount){
 function cgPlainError(err,op){
   const offlineSentence='Saved on this phone — will upload when you\'re back online';
   if(!cgNetOnline())return offlineSentence;
-  if(cgIsAuthErr(err))return 'Sign in again — this phone kept your day.';
+  if(cgIsAuthErr(err))return sheetsOffMessage('signin');
   const status=err&&err.pack?Number(err.pack.status):0;
   const msg=String(err&&err.message||'');
   const pdf=op&&op.kind==='pdf_upload';
@@ -6312,9 +6374,9 @@ async function sbRefreshCaregiverJwt(){
       body:JSON.stringify({refresh_token:refresh})
     });
     pack=await sbRead(res);
-  }catch(e){return false;}
+  }catch(e){cgWarnRaw('session refresh', e);return false;}
   const token=pack&&pack.data&&pack.data.access_token;
-  if(!pack||!pack.ok||!token)return false;
+  if(!pack||!pack.ok||!token){cgWarnRaw('session refresh', pack&&pack.data);return false;}
   const expiresAt=typeof sbExpiresMs==='function'?sbExpiresMs(pack.data):0;
   const nextRefresh=(pack.data&&pack.data.refresh_token)||refresh;
   if(currentUser){
@@ -6340,9 +6402,32 @@ async function sbEnsureCaregiverJwt(){
   if(typeof evercareSbEnabled==='function'&&!evercareSbEnabled())return false;
   const token=typeof sbToken==='function'?sbToken():'';
   const exp=currentUser&&Number(currentUser.sbExpiresAt);
-  const fresh=!!token&&!(exp>0&&exp<=Date.now()+60000);
+  const fresh=!!token&&!(exp>0&&exp<=Date.now()+3*60*1000);
   if(fresh)return true;
   return sbRefreshCaregiverJwt();
+}
+async function cgRefreshAccessToken(){
+  if(!currentUser||!currentUser.username)return false;
+  if(typeof isCgSessionExpired==='function'&&isCgSessionExpired(currentUser))return false;
+  if(typeof sbEnsureCaregiverJwt!=='function')return false;
+  const exp=Number(currentUser.sbExpiresAt)||0;
+  const due=!!currentUser.sbRefreshToken&&exp>0&&exp<=Date.now()+3*60*1000;
+  if(!due)return true;
+  if(typeof window!=='undefined'&&window._cgRefreshBusy)return false;
+  if(typeof window!=='undefined')window._cgRefreshBusy=true;
+  let ok=false;
+  try{ok=await sbEnsureCaregiverJwt();}catch(e){cgWarnRaw('session refresh', e);ok=false;}
+  if(typeof window!=='undefined')window._cgRefreshBusy=false;
+  if(!ok){
+    cgWarnRaw('session refresh failed', currentUser&&currentUser.sbExpiresAt);
+    if(typeof window!=='undefined'&&!window._cgRefreshPrompted&&typeof showTempMsg==='function'){
+      window._cgRefreshPrompted=true;
+      showTempMsg(sheetsOffMessage('signin'),'var(--danger)');
+    }
+    return false;
+  }
+  if(typeof window!=='undefined')window._cgRefreshPrompted=false;
+  return true;
 }
 async function cgFlushPdfOp(op){
   op=op||{};
@@ -6562,7 +6647,7 @@ function cgRetryOfflineQueue(){
 }
 // GHOST-TIMESHEET-PDF-WRITE-CONTRACT-v1 — client blank-letter JPEG overlay. No Edge function and no render RPC.
 // After Save Day (backup row id) or Submit, uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
-// Default Supabase: overlay only. A failed overlay or upload soft-fails (Save Day still succeeds). No Sheets dual-write.
+// Default Supabase: overlay only. A failed overlay or upload soft-fails (Save Day still succeeds). No office dual-write.
 const SB_PDF_BUCKET='evercare-pdfs';
 const SB_PDF_MAX_BYTES=25*1024*1024;
 const SB_PDF_TARGET_BYTES=2*1024*1024;
@@ -7071,7 +7156,7 @@ function sbTimesheetPdfRecord(daysSource){
     clientName:(client&&client.name)||ts.clientName||'',
     empName:(currentUser&&(currentUser.name||currentUser.empName))||'',
     username:(currentUser&&currentUser.username)||'',
-    weekStart:(weekEl&&weekEl.value)||ts.weekStart||'',
+    weekStart:civilWeekSunday((weekEl&&weekEl.value)||ts.weekStart||currentWeekSunday()),
     svcType:ts.svcType||(svcEl&&svcEl.value)||'',
     totalHrs:(totalEl&&totalEl.textContent)||'',
     notes:(notesEl&&notesEl.value)||ts.notes||'',
@@ -7591,7 +7676,8 @@ function openTS(id){
       weekStart:ts.weekStart,
       clientName:ts.clientName,
       days:weekDataForTS(id),
-      correctionDays:ts.correctionDays||[]
+      correctionDays:ts.correctionDays||[],
+      correctionNote:ts.correctionNote||''
     };
     loadCorrectionMode();
     return;
@@ -7612,7 +7698,7 @@ function openTS(id){
     if(sel)sel.value=(ts&&ts.clientId)?ts.clientId:'';
   });
   if(ts){
-    document.getElementById('cg_weekstart').value=ts.weekStart||currentWeekSunday();
+    document.getElementById('cg_weekstart').value=/^\d{4}-\d{2}-\d{2}/.test(String(ts.weekStart||''))?civilWeekSunday(ts.weekStart):currentWeekSunday();
     document.getElementById('cg_notes').value=ts.notes||'';
   }else{
     document.getElementById('cg_weekstart').value=currentWeekSunday();
@@ -7644,16 +7730,14 @@ var callOffIgnoreUntil=0;
 var callOffGhostMs=800;
 var callOffPostFlight=null;
 function callOffYmd(d){
-  const dt=d instanceof Date?d:new Date();
-  const y=dt.getFullYear();
-  const m=String(dt.getMonth()+1).padStart(2,'0');
-  const day=String(dt.getDate()).padStart(2,'0');
-  return y+'-'+m+'-'+day;
+  return nyCivilYmd(d instanceof Date?d:new Date(d==null?Date.now():d));
 }
 function callOffTomorrowYmd(nowMs){
-  const d=new Date(nowMs==null?Date.now():Number(nowMs));
-  d.setDate(d.getDate()+1);
-  return callOffYmd(d);
+  const ymd=callOffYmd(new Date(nowMs==null?Date.now():Number(nowMs)));
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if(!m)return ymd;
+  const next=new Date(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3])+1));
+  return next.getUTCFullYear()+'-'+String(next.getUTCMonth()+1).padStart(2,'0')+'-'+String(next.getUTCDate()).padStart(2,'0');
 }
 function callOffStoreKey(){
   const u=currentUser&&currentUser.username?String(currentUser.username):'';
@@ -9945,7 +10029,8 @@ async function submitInservice(){
       delete isData['sig_'+currentIS.id];
       delete isData['answers_'+currentIS.id];
       saveISData(isData);
-      showTempMsg(((e&&e.message)?(e.message+' '):'')+sheetsOffMessage(),'var(--danger)');
+      cgWarnRaw('inservice', e);
+      showTempMsg(sheetsOffMessage('inservice'),'var(--danger)');
       return;
     }
   }

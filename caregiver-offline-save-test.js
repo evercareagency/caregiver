@@ -47,7 +47,7 @@ const fin = extractFn(html, 'async function doFinalSubmit()');
 assert.ok(fin.includes('cgEnqueueSubmit'), 'submit can queue');
 assert.ok(!fin.includes("action:'submit'"), 'submit does not post Apps Script');
 assert.ok(fin.includes('sbRefreshTimesheetPdf(row.id,weekData)'), 'online submit still refreshes the PDF');
-assert.ok(fin.includes('still on this screen'), 'a blocked submit keeps the entries');
+assert.ok(fin.includes('sheetsOffMessage()') && fin.includes("showTempMsg(sheetsOffMessage()"), 'a blocked submit keeps the entries');
 assert.ok(!extractFn(html, 'function evercareSbEnabled()').includes('evercare_sheets'), 'the sheets flag is not a backend switch');
 assert.ok(!extractFn(html, 'function evercareSbEnabled()').includes('sheets=1'), 'the sheets query is not a backend switch');
 
@@ -71,7 +71,10 @@ const src = [
   extractFn(html, 'function sbIsConflict(err)'),
   extractFn(html, 'async function sbEnsureOrgId()'),
   extractFn(html, 'function sbDayWire(day)'),
+  extractFn(html, 'function civilWeekSunday(ymd)'),
   extractFn(html, 'function sbWeekSunday(value)'),
+  extractFn(html, 'function sheetsOffMessage(kind)'),
+  extractFn(html, 'function cgWarnRaw(where, err)'),
   extractFn(html, 'function sbDayIndex(key)'),
   extractFn(html, 'function sbNormalizeDays(days)'),
   extractFn(html, 'function sbIsUuid(value)'),
@@ -303,7 +306,7 @@ function queueOf(box){
   assert.strictEqual(vm.runInContext('cgBackoffMs(7)', merged), 60000);
   assert.strictEqual(vm.runInContext('cgBackoffMs(8)', merged), 60000);
   const plain = run({onLine:true});
-  assert.strictEqual(vm.runInContext('cgPlainError({message:"jwt expired",pack:{status:401}},{kind:"save_day"})', plain), 'Sign in again — this phone kept your day.');
+  assert.strictEqual(vm.runInContext('cgPlainError({message:"jwt expired",pack:{status:401}},{kind:"save_day"})', plain), 'Please sign in again. Your entries are still on this phone. Call the office at (216) 377-5991 if it keeps happening.');
   assert.strictEqual(vm.runInContext('cgPlainError({message:"duplicate key value",pack:{status:409}},{kind:"save_day"})', plain), 'This week is already saved. Tap to retry.');
   assert.strictEqual(vm.runInContext('cgPlainError({message:"bad",pack:{status:422}},{kind:"save_day"})', plain), "The office couldn't read this day. Tap to retry.");
   assert.strictEqual(vm.runInContext('cgPlainError({message:"entity too large",pack:{status:413}},{kind:"pdf_upload"})', plain), 'That PDF is too big to upload.');
@@ -373,7 +376,9 @@ function queueOf(box){
   await vm.runInContext('cgFlushOfflineQueue()', auth);
   assert.strictEqual(auth.calls.length, 0, 'auth failure does not call the data API');
   assert.strictEqual(queueOf(auth).length, 1, 'auth failure keeps the op');
-  assert.strictEqual(auth.els.offlineQueueStatus.textContent, 'Sign in again — this phone kept your day.');
+  assert.strictEqual(auth.els.offlineQueueStatus.textContent, 'Please sign in again. Your entries are still on this phone. Call the office at (216) 377-5991 if it keeps happening.');
+  assert.ok(auth.els.offlineQueueStatus.textContent.indexOf('Failed to fetch') < 0);
+  assert.ok(auth.els.offlineQueueStatus.textContent.indexOf('No suitable key') < 0);
   assert.strictEqual(queueOf(auth)[0].attempt_count, 1);
 
   const held = run({onLine:false});
