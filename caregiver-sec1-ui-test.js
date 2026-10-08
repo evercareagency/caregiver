@@ -13,7 +13,7 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-sec1-cg2">', 'sec1-cg2 meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-geo1">', 'geo1 meta is first');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui-h2">') > 0, 'sec1-ui-h2 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui">') > 0, 'sec1-ui meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">') > 0, 'msg-composer-rect1 meta stays');
@@ -36,8 +36,8 @@ assert.ok(html.includes('const TS_PDF_PAGE_SLACK_PT=72;'), 'letter slack stays')
 assert.ok(html.includes("format:'letter'"), 'PDF format stays letter');
 assert.ok(html.includes('5510 Pearl Rd Ste 200, Cleveland, OH 44129'), 'office address stays');
 assert.ok(html.includes('/^\\d{5}(?:-\\d{4})?$/'), 'ZIP check stays');
-assert.ok(html.includes('https://nominatim.openstreetmap.org/search?format=json&q='), 'address geocode stays');
-assert.ok(html.includes('https://nominatim.openstreetmap.org/reverse?format=json&lat='), 'reverse geocode stays');
+const vendorGone = ['nomi','natim'].join('') + '|' + ['open','street','map'].join('') + '|' + ['tile','.','osm'].join('') + '|' + ['leaf','let'].join('');
+assert.strictEqual((html.match(new RegExp(vendorGone, 'ig')) || []).length, 0, 'map vendors stay off the page');
 
 function walk(dir, out){
   fs.readdirSync(dir, {withFileTypes:true}).forEach(function(ent){

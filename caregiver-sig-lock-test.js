@@ -85,18 +85,35 @@ async function runBrowser(){
       viewport: {width:390, height:844, isMobile:true, hasTouch:true, deviceScaleFactor:2},
       userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
     });
+    await page.evaluateOnNewDocument(function(){
+      const orig = window.fetch.bind(window);
+      window.fetch = function(input, init){
+        let mode = '';
+        try{mode = sessionStorage.getItem('__cgNet') || '';}catch(e){}
+        const url = String(input && input.url || input || '');
+        if(/script\.google\.com/.test(url))return Promise.reject(new Error('blocked'));
+        if(mode && /supabase\.co/.test(url)){
+          return Promise.resolve(new Response('[]', {status:200, headers:{'Content-Type':'application/json'}}));
+        }
+        return orig(input, init);
+      };
+    });
     page.on('dialog', function(d){d.accept();});
-    await page.goto('http://127.0.0.1:' + port + '/index.html?sheets=1', {waitUntil:'domcontentloaded', timeout:20000});
+    await page.goto('http://127.0.0.1:' + port + '/index.html', {waitUntil:'domcontentloaded', timeout:20000});
     await page.evaluate(function(){
       localStorage.setItem('cg_session', JSON.stringify({
         username:'siglock.aide',
         name:'Sig Lock',
         loginAt:Date.now() - 60 * 60 * 1000,
         mustChangePassword:false,
-        needsEmail:false
+        needsEmail:false,
+        sbAccessToken:'jwt-test',
+        sbRefreshToken:'refresh-test',
+        sbExpiresAt:Date.now()+60*60*1000
       }));
       sessionStorage.setItem('sandata_ack_session','1');
       sessionStorage.setItem('notice_ack_siglock.aide','1');
+      sessionStorage.setItem('__cgNet','stub');
     });
     await page.reload({waitUntil:'domcontentloaded', timeout:20000});
     await page.waitForFunction(function(){

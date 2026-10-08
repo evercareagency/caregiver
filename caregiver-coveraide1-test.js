@@ -85,6 +85,7 @@ assert.ok(html.includes("callOffScreen:'home'"), 'call off keeps the home tab');
 const ctx = {Math:Math, Date:Date, Number:Number, String:String, Intl:Intl, isFinite:isFinite};
 vm.createContext(ctx);
 [
+  'function nyCivilYmd(date)',
   'function callOffYmd(d)',
   'function callOffTomorrowYmd(nowMs)',
   'function callOffCleanReason(reason)',

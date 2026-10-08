@@ -43,9 +43,9 @@ assert.ok(!kb.includes('localStorage'), 'keyboard path does not remember a usern
 assert.ok(!kb.includes('doLogin'), 'keyboard path does not sign in');
 
 const login = extractFn(html, 'async function doLogin()');
-assert.ok(login.includes('evercareSbEnabled()'), 'soft path gate stays on doLogin');
+assert.ok(!login.includes('releaseStuckSheetsRollback()'), 'sign-in does not keep a sheets rollback');
 assert.ok(login.includes('loginAideWithSupabase(user,pass)'), 'supabase login stays');
-assert.ok(login.includes("action:'login'"), 'sheets login stays on the rollback');
+assert.ok(!login.includes("action:'login'"), 'sign-in does not post Apps Script');
 assert.ok(!login.includes('visualViewport') && !login.includes('loginKb'), 'doLogin is not the keyboard handler');
 
 const api = new Function(

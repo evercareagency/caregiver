@@ -25,7 +25,7 @@ function extractFn(src, sig){
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-sec1-cg2">', 'newer tip meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-geo1">', 'newer tip meta is first');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui">') > 0, 'sec1-ui meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">') > 0, 'msg-composer-rect1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pwa-install-copy1">') > 0, 'pwa-install-copy1 meta stays');
@@ -50,7 +50,8 @@ assert.ok(tip.includes('MERGE HOLD') && tip.includes('Do not claim LIVE'), 'merg
 assert.ok(tip.includes('CALLABLE LIVE'), 'Ace contract is callable');
 assert.ok(tip.includes('No new Ace patch'), 'no new Ace patch');
 assert.ok(tip.includes('!has_address || !has_coords'), 'gate_required formula');
-assert.ok(tip.includes('https://nominatim.openstreetmap.org/search?format=json&q='), 'Admin Nominatim URL');
+assert.ok(tip.includes('p_lat') && tip.includes('p_lng'), 'save still documents phone coordinates');
+assert.ok(!new RegExp(['nomi','natim'].join(''), 'i').test(tip), 'old address lookup stays out of the tip');
 assert.ok(!/CONTRACT-v1 is LIVE/.test(tip), 'this tip does not claim live');
 assert.ok(tip.includes('aide_get_home_address') && tip.includes('aide_save_home_address'), 'rpc names documented');
 assert.ok(tip.includes('p_home_address') && tip.includes('p_lat') && tip.includes('p_lng'), 'save args documented');
@@ -82,13 +83,8 @@ assert.ok(!/nearby|near-rank|Cover rank|why we/i.test(gate), 'no why-copy on the
 assert.ok(html.includes('#homeAddrScreen.homeaddr-signup{background:#2a7f7f;}'), 'signup teal');
 assert.ok(html.includes('#homeAddrScreen.homeaddr-missing{background:#1a2744;}'), 'missing navy');
 assert.ok(html.includes('body.homeaddr-gate footer{display:none !important;}'), 'footer hides only while the gate is up');
-assert.ok(html.includes('nominatim.openstreetmap.org/search'), 'client geocode');
-
-const geoFn = extractFn(html, 'async function homeAddrGeocode(addr)');
-assert.ok(geoFn.includes("fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q))"), 'Admin geocodeClientAddress URL');
-assert.ok(geoFn.includes('data[0].lat') && geoFn.includes('data[0].lon'), 'lat and lon from the first hit');
-assert.ok(!/countrycodes|limit=|data\[0\]\.lng/.test(geoFn), 'no extra Nominatim params');
-assert.ok(!/getGpsPosition|navigator\.geolocation/.test(geoFn), 'home geocode is not punch GPS');
+assert.ok(!html.includes('async function homeAddrGeocode(addr)'), 'street lookup helper is gone');
+assert.ok(html.includes('Do this while you\'re at home.'), 'home gate copy');
 const gpsFn = extractFn(html, 'function getGpsPosition()');
 assert.ok(gpsFn.includes('navigator.geolocation.getCurrentPosition'), 'punch GPS function stays');
 
@@ -168,7 +164,9 @@ assert.ok(submitFn.includes('homeAddrStateCode(live.state)'), 'submit normalizes
 assert.ok(submitFn.indexOf('homeAddrStateCode(live.state)') < submitFn.indexOf("/^[A-Za-z]{2}$/"), 'state code is normalized before the format check');
 assert.ok(submitFn.includes("/^\\d{5}(?:-\\d{4})?$/"), 'zip stays 5 or 5+4');
 assert.ok(submitFn.includes("sbRest('rpc/aide_save_home_address'"), 'save wire stays');
-assert.ok(submitFn.includes('homeAddrGeocode(line)'), 'geocode wire stays');
+assert.ok(submitFn.includes('getGpsPosition()'), 'Continue reads the phone');
+assert.ok(submitFn.indexOf('getGpsPosition()') > submitFn.indexOf('homeAddrStateCode(live.state)'), 'phone read is after the address checks');
+assert.ok(!submitFn.includes('fetch('), 'Continue does not look the address up');
 const flushFn = extractFn(html, 'function homeAddrFlushAutofill()');
 assert.ok(flushFn.includes('requestAnimationFrame'), 'settle flushes a frame');
 assert.ok(flushFn.includes('setTimeout(resolve, 80)'), 'settle waits a short beat');
@@ -176,8 +174,8 @@ assert.ok(flushFn.includes('setTimeout(finish, 50)'), 'settle still runs if the 
 const bindFn = extractFn(html, 'function homeAddrBindFields()');
 assert.ok(bindFn.includes('homeAddrStreet') && bindFn.includes('homeAddrCity') && bindFn.includes('homeAddrState') && bindFn.includes('homeAddrZip'), 'four fields are bound');
 assert.ok(bindFn.includes("'input'") && bindFn.includes("'change'") && bindFn.includes("'blur'"), 'input change and blur acknowledge autofill');
-const geoFnCheck = extractFn(html, 'async function homeAddrGeocode(addr)');
-assert.ok(geoFnCheck.includes("fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q))"), 'Nominatim URL unchanged');
+assert.ok(submitFn.includes('p_home_address:line'), 'address line still posts');
+assert.ok(submitFn.includes('p_lat:lat') && submitFn.includes('p_lng:lng'), 'phone coordinates still post');
 
 const contractMissing = api.homeAddrNormalize({
   success:true, ok:true, marker:'aide-home-addr1', v:'aide-home-addr1',
@@ -268,19 +266,31 @@ async function runBrowser(){
   try{
     const page = await browser.newPage();
     await page.setViewport({width:390, height:844, deviceScaleFactor:2, isMobile:true, hasTouch:true});
+    await page.setRequestInterception(true);
+    page.on('request', function(req){
+      const u = req.url();
+      if(/script\.google\.com/.test(u)){req.abort();return;}
+      req.continue().catch(function(){});
+    });
     page.on('pageerror', function(err){console.log('PAGEERROR', err && err.message);});
     await page.evaluateOnNewDocument(function(){
       var preset = null;
       try{preset = JSON.parse(localStorage.getItem('__homeAddrGet') || 'null');}catch(e){preset = null;}
-      window.__homeAddr = {get:preset, saves:[], geos:[], auths:[]};
+      window.__homeAddr = {get:preset, saves:[], outside:[], auths:[], gps:0};
+      navigator.geolocation = {
+        getCurrentPosition: function(ok){
+          window.__homeAddr.gps += 1;
+          ok({coords:{latitude:41.4993, longitude:-81.6944, accuracy:12}, timestamp:Date.parse('2026-10-08T12:00:00Z')});
+        }
+      };
       const orig = window.fetch.bind(window);
       window.fetch = function(url, init){
         const u = String(url);
-        if(u.indexOf('nominatim.openstreetmap.org') !== -1){
-          window.__homeAddr.geos.push(u);
-          return Promise.resolve(new Response(JSON.stringify([{lat:'41.4993', lon:'-81.6944', display_name:'123 Maple Ave, Cleveland'}]), {status:200, headers:{'Content-Type':'application/json'}}));
+        if(/script\.google\.com/.test(u))return Promise.reject(new Error('blocked'));
+        if(u.indexOf('supabase.co') === -1){
+          if(!/fonts\.|gstatic|127\.0\.0\.1|localhost/.test(u))window.__homeAddr.outside.push(u);
+          return orig(url, init);
         }
-        if(u.indexOf('supabase.co') === -1)return orig(url, init);
         let body = {};
         try{body = init && init.body ? JSON.parse(init.body) : {};}catch(e){body = {};}
         let data = {success:true, data:null};
@@ -315,7 +325,6 @@ async function runBrowser(){
       await page.evaluate(function(o){
         localStorage.clear();
         sessionStorage.clear();
-        if(o.sheets)localStorage.setItem('evercare_sheets', '1');
         if(o.first)localStorage.setItem('evercare_homeaddr_first_ada', '1');
         if(o.session !== false){
           localStorage.setItem('cg_session', JSON.stringify({
@@ -324,7 +333,9 @@ async function runBrowser(){
             loginAt:Date.now() - 60 * 60 * 1000,
             mustChangePassword:false,
             needsEmail:false,
-            sbAccessToken: o.sheets ? '' : 'test-jwt'
+            sbAccessToken:'test-jwt',
+            sbRefreshToken:'refresh-test',
+            sbExpiresAt:Date.now()+60*60*1000
           }));
         }
         sessionStorage.setItem('sandata_ack_session', '1');
@@ -446,13 +457,17 @@ async function runBrowser(){
       const autofilled = await page.evaluate(function(){
         return {
           address: window.__homeAddr.saves[0] && window.__homeAddr.saves[0].p_home_address,
-          geos: window.__homeAddr.geos.length,
+          lat: window.__homeAddr.saves[0] && window.__homeAddr.saves[0].p_lat,
+          outside: window.__homeAddr.outside.length,
+          gps: window.__homeAddr.gps,
           saves: window.__homeAddr.saves.length,
           err: document.getElementById('homeAddrErr').textContent
         };
       });
       assert.strictEqual(autofilled.saves, 1, 'silent autofill saves for ' + stateValue);
-      assert.strictEqual(autofilled.geos, 1, 'silent autofill geocodes for ' + stateValue);
+      assert.ok(autofilled.gps >= 1, 'silent autofill reads the phone for ' + stateValue);
+      assert.strictEqual(autofilled.lat, 41.4993, 'phone latitude is saved for ' + stateValue);
+      assert.strictEqual(autofilled.outside, 0, 'silent autofill stays on the phone for ' + stateValue);
       assert.strictEqual(autofilled.address, '123 Maple Ave, Cleveland, OH 44115', 'normalized address for ' + stateValue);
       assert.ok(!/required/i.test(autofilled.err), 'required error stays clear for ' + stateValue);
     }
@@ -492,7 +507,8 @@ async function runBrowser(){
     const savedCall = await page.evaluate(function(){
       return {
         saves: window.__homeAddr.saves,
-        geos: window.__homeAddr.geos,
+        outside: window.__homeAddr.outside,
+        gps: window.__homeAddr.gps,
         auths: window.__homeAddr.auths,
         footer: getComputedStyle(document.querySelector('footer')).display,
         gate: document.getElementById('homeAddrScreen').classList.contains('active')
@@ -502,10 +518,8 @@ async function runBrowser(){
     assert.strictEqual(savedCall.saves[0].p_home_address, '123 Maple Ave, Cleveland, OH 44115');
     assert.strictEqual(savedCall.saves[0].p_lat, 41.4993);
     assert.strictEqual(savedCall.saves[0].p_lng, -81.6944);
-    assert.strictEqual(savedCall.geos.length, 1, 'one geocode');
-    assert.ok(savedCall.geos[0].indexOf('https://nominatim.openstreetmap.org/search?format=json&q=') === 0, 'Admin Nominatim URL');
-    assert.ok(savedCall.geos[0].indexOf(encodeURIComponent('123 Maple Ave, Cleveland, OH 44115')) > 0, 'composed address is the query');
-    assert.ok(savedCall.geos[0].indexOf('countrycodes') === -1, 'no country filter');
+    assert.ok(savedCall.gps >= 1, 'Continue reads the phone');
+    assert.strictEqual(savedCall.outside.length, 0, 'Continue does not leave the phone');
     assert.ok(savedCall.auths.length === 1 && savedCall.auths[0].indexOf('Bearer test-jwt') === 0, 'save uses the caregiver JWT');
     assert.notStrictEqual(savedCall.footer, 'none', 'footer returns on home');
     assert.strictEqual(savedCall.gate, false);
@@ -601,18 +615,19 @@ async function runBrowser(){
     assert.strictEqual(bare.lat, 41.4993);
     assert.strictEqual(bare.lng, -81.6944);
 
-    await boot({sheets:true, search:'&sheets=1', session:true, get:{gate_required:true, home_lat:null, home_lng:null, has_address:false, has_coords:false}});
+    await boot({session:true, get:{gate_required:true, home_lat:null, home_lng:null, has_address:false, has_coords:false}});
     await page.waitForFunction(function(){
-      return document.getElementById('caregiverScreen').classList.contains('active');
+      const el = document.getElementById('homeAddrScreen');
+      return el && el.classList.contains('active') && !el.classList.contains('homeaddr-checking');
     }, {timeout:8000});
-    const sheets = await page.evaluate(function(){
+    const signedIn = await page.evaluate(function(){
       return {
         gate: document.getElementById('homeAddrScreen').classList.contains('active'),
         saves: window.__homeAddr.saves.length
       };
     });
-    assert.strictEqual(sheets.gate, false, 'sheets rollback does not show the gate');
-    assert.strictEqual(sheets.saves, 0);
+    assert.strictEqual(signedIn.gate, true, 'a signed-in aide with gate_required sees the address gate');
+    assert.strictEqual(signedIn.saves, 0);
   }finally{
     await browser.close();
     server.close();

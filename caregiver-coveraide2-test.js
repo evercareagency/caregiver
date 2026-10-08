@@ -63,6 +63,7 @@ const ctx = {
 };
 vm.createContext(ctx);
 [
+  'function nyCivilYmd(date)',
   'function callOffYmd(d)',
   'function callOffTomorrowYmd(nowMs)',
   'function callOffCleanReason(reason)',
