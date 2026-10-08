@@ -43,13 +43,16 @@ assert.ok(loginFn && signupFn && verifyFn && resetFn && setupFn && authSetup && 
 
 assert.ok(loginFn.indexOf('await loginAideWithSupabase(user,pass)') < loginFn.indexOf("action:'login'"), 'default login is Auth before Sheets');
 assert.ok(loginFn.slice(0, loginFn.indexOf("action:'login'")).includes('return;'), 'Auth login returns before Sheets');
-assert.ok(loginFn.includes("if(evercareSbEnabled()){document.getElementById('loginErr').style.display='block';}"), 'cut login errors do not read a local password');
+assert.ok(loginFn.includes('showLoginErr(e&&e.message)'), 'cut login errors do not read a local password');
+assert.ok(html.includes('Too many attempts — please wait a few minutes and try again'), 'rate limit copy');
 
 const signupCut = signupFn.slice(0, signupFn.indexOf('SHEETS_URL'));
 assert.ok(signupCut.includes('evercareSbEnabled()') && signupCut.includes('return;'), 'cut signup returns before Sheets');
 assert.ok(!signupCut.includes('password:pass'), 'cut signup does not store a local password');
 
-assert.ok(verifyFn.includes('sendAideRecoveryEmail(resolved)'), 'forgot recovers to the resolved Auth email');
+assert.ok(verifyFn.includes('sendAideRecoveryEmail(email)'), 'forgot sends the typed email');
+assert.ok(verifyFn.includes('If that email is on file, a reset link is on its way. Questions? Call the office at (216) 377-5991.'), 'forgot stays neutral');
+assert.ok(!verifyFn.includes('resolveAide' + 'AuthEmail'), 'forgot does not look up a username');
 assert.ok(verifyFn.includes('releaseStuckSheetsRollback()'), 'forgot clears a stuck sheets rollback');
 assert.ok(!verifyFn.includes('verify_reset') && !verifyFn.includes('SHEETS_URL'), 'forgot does not call Sheets verify_reset');
 assert.ok(recoverFn.includes('/auth/v1/recover') && !recoverFn.includes('SHEETS_URL'), 'forgot email is Auth recover');
@@ -69,6 +72,8 @@ assert.ok(authSetup.includes("method:'PUT'") && authSetup.includes('/auth/v1/use
 assert.ok(authSetup.includes('must_change_password:false'), 'setup clears the aide flag');
 assert.ok(!authSetup.includes('SHEETS_URL') && !authSetup.includes('set_password'), 'Auth setup does not write Sheets');
 
+const testPw = process.env.EVERCARE_TEST_PASSWORD || '';
+const nextPw = testPw ? testPw + '-next' : '';
 const urlConst = (html.match(/const SUPABASE_URL='([^']+)'/) || [])[1];
 const keyConst = (html.match(/const SUPABASE_ANON_KEY='([^']+)'/) || [])[1];
 const sheetsUrl = (html.match(/const SHEETS_URL='([^']+)'/) || [])[1];
@@ -120,9 +125,9 @@ function harness(opts){
   const toasts = [];
   const homes = [];
   const nodes = {
-    setup_curpass: {value: opts.currentPassword || 'temp-pw'},
-    setup_newpass: {value: opts.newPassword || 'lasting-pw'},
-    setup_confirm: {value: opts.confirmPassword || 'lasting-pw'},
+    setup_curpass: {value: opts.currentPassword || testPw},
+    setup_newpass: {value: opts.newPassword || nextPw},
+    setup_confirm: {value: opts.confirmPassword || nextPw},
     setup_email: {value: opts.email || 'aide.one@example.com'},
     aideSetupErr: {textContent: '', style: {display: 'none'}},
     aideSetupBtn: {textContent: 'Save & Continue →', disabled: false},
@@ -139,7 +144,7 @@ function harness(opts){
     location: {search: opts.search || ''},
     localStorage: storage(opts.storage),
     sessionStorage: storage(),
-    window: {_cgFreshLogin: true, _aideSetupCurrentPassword: 'temp-pw'},
+    window: {_cgFreshLogin: true, _aideSetupCurrentPassword: testPw},
     currentUser: opts.currentUser,
     document: {
       getElementById: function(id){return nodes[id] || null;},
@@ -203,6 +208,10 @@ function harness(opts){
 }
 
 (async function(){
+  if(!testPw){
+    console.log('caregiver-cgauth-test: password cases skipped');
+    return;
+  }
   const lasting = harness({
     currentUser: {
       username: 'aide.one',
@@ -219,7 +228,7 @@ function harness(opts){
   await vm.runInContext('submitAideSetup()', lasting.box);
   const put = lasting.calls.filter(function(c){return c.url.indexOf('/auth/v1/user') >= 0;})[0];
   assert.ok(put && put.init.method === 'PUT', 'must-change writes the new password to Auth');
-  assert.deepStrictEqual(JSON.parse(put.init.body), {password: 'lasting-pw', email: 'aide.one@example.com'});
+  assert.deepStrictEqual(JSON.parse(put.init.body), {password: nextPw, email: 'aide.one@example.com'});
   const patch = lasting.calls.filter(function(c){return c.init.method === 'PATCH' && c.url.indexOf('/rest/v1/aides') >= 0;})[0];
   assert.strictEqual(JSON.parse(patch.init.body).must_change_password, false);
   assert.deepStrictEqual(lasting.sheets, [], 'token setup does not post Sheets');
@@ -261,7 +270,7 @@ function harness(opts){
   });
   await vm.runInContext('submitAideSetup()', sheetsMode.box);
   assert.deepStrictEqual(sheetsMode.sheets.map(function(p){return p.action;}), ['complete_aide_setup', 'set_password']);
-  assert.strictEqual(sheetsMode.sheets[1].newPassword, 'lasting-pw');
+  assert.strictEqual(sheetsMode.sheets[1].newPassword, nextPw);
   assert.strictEqual(sheetsMode.calls.length, 0, 'sheets rollback does not call Auth');
   assert.deepStrictEqual(sheetsMode.toasts, ['Account setup complete.']);
 

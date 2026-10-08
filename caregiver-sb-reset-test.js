@@ -64,7 +64,10 @@ assert.ok(extractFn(html, 'async function clearAideMustChangeAfterRecovery(token
 assert.ok(recoverFn.includes('/auth/v1/recover'), 'forgot password sends a recovery email');
 assert.ok(!recoverFn.includes('reset_password') && !submitFn.includes('SHEETS_URL'), 'recovery path does not write Sheets');
 
-assert.ok(verifyFn.includes('sendAideRecoveryEmail(resolved)'), 'forgot emails the resolved Auth address');
+assert.ok(verifyFn.includes('sendAideRecoveryEmail(email)'), 'forgot emails the address the aide types');
+assert.ok(verifyFn.includes('If that email is on file, a reset link is on its way. Questions? Call the office at (216) 377-5991.'), 'forgot stays neutral');
+assert.ok(!verifyFn.includes('resolveAide' + 'AuthEmail') && !verifyFn.includes('aide_login_email'), 'forgot does not look up a username');
+assert.ok(!html.includes('resolveAide' + 'AuthEmail') && !html.includes('resolve_' + 'username_email'), 'old username email lookup is gone');
 assert.ok(verifyFn.includes('releaseStuckSheetsRollback()'), 'forgot clears a stuck sheets rollback before recover');
 assert.ok(!verifyFn.includes('reset_new_pass'), 'forgot does not open an in-modal password');
 assert.ok(!verifyFn.includes('Password reset! Please log in.'), 'forgot does not claim the password changed');
@@ -200,8 +203,7 @@ function harness(opts){
       const u = String(url);
       let res = opts.fetch && opts.fetch(u, init);
       if(!res){
-        if(u.indexOf('resolve_username_email') >= 0)res = opts.rpc || {ok: true, status: 200, raw: 'null'};
-        else if(u.indexOf('/auth/v1/recover') >= 0)res = opts.recover || {ok: true, status: 200, raw: '{}'};
+        if(u.indexOf('/auth/v1/recover') >= 0)res = opts.recover || {ok: true, status: 200, raw: '{}'};
         else if(u.indexOf('/auth/v1/user') >= 0)res = opts.user || {ok: true, status: 200, raw: JSON.stringify({email: 'mo.aide@example.com'})};
         else if(u.indexOf('/rest/v1/aides') >= 0 && init.method === 'GET')res = opts.aide || {ok: true, status: 200, raw: '[]'};
         else if(u.indexOf('/rest/v1/aides') >= 0 && init.method === 'PATCH')res = opts.patch || {ok: true, status: 200, raw: '[]'};
@@ -222,7 +224,6 @@ function harness(opts){
     extractFn(html, 'async function sbRead(res)'),
     extractFn(html, 'function sbErrMsg(pack,fallback)'),
     extractFn(html, 'function sbJwtSub(token)'),
-    extractFn(html, 'async function resolveAideAuthEmail(username)'),
     extractFn(html, 'function aideEmailsMatch(resolved,entered)'),
     extractFn(html, 'function caregiverRecoverRedirect()'),
     extractFn(html, 'async function sendAideRecoveryEmail(email)'),
@@ -254,26 +255,24 @@ function harness(opts){
   return {calls: calls, box: box, nodes: nodes, toasts: toasts, closed: closed, alerts: alerts, screens: screens, replaced: replaced, nav: nav, timers: timers};
 }
 
-function rpcEmail(email){
-  return {ok: true, status: 200, raw: JSON.stringify(email)};
-}
+const neutral = 'If that email is on file, a reset link is on its way. Questions? Call the office at (216) 377-5991.';
 
 (async function(){
   const sent = harness({
     user: ' Mossier ',
-    email: 'Mo.Aide@Example.com',
-    rpc: rpcEmail('mo.aide@example.com')
+    email: 'Mo.Aide@Example.com'
   });
   await sent.box.verifyReset();
-  assert.deepStrictEqual(sent.toasts, ['Check your email for a link to set a new password.']);
-  assert.deepStrictEqual(sent.closed, ['resetModal']);
+  assert.deepStrictEqual(sent.toasts, []);
+  assert.deepStrictEqual(sent.closed, []);
+  assert.strictEqual(sent.nodes.reset_blurb.textContent, neutral);
+  assert.strictEqual(sent.nodes.resetErr.style.display, 'none');
   assert.strictEqual(sent.nodes.reset_new_pass.style.display, 'none', 'email link replaces the in-modal password');
-  const resolveCall = sent.calls.filter(function(c){return c.url.indexOf('resolve_username_email') >= 0;})[0];
+  assert.ok(!sent.calls.some(function(c){return c.url.indexOf('resolve_' + 'username_email') >= 0 || c.url.indexOf('aide_login_email') >= 0;}));
   const recoverCall = sent.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
-  assert.ok(resolveCall && recoverCall);
-  assert.deepStrictEqual(JSON.parse(resolveCall.init.body), {p_username: 'mossier', p_org_slug: 'evercare'});
+  assert.ok(recoverCall);
   assert.strictEqual(recoverCall.init.method, 'POST');
-  assert.deepStrictEqual(JSON.parse(recoverCall.init.body), {email: 'mo.aide@example.com'});
+  assert.deepStrictEqual(JSON.parse(recoverCall.init.body), {email: 'Mo.Aide@Example.com'});
   assert.strictEqual(recoverCall.init.headers.apikey, anonKey);
   assert.strictEqual(recoverCall.init.headers.Authorization, 'Bearer ' + anonKey);
   const redirect = decodeURIComponent(recoverCall.url.split('redirect_to=')[1]);
@@ -284,10 +283,10 @@ function rpcEmail(email){
     origin: 'https://evercareagency.github.io',
     pathname: '/caregiver/',
     user: 'mossier',
-    email: 'mo.aide@example.com',
-    rpc: rpcEmail('mo.aide@example.com')
+    email: 'mo.aide@example.com'
   });
   await sentLive.box.verifyReset();
+  assert.strictEqual(sentLive.nodes.reset_blurb.textContent, neutral);
   const liveRecover = sentLive.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
   const liveRedirect = decodeURIComponent(liveRecover.url.split('redirect_to=')[1]);
   assert.strictEqual(liveRedirect, 'https://evercareagency.github.io/caregiver/');
@@ -307,63 +306,78 @@ function rpcEmail(email){
 
   const mismatch = harness({
     user: 'mossier',
-    email: 'other@example.com',
-    rpc: rpcEmail('moshire21@hotmail.com')
+    email: 'other@example.com'
   });
   await mismatch.box.verifyReset();
-  assert.deepStrictEqual(mismatch.toasts, ['Check your email for a link to set a new password.']);
-  assert.deepStrictEqual(mismatch.closed, ['resetModal']);
-  assert.strictEqual(mismatch.nodes.resetErr.textContent, '');
+  assert.deepStrictEqual(mismatch.toasts, []);
+  assert.deepStrictEqual(mismatch.closed, []);
+  assert.strictEqual(mismatch.nodes.reset_blurb.textContent, neutral);
+  assert.strictEqual(mismatch.nodes.resetErr.style.display, 'none');
   const mismatchRecover = mismatch.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
-  assert.ok(mismatchRecover, 'a different typed email still recovers');
-  assert.deepStrictEqual(JSON.parse(mismatchRecover.init.body), {email: 'moshire21@hotmail.com'});
+  assert.ok(mismatchRecover, 'the typed email is what recover sends');
+  assert.deepStrictEqual(JSON.parse(mismatchRecover.init.body), {email: 'other@example.com'});
   assert.ok(!mismatch.calls.some(function(c){return c.url === 'https://sheets.example/exec' || (c.body && c.body.action === 'verify_reset');}));
 
   const optionalEmail = harness({
     user: 'mossier',
-    email: '',
-    rpc: rpcEmail('moshire21@hotmail.com')
+    email: ''
   });
   await optionalEmail.box.verifyReset();
-  const optionalRecover = optionalEmail.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
-  assert.ok(optionalRecover, 'an empty email field still recovers');
-  assert.deepStrictEqual(JSON.parse(optionalRecover.init.body), {email: 'moshire21@hotmail.com'});
+  assert.ok(!optionalEmail.calls.some(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;}), 'an empty email does not recover');
+  assert.strictEqual(optionalEmail.nodes.resetErr.textContent, 'Enter the email on your account.');
+  assert.notStrictEqual(optionalEmail.nodes.reset_blurb.textContent, neutral);
 
-  const unknown = harness({user: 'mossier', email: 'moshire21@hotmail.com', rpc: {ok: true, status: 200, raw: 'null'}});
+  const unknown = harness({
+    user: 'mossier',
+    email: 'missing@example.com',
+    recover: {ok: false, status: 400, raw: JSON.stringify({message: 'User not found'})}
+  });
   await unknown.box.verifyReset();
-  assert.strictEqual(unknown.nodes.resetErr.textContent, 'Check the username and try again.');
+  assert.strictEqual(unknown.nodes.reset_blurb.textContent, neutral);
+  assert.strictEqual(unknown.nodes.resetErr.style.display, 'none');
   assert.deepStrictEqual(unknown.toasts, []);
-  assert.ok(!unknown.calls.some(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;}));
+  const unknownRecover = unknown.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
+  assert.deepStrictEqual(JSON.parse(unknownRecover.init.body), {email: 'missing@example.com'});
 
   const recoverDown = harness({
     user: 'mossier',
     email: 'mo.aide@example.com',
-    rpc: rpcEmail('mo.aide@example.com'),
     recover: {ok: false, status: 500, raw: JSON.stringify({message: 'mailer down'})}
   });
   await recoverDown.box.verifyReset();
   assert.deepStrictEqual(recoverDown.toasts, []);
   assert.deepStrictEqual(recoverDown.closed, []);
-  assert.strictEqual(recoverDown.nodes.resetErr.textContent, 'mailer down');
+  assert.strictEqual(recoverDown.nodes.reset_blurb.textContent, neutral);
+  assert.strictEqual(recoverDown.nodes.resetErr.style.display, 'none');
+  assert.ok(recoverDown.nodes.resetErr.textContent.indexOf('mailer down') < 0);
 
   const sheetsVerify = harness({
     search: '?sheets=1&keep=1',
     storage: {evercare_sheets: '1'},
     user: 'mossier',
-    email: 'moshire21@hotmail.com',
-    rpc: rpcEmail('moshire21@hotmail.com')
+    email: 'mo.aide@example.com'
   });
   await sheetsVerify.box.verifyReset();
   const sheetsRecover = sheetsVerify.calls.filter(function(c){return c.url.indexOf('/auth/v1/recover') >= 0;})[0];
   assert.ok(sheetsRecover, 'a stuck sheets flag still sends Auth recover');
-  assert.deepStrictEqual(JSON.parse(sheetsRecover.init.body), {email: 'moshire21@hotmail.com'});
+  assert.deepStrictEqual(JSON.parse(sheetsRecover.init.body), {email: 'mo.aide@example.com'});
+  assert.strictEqual(sheetsVerify.nodes.reset_blurb.textContent, neutral);
   assert.ok(!sheetsVerify.calls.some(function(c){return c.url === 'https://sheets.example/exec' || (c.body && c.body.action === 'verify_reset');}));
   assert.strictEqual(sheetsVerify.box.localStorage.getItem('evercare_sheets'), null);
   assert.ok(sheetsVerify.box.location.search.indexOf('sheets=1') < 0, 'sheets=1 is stripped before the next sign-in');
   assert.ok(sheetsVerify.box.location.search.indexOf('keep=1') >= 0, 'other query params stay');
   assert.strictEqual(sheetsVerify.nodes.reset_new_pass.style.display, 'none');
 
-  const cutSet = harness({user: 'mossier', email: 'mo.aide@example.com', password: 'new-secret'});
+  const testPw = process.env.EVERCARE_TEST_PASSWORD || '';
+  if(!testPw){
+    console.log('caregiver-sb-reset password cases skipped');
+    console.log('caregiver-sb-reset checks ok');
+    return;
+  }
+  const sheetsPw = testPw + '-sheets';
+  const nextPw = testPw + '-next';
+
+  const cutSet = harness({user: 'mossier', email: 'mo.aide@example.com', password: nextPw});
   await cutSet.box.doResetPassword();
   assert.deepStrictEqual(cutSet.toasts, []);
   assert.deepStrictEqual(cutSet.closed, []);
@@ -373,16 +387,16 @@ function rpcEmail(email){
   const sheetsReset = harness({
     search: '?sheets=1',
     user: 'mossier',
-    password: 'sheets-secret'
+    password: sheetsPw
   });
   await sheetsReset.box.doResetPassword();
-  assert.strictEqual(JSON.stringify(sheetsReset.calls[0].body), JSON.stringify({action: 'reset_password', username: 'mossier', password: 'sheets-secret'}));
+  assert.strictEqual(JSON.stringify(sheetsReset.calls[0].body), JSON.stringify({action: 'reset_password', username: 'mossier', password: sheetsPw}));
   assert.deepStrictEqual(sheetsReset.toasts, ['✅ Password reset! Please log in.']);
 
   const storedSheets = harness({
     storage: {evercare_sheets: '1'},
     user: 'mossier',
-    password: 'sheets-secret',
+    password: sheetsPw,
     sheetsThrow: true
   });
   await storedSheets.box.doResetPassword();
@@ -394,8 +408,8 @@ function rpcEmail(email){
   const token = 'hdr.' + b64url({sub: userId}) + '.sig';
   const probeSession = JSON.stringify({username:'probeqa', name:'Probe QA Test', loginAt:Date.now(), sbAccessToken:token});
   const landed = harness({
-    recoveryPass: 'new-secret',
-    recoveryConfirm: 'new-secret',
+    recoveryPass: nextPw,
+    recoveryConfirm: nextPw,
     storage: {
       cg_session: probeSession,
       evercare_sb_session: JSON.stringify({access_token:token, refresh_token:'r'})
@@ -426,7 +440,7 @@ function rpcEmail(email){
   const put = landed.calls.filter(function(c){return c.url.indexOf('/auth/v1/user') >= 0;})[0];
   const patch = landed.calls.filter(function(c){return c.init.method === 'PATCH';})[0];
   assert.strictEqual(put.init.method, 'PUT');
-  assert.deepStrictEqual(JSON.parse(put.init.body), {password: 'new-secret'});
+  assert.deepStrictEqual(JSON.parse(put.init.body), {password: nextPw});
   assert.strictEqual(put.init.headers.Authorization, 'Bearer ' + token);
   assert.strictEqual(put.init.headers.apikey, anonKey);
   assert.ok(patch.url.indexOf('id=eq.' + aideId) >= 0);
@@ -435,8 +449,8 @@ function rpcEmail(email){
   assert.ok(!landed.calls.some(function(c){return c.url.indexOf('/auth/v1/recover') >= 0 || (c.body && c.body.action === 'reset_password');}));
 
   const putFails = harness({
-    recoveryPass: 'new-secret',
-    recoveryConfirm: 'new-secret',
+    recoveryPass: nextPw,
+    recoveryConfirm: nextPw,
     window: {__sbRecovery: {access_token: token}},
     user: {ok: false, status: 422, raw: JSON.stringify({message: 'Password should be at least 6 characters.'})}
   });
@@ -450,8 +464,8 @@ function rpcEmail(email){
   assert.ok(putFails.box.window.__sbRecovery);
 
   const patchFails = harness({
-    recoveryPass: 'new-secret',
-    recoveryConfirm: 'new-secret',
+    recoveryPass: nextPw,
+    recoveryConfirm: nextPw,
     window: {__sbRecovery: {access_token: token}},
     aide: {ok: true, status: 200, raw: JSON.stringify([{id: aideId}])},
     fetch: function(u, init){
@@ -467,8 +481,8 @@ function rpcEmail(email){
 
   const delayed = harness({
     search: '?from=email',
-    recoveryPass: 'new-secret',
-    recoveryConfirm: 'new-secret',
+    recoveryPass: nextPw,
+    recoveryConfirm: nextPw,
     window: {__sbRecovery: {access_token: token, refresh_token: 'r'}},
     aide: {ok: true, status: 200, raw: JSON.stringify([{id: aideId}])},
     patch: {ok: true, status: 204, raw: ''}
@@ -483,8 +497,8 @@ function rpcEmail(email){
   const pagesSaved = harness({
     origin: 'https://evercareagency.github.io',
     pathname: '/caregiver/',
-    recoveryPass: 'new-secret',
-    recoveryConfirm: 'new-secret',
+    recoveryPass: nextPw,
+    recoveryConfirm: nextPw,
     window: {__sbRecovery: {access_token: token, refresh_token: 'r'}},
     aide: {ok: true, status: 200, raw: '[]'}
   });
@@ -497,8 +511,8 @@ function rpcEmail(email){
   const localSaved = harness({
     origin: 'http://localhost:8080',
     pathname: '/index.html',
-    recoveryPass: 'new-secret',
-    recoveryConfirm: 'new-secret',
+    recoveryPass: nextPw,
+    recoveryConfirm: nextPw,
     window: {__sbRecovery: {access_token: token, refresh_token: 'r'}},
     aide: {ok: true, status: 200, raw: '[]'}
   });
@@ -512,8 +526,8 @@ function rpcEmail(email){
     origin: 'https://evercareagency.github.io',
     pathname: '/caregiver/',
     search: '?sheets=1',
-    recoveryPass: 'new-secret',
-    recoveryConfirm: 'new-secret',
+    recoveryPass: nextPw,
+    recoveryConfirm: nextPw,
     window: {__sbRecovery: {access_token: token, refresh_token: 'r'}, navigator: {standalone: true}},
     aide: {ok: true, status: 200, raw: '[]'}
   });
@@ -543,7 +557,7 @@ function rpcEmail(email){
     name: 'Mo Aide',
     user: 'mossier',
     email: 'mo.aide@example.com',
-    password: 'secret',
+    password: testPw,
     code: 'ECA2026'
   });
   await signupCut.box.doSignup();
@@ -555,7 +569,7 @@ function rpcEmail(email){
     name: 'Mo Aide',
     user: 'Mossier',
     email: 'Mo.Aide@Example.com',
-    password: 'secret',
+    password: testPw,
     code: 'ECA2026',
     sheetsHttp: {ok: true, status: 200, raw: JSON.stringify({success: true})}
   });
@@ -564,7 +578,7 @@ function rpcEmail(email){
   assert.deepStrictEqual(JSON.parse(signupSheets.calls[0].init.body), {
     action: 'signup',
     username: 'mossier',
-    password: 'secret',
+    password: testPw,
     name: 'Mo Aide',
     email: 'mo.aide@example.com'
   });
