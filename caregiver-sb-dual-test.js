@@ -463,7 +463,7 @@ async function runBrowser(){
       home:document.getElementById('caregiverScreen').classList.contains('active')
     };
   });
-  assert.strictEqual(limited.text,'Too many attempts — please wait a few minutes and try again');
+  assert.strictEqual(limited.text,'Too many attempts — please wait 15 minutes and try again');
   assert.strictEqual(limited.home,false);
   assert.ok(!sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}),'rate limit skips the password grant');
 

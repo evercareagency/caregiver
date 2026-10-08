@@ -79,11 +79,9 @@ assert.ok(resetSb.includes('return'), 'cut set-password does not fall through to
 assert.ok(!resetSb.includes('Password reset! Please log in.'), 'cut set-password does not claim a Sheets reset');
 assert.ok(resetFn.includes("action:'reset_password'"), 'sheets rollback still resets on Sheets');
 
-const signupSb = signupFn.slice(0, signupFn.indexOf('SHEETS_URL'));
-assert.ok(signupSb.includes('evercareSbEnabled()') && signupSb.includes('return'), 'cut signup returns before Sheets');
-assert.ok(signupSb.includes('Accounts are created by the office. Contact your manager.'), 'cut signup tells the aide to contact the office');
-assert.ok(!signupSb.includes('startCgSession'), 'cut signup does not create a session');
-assert.ok(signupFn.includes("action:'signup'"), 'sheets rollback still signs up on Sheets');
+assert.ok(signupFn.includes('Accounts are created by the office. Contact your manager.'), 'signup tells the aide to contact the office');
+assert.ok(!signupFn.includes('fetch(') && !signupFn.includes('SHEETS_URL') && !signupFn.includes('localStorage') && !signupFn.includes('store.'), 'signup does not call the network or write a local user');
+assert.ok(!signupFn.includes('startCgSession'), 'signup does not create a session');
 
 function storage(initial){
   const mem = Object.assign({}, initial || {});
@@ -152,7 +150,6 @@ function harness(opts){
     SUPABASE_URL: 'https://zealkptwgifnkbkuavvp.supabase.co',
     SUPABASE_ANON_KEY: anonKey,
     SHEETS_URL: 'https://sheets.example/exec',
-    OFFICE_CODE: 'ECA2026',
     JSON: JSON,
     Date: Date,
     String: String,
@@ -557,12 +554,11 @@ const neutral = 'If that email is on file, a reset link is on its way. Questions
     name: 'Mo Aide',
     user: 'mossier',
     email: 'mo.aide@example.com',
-    password: testPw,
-    code: 'ECA2026'
+    password: testPw
   });
   await signupCut.box.doSignup();
   assert.strictEqual(signupCut.nodes.signupErr.textContent, 'Accounts are created by the office. Contact your manager.');
-  assert.strictEqual(signupCut.calls.length, 0, 'cut signup does not post Sheets or Auth');
+  assert.strictEqual(signupCut.calls.length, 0, 'signup does not post Sheets or Auth');
 
   const signupSheets = harness({
     search: '?sheets=1',
@@ -570,19 +566,12 @@ const neutral = 'If that email is on file, a reset link is on its way. Questions
     user: 'Mossier',
     email: 'Mo.Aide@Example.com',
     password: testPw,
-    code: 'ECA2026',
     sheetsHttp: {ok: true, status: 200, raw: JSON.stringify({success: true})}
   });
   await signupSheets.box.doSignup();
-  assert.strictEqual(signupSheets.calls[0].url, 'https://sheets.example/exec');
-  assert.deepStrictEqual(JSON.parse(signupSheets.calls[0].init.body), {
-    action: 'signup',
-    username: 'mossier',
-    password: testPw,
-    name: 'Mo Aide',
-    email: 'mo.aide@example.com'
-  });
-  assert.ok(signupSheets.calls.some(function(c){return c.url === 'session';}));
+  assert.strictEqual(signupSheets.calls.length, 0, 'sheets mode does not sign up');
+  assert.strictEqual(signupSheets.nodes.signupErr.textContent, 'Accounts are created by the office. Contact your manager.');
+  assert.ok(!JSON.stringify(signupSheets.box.localStorage).includes('cg_users'));
 
   const bootRec = harness({hash: '#access_token=' + encodeURIComponent(token) + '&refresh_token=r&type=recovery&expires_in=3600'});
   bootRec.box.restoreCgSession = function(){bootRec.calls.push({url: 'restore'}); return true;};
