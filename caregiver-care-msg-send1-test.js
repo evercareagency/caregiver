@@ -10,7 +10,7 @@ const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-exec-off1">', 'newer tip meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-geo1">', 'newer tip meta is first');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui">') > 0, 'sec1-ui meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">') > 0, 'msg-composer-rect1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pwa-install-copy1">') > 0, 'pwa-install-copy1 meta stays');
@@ -460,7 +460,7 @@ async function runBrowser(){
         build:(document.querySelector('meta[name="caregiver-build"]')||{}).content
       };
     });
-    assert.strictEqual(result.build, '2026-10-08-exec-off1', 'first build meta is the cache token');
+    assert.strictEqual(result.build, '2026-10-08-geo1', 'first build meta is the cache token');
     assert.strictEqual(result.marker, 'v=care-msg-send1');
     assert.strictEqual(result.cache, '?v=care-msg-send1');
     assert.strictEqual(result.afterSend.fail, false, 'the screen does not say the message did not send');

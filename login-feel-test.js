@@ -143,6 +143,7 @@ async function runBrowser(){
     window._fetchLog=[];
     const orig=window.fetch.bind(window);
     window.fetch=function(url,opts){
+      if(/script\.google\.com/.test(String(url)))return Promise.reject(new Error('blocked'));
       let action='';
       try{action=JSON.parse((opts&&opts.body)||'{}').action||'';}catch(e){}
       window._fetchLog.push({

@@ -77,6 +77,7 @@ function runSave(opts){
     saveUserWeekData:function(){box._stored = true;},
     refreshSaveDayState:function(){},
     paintDayRowStatus:function(){},
+    paintDayLocation:function(){},
     showTempMsg:function(){},
     evercareSbEnabled:function(){return opts.sheets !== true;},
     cgShouldSyncNow:function(){return !!opts.live;},

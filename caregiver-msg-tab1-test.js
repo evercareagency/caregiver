@@ -25,7 +25,7 @@ function extractFn(src, sig){
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-exec-off1">', 'newer tip meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-geo1">', 'newer tip meta is first');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui">') > 0, 'sec1-ui meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">') > 0, 'msg-composer-rect1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pwa-install-copy1">') > 0, 'pwa-install-copy1 meta stays');
@@ -288,6 +288,7 @@ async function runBrowser(){
         let mode = '';
         try{mode = sessionStorage.getItem('__cgNet') || '';}catch(e){}
         const url = String(input && input.url || input || '');
+        if(/script\.google\.com/.test(url))return Promise.reject(new Error('blocked'));
         if(mode && /supabase\.co/.test(url)){
           return Promise.resolve(new Response('[]', {status:200, headers:{'Content-Type':'application/json'}}));
         }
@@ -372,6 +373,7 @@ async function runBrowser(){
     let markCalls = 0;
     page.on('request', function(req){
       const url = req.url();
+      if(/script\.google\.com/.test(url)){req.abort();return;}
       if(!/supabase\.co/.test(url)){req.continue().catch(function(){});return;}
       if(req.method()==='OPTIONS'){
         req.respond({status:204, headers:cors, body:''}).catch(function(){});

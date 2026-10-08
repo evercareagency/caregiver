@@ -188,6 +188,7 @@ function run(opts){
     saveUserWeekData: function(data){box._savedWeek = data;},
     refreshSaveDayState: function(){},
     paintDayRowStatus: function(){},
+    paintDayLocation: function(){},
     showTempMsg: function(msg){box.msgs.push(msg);},
     getAllTimesheets: function(){return [{id:'local-1', clientId:'af44b579-5881-46ea-8cb8-83a33c0af200', clientName:'Ada Client', weekStart:'2026-09-20'}];},
     getSelectedClient: function(){return {id:'af44b579-5881-46ea-8cb8-83a33c0af200', name:'Ada Client'};},

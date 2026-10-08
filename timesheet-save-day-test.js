@@ -48,6 +48,7 @@ assert.ok(refreshFn.includes('saveTargetDayName'), 'Save button must name the ta
 console.log('static checks ok');
 
 async function runBrowser(){
+  if(process.env.SKIP_BROWSER==='1')return;
   let puppeteer;
   try{puppeteer=require('puppeteer-core');}
   catch(e){puppeteer=require('/tmp/cgtest/node_modules/puppeteer-core');}
@@ -61,7 +62,7 @@ async function runBrowser(){
   await page.setRequestInterception(true);
   page.on('request',req=>{
     const u=req.url();
-    if(/script\.google\.com|nominatim|fonts\.googleapis|fonts\.gstatic|gstatic\.com/.test(u)){req.abort();return;}
+    if(/script\.google\.com|fonts\.googleapis|fonts\.gstatic|gstatic\.com/.test(u)){req.abort();return;}
     if(/supabase\.co/.test(u)){
       req.respond({status:200,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:'[]'});
       return;

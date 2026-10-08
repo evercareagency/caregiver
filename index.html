@@ -5,6 +5,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="caregiver-shell" content="2026-09-29-pages-cache-fresh1">
+<meta name="caregiver-build" content="2026-10-08-geo1">
 <meta name="caregiver-build" content="2026-10-08-exec-off1">
 <meta name="caregiver-build" content="2026-10-08-sec1-cg2">
 <meta name="caregiver-build" content="2026-10-08-sec1-ui-h2">
@@ -163,6 +164,7 @@ function cgShellBoot(){
 // end v=pages-cache-fresh1
 cgShellBoot();
 </script>
+<!-- caregiver-build: 2026-10-08-geo1 v=geo1 ?v=geo1 GEO1 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Quiet Mo. Save Day stores the phone's raw location only: lat, lng, accuracyM, and gpsAt. A new save does not write a street label. A missed, denied, or rough phone location does not block Save Day or Submit. Where do you live? reads the phone on the Continue tap and still POSTs /rest/v1/rpc/aide_save_home_address {p_home_address, p_lat, p_lng}. Do this while you're at home. America/New_York Sunday week keys stay. Correction notes stay. Token refresh on visibilitychange and pageshow stays. A save that cannot reach the office shows (216) 377-5991. Save and print stay one US Letter page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on page 1. Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. Cache bust ?v=geo1. v=exec-off1 and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-10-08-exec-off1 v=exec-off1 ?v=exec-off1 EXEC_OFF1 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Quiet Mo. Supabase is the system of record. The aide portal does not call the legacy the old web app web app on page load, warm-up, timers, sign-in, home, timesheet fill, submit, resubmit, corrections, PDF, backups, location status, in-services, or messages. The old sheets rollback is deleted. A save that cannot reach the office shows (216) 377-5991 and keeps timesheet entries on the screen. Corrections read timesheets with status correction_requested. Save and print use the client overlay. Save and print stay one US Letter page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on page 1. Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. SEC1_CG2 sign-in stays aide_login_email. Login look stays. Cache bust ?v=exec-off1. v=sec1-cg2 and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-10-08-sec1-cg2 v=sec1-cg2 ?v=sec1-cg2 SEC1_CG2 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Aides are created only by the office. The login screen has no Sign Up tab, no sign-up control, and no office-code field. doSignup always shows Accounts are created by the office. Contact your manager. It does not call the network and does not write a local user. Forgot password has no Username field. It still posts the typed email to /auth/v1/recover and shows the same neutral message with the office line (216) 377-5991. Too many login attempts says 15 minutes. The Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. Sign-in stays aide_login_email. Login look, remember-username, and the 1-Letter-page timesheet PDF stay. Cache bust ?v=sec1-cg2. v=sec1-ui-h2 and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-10-08-sec1-ui-h2 v=sec1-ui-h2 ?v=sec1-ui-h2 SEC1_UI_H2 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Sign-in posts aide_login_email with the username, password, and org evercare on the anon key, then the password grant. A null result shows Incorrect username or password. HTTP 400 too many login attempts shows a wait message. Forgot password posts the typed email to /auth/v1/recover with redirect_to this page and always shows the same office message. The Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. Login look, remember-username, and the timesheet PDF layout stay. Cache bust ?v=sec1-ui-h2. v=sec1-ui and earlier tips unchanged. -->
@@ -172,8 +174,8 @@ cgShellBoot();
 <!-- caregiver-build: 2026-09-29-care-msg-send1 v=care-msg-send1 ?v=care-msg-send1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Messages (#messagesScreen) send no longer paints “The message did not send. Try again.” after Ace already stored the message. After aide_send_office_message parses ok, the follow-up aide_list_office_messages is soft: auth, network, parse, or a missing list RPC keeps the send-parsed rows via aideChatEnsureSent and stays on the success path. Never throw after a successful send parse. Before deliver and refresh, sbEnsureCaregiverJwt runs when it is present. A 401/403 or cgIsAuthErr on get_or_create or send calls sbRefreshCaregiverJwt once and retries that deliver once. A second auth failure keeps “The message did not send. Try again.” A send while aideChatBusy shows “Still loading messages…” and does not clear the composer. The send catch logs console.error aideChatSend with err.message and err.pack status and data. aideChatSendBody stays {p_body} plus optional p_escalate_kind. Stub path, phone lock, and Admin stay. Ace unchanged. No new Ace patch. No new SQL. Cache bust ?v=care-msg-send1. v=aide-notif-done-hide1, pages-cache-fresh1, aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, and aidechat1 unchanged. -->
 <!-- caregiver-build: 2026-09-29-aide-notif-done-hide1 v=aide-notif-done-hide1 ?v=aide-notif-done-hide1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Settings Notifications (#moreScreen #clienthrsPushCard) is Remi reminders and Office chat only. The Turn on Remi reminders card, Allow notifications button, Not now, and What you’ll get gate are gone. Flipping either toggle ON saves that choice and asks the phone for notification permission, then subscribes with the existing public key under the hood. Aide-facing copy stays plain English. If permission is not granted after ON, the only extra line is “Open the app from your Home Screen, then tap Allow.” When phone pings are on, the line is “Phone pings on.” Both choices ON does not show a nag card. Both OFF still POSTs /rest/v1/rpc/aide_revoke_web_push_subscription {}. POST /rest/v1/rpc/aide_get_notification_prefs {}, POST /rest/v1/rpc/aide_save_notification_prefs, POST /rest/v1/rpc/get_vapid_public_key {}, and POST /rest/v1/rpc/aide_upsert_web_push_subscription stay. The public key never appears on screen. caregiver-push-sw.js stays the only worker at scope ./. v=pages-cache-fresh1 clean-URL shell behavior stays. No new Ace patch. No new SQL. No Admin. No Auth. Cache bust ?v=aide-notif-done-hide1. -->
 <!-- caregiver-build: 2026-09-29-pages-cache-fresh1 v=pages-cache-fresh1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. The clean Home Screen URL https://evercareagency.github.io/caregiver/ gets the latest Pages deploy without a new ?v= link. GitHub Pages still sends index.html with max-age=600, and Safari or Add to Home Screen can keep that shell. caregiver-push-sw.js stays the only worker, registered as ./caregiver-push-sw.js at scope ./ (the same registration push already uses). It keeps the v=clienthrs1d push and notificationclick behavior: a tap still opens #messages. The worker calls skipWaiting and clientsClaim. Document navigations are network-first with cache no-store, and index.html is never written into Cache Storage. The page listens for controllerchange and reloads once. The tiny caregiver-shell build id is revalidated with cache:'no-store' against that clean URL; a mismatch hard-reloads once. Existing ?v= probe markers stay, including ?v=aide-home-addr1-autofill1 and ?v=aide-home-addr1. No new Ace patch. No new SQL. No Auth. v=aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
-<!-- caregiver-build: 2026-09-29-aide-home-addr1-autofill1 v=aide-home-addr1-autofill1 ?v=aide-home-addr1-autofill1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Where do you live? (#homeAddrScreen / #homeAddrForm) Continue re-reads live DOM .value from #homeAddrStreet, #homeAddrCity, #homeAddrState, and #homeAddrZip after requestAnimationFrame and a short settle, so iOS/Safari autofill that has painted is captured. input, change, and blur on those fields acknowledge a value that lands. State accepts a full US state name or a 2-letter code, case-insensitive, and is normalized to the 2-letter code before the address line and the ZIP/state checks. #homeAddrState has no maxlength. ZIP stays 5 or 5+4 digits. Autocomplete stays street-address, address-level2, address-level1, and postal-code. Nominatim and POST /rest/v1/rpc/aide_save_home_address are unchanged. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Punch GPS, Cover call-off, care-msg, the login toast, and the site footer stay. Cache bust ?v=aide-home-addr1-autofill1. v=aide-home-addr1 unchanged. -->
-<!-- caregiver-build: 2026-09-28-aide-home-addr1 v=aide-home-addr1 ?v=aide-home-addr1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Columns home_address, home_lat, and home_lng are already on aides (cover1). Caregiver JWT only, via sbUserHeaders Bearer. Not the anon key. Not admin, scheduler, or nurse. POST /rest/v1/rpc/aide_get_home_address {}. gate_required is !has_address || !has_coords. When gate_required, #homeAddrScreen is full screen and #bottomNav and Home stay hidden. Signup / first login is teal #2a7f7f with the house mark. An existing aide missing an address or coords is navy #1a2744 with the pin mark. Title is Where do you live? Fields are Street, City, State, and ZIP. No why-copy on the gate. Continue builds one address (max 500), geocodes with the Admin geocodeClientAddress Nominatim call https://nominatim.openstreetmap.org/search?format=json&q= (not punch GPS), and requires finite p_lat in [-90,90] and p_lng in [-180,180]. Then POST /rest/v1/rpc/aide_save_home_address {p_home_address, p_lat, p_lng}. The gate clears only when that save returns an address and coords (has_address, has_coords, gate_required false). Punch GPS stays getGpsPosition. Cover call-off, care-msg-safe1, the site footer, and the login toast (showTempMsg) stay. Dates people read stay MM/DD/YYYY. A missing function does not trap Home. Cache bust ?v=aide-home-addr1. v=care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, coveraide2, and offline1 unchanged. -->
+<!-- caregiver-build: 2026-09-29-aide-home-addr1-autofill1 v=aide-home-addr1-autofill1 ?v=aide-home-addr1-autofill1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Where do you live? (#homeAddrScreen / #homeAddrForm) Continue re-reads live DOM .value from #homeAddrStreet, #homeAddrCity, #homeAddrState, and #homeAddrZip after requestAnimationFrame and a short settle, so iOS/Safari autofill that has painted is captured. input, change, and blur on those fields acknowledge a value that lands. State accepts a full US state name or a 2-letter code, case-insensitive, and is normalized to the 2-letter code before the address line and the ZIP/state checks. #homeAddrState has no maxlength. ZIP stays 5 or 5+4 digits. Autocomplete stays street-address, address-level2, address-level1, and postal-code. POST /rest/v1/rpc/aide_save_home_address stays the same save. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Punch GPS, Cover call-off, care-msg, the login toast, and the site footer stay. Cache bust ?v=aide-home-addr1-autofill1. v=aide-home-addr1 unchanged. -->
+<!-- caregiver-build: 2026-09-28-aide-home-addr1 v=aide-home-addr1 ?v=aide-home-addr1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Ace GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 is CALLABLE LIVE. No new Ace patch. No new SQL. Columns home_address, home_lat, and home_lng are already on aides (cover1). Caregiver JWT only, via sbUserHeaders Bearer. Not the anon key. Not admin, scheduler, or nurse. POST /rest/v1/rpc/aide_get_home_address {}. gate_required is !has_address || !has_coords. When gate_required, #homeAddrScreen is full screen and #bottomNav and Home stay hidden. Signup / first login is teal #2a7f7f with the house mark. An existing aide missing an address or coords is navy #1a2744 with the pin mark. Title is Where do you live? Fields are Street, City, State, and ZIP. No why-copy on the gate. Continue builds one address (max 500), reads the phone location on that tap, and requires finite p_lat in [-90,90] and p_lng in [-180,180]. Then POST /rest/v1/rpc/aide_save_home_address {p_home_address, p_lat, p_lng}. The gate clears only when that save returns an address and coords (has_address, has_coords, gate_required false). Punch GPS stays getGpsPosition. Cover call-off, care-msg-safe1, the site footer, and the login toast (showTempMsg) stay. Dates people read stay MM/DD/YYYY. A missing function does not trap Home. Cache bust ?v=aide-home-addr1. v=care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, coveraide2, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-care-msg-safe1 v=care-msg-safe1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. Messages (#messagesScreen) stays top:0 and still ends at the dock (bottom:var(--eca-dock-h)). The messages header pads with max(13px, calc(13px + env(safe-area-inset-top, 0px))) so Back and Refresh sit below the phone status bar. Both hit targets are at least 44px. .aidechat-compose is flush above #bottomNav: no padding under the send row, the thread scrolls in the middle, and the dock stays visible. The dock hides only while the phone keyboard is open on the composer (body.aidechat-kb). That path pins the screen to the visual viewport and retries through the keyboard animation so the thread and composer stay in view. If office-thread rows are already painted, a later refresh throw does not paint “The office thread did not load. Try Refresh.” The catch logs err.message and err.pack status and data. Refresh and the 15s poll share aideChatBusy so aideChatRefresh and list calls do not overlap. Ace is BACKEND_OK. No Ace patch. No new RPC. v=punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-28-punch-leftovers1 v=punch-leftovers1 — Monday 2026-09-28. MERGE HOLD. Do not claim LIVE. The bottom dock stays visible. Home, Timesheet, Inservices, and More can scroll their last card and the site footer clear of it: body.has-bottom-nav .wrap and footer use padding-bottom var(--eca-dock-clear), which is the dock height plus a gap. --eca-dock-h is the button plus the dock padding plus env(safe-area-inset-bottom). The viewport uses viewport-fit=cover so a notched phone reports that inset, and the dock labels sit in the button above it so the home indicator does not clip them. Messages (#messagesScreen) ends at the top of the dock (bottom:var(--eca-dock-h)); the thread scrolls inside that screen, and scrolling to the last message does not cover or dismiss the dock. The dock hides only while the phone keyboard is open on the composer (body.aidechat-kb), and that path sizes the thread to the visual viewport. Sandata Reminder, Important Notice, and Call off Submit are unchanged. v=care-msg-tab1, vapid1, clienthrs1d, aidechat1, and offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-27-care-msg-tab1 v=care-msg-tab1 — Sunday 2026-09-27. MERGE HOLD. Do not claim LIVE. GHOST-CARE-MSG-TAB1-CONTRACT-v1. Caregiver bottom nav is five tabs in this order: Home, Timesheet, Messages, Inservices, More. The Messages tab calls openAideMessages() and opens #messagesScreen, the same screen the old Home card opened. Deep links #messages, #caregiver/messages, and ?open=messages stay valid. Home no longer shows #aideChatHomeCard. #callOffHomeCard stays. #msgNavBadge uses the same red .bn-badge as #isNavBadge (background #ff3b30). It shows when aide_list_office_messages returns office or Remi messages that still lack read_by_aide_at, or an equivalent unread field already on that list, and the count is greater than 0. It hides at 0. The badge is decorative (pointer-events none) and the Messages tab stays the control. The count refreshes on Home open, the login schedule (scheduleHomeBackgroundLoads), pageshow, and visibilitychange. After aide_mark_office_messages_read succeeds on Messages open, the badge clears. A missing list RPC hides the badge and does not invent a count. No new Ace RPC. No SQL. No Admin. No Auth reseal. No Quo. No SMS. v=vapid1, clienthrs1d, aidechat1, cgsigfit1, cgsigs2, cguser1, cghome1b, coveraide2, cgacct1, cgsave1, coveraide1, cgsiglock1, cgsigs1, cgisbadge2, cgquizlet1, loginkb1, cgisbadge1, cghome1, cgauth1, bcast1b, bcast1, warmoff1, cgpdf1p2, norbkup1, pwreset1, isassign1, portal1, cgpdfv1, ishydr1, bakuuid1, cgpdf1, home1, nocert1, sbseal1, and offline1 unchanged. -->
@@ -262,7 +264,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);color:var(--text);ma
 .device-btn.active{background:var(--navy);color:white;}
 .instructions-box{background:var(--off);border-radius:8px;padding:12px 14px;font-size:0.76rem;color:var(--text);line-height:1.9;}
 .instructions-box ol{padding-left:16px;}
-/* Home address gate (v=aide-home-addr1-autofill1). Full screen. Not punch GPS. Short labels only. */
+/* Home address gate. Full screen. Phone location is read on Continue. Short labels only. */
 #homeAddrScreen.active{display:flex !important;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px 28px;min-height:100vh;min-height:100dvh;text-align:center;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 #homeAddrScreen.homeaddr-signup{background:#2a7f7f;}
 #homeAddrScreen.homeaddr-missing{background:#1a2744;}
@@ -283,7 +285,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);color:var(--text);ma
 .homeaddr-card .req{color:#d64545;letter-spacing:0;}
 .homeaddr-card input{min-height:48px;font-size:1rem;padding:12px 14px;border-radius:10px;border-color:#d5deea;}
 .homeaddr-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.homeaddr-note{font-size:1rem;line-height:1.45;color:var(--navy);margin:2px 0 12px;overflow-wrap:anywhere;}
 #homeAddrContinue{min-height:52px;font-size:1.05rem;border-radius:12px;margin-top:6px;}
+#homeAddrErr{font-size:0.95rem;line-height:1.45;overflow-wrap:anywhere;}
 body.homeaddr-gate footer{display:none !important;}
 /* CORRECTION */
 .correction-banner{background:var(--warn);color:white;padding:12px 16px;border-radius:8px;font-size:0.82rem;font-weight:500;margin-bottom:14px;cursor:pointer;display:none;overflow-wrap:anywhere;word-break:break-word;max-width:100%;}
@@ -393,7 +397,7 @@ canvas.sigpad.signed{border-color:var(--success);}
 .backup-help{font-size:0.92rem;color:var(--navy);margin-top:10px;line-height:1.55;}
 .submit-help{font-size:0.74rem;color:var(--muted);margin-top:0;margin-bottom:6px;line-height:1.5;}
 .modal p.backup-confirm-help{font-size:1rem;line-height:1.6;color:var(--navy);margin-top:4px;margin-bottom:10px;}
-.loc-tag{font-size:0.7rem;color:var(--teal);background:var(--teal-light);border:1px solid var(--border);border-radius:6px;padding:5px 9px;margin-bottom:9px;display:flex;align-items:center;gap:5px;}
+.loc-tag{font-size:0.85rem;color:var(--teal);background:var(--teal-light);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:9px;display:flex;align-items:flex-start;gap:6px;line-height:1.4;overflow-wrap:anywhere;max-width:100%;}
 .total-bar{background:var(--teal);color:white;padding:12px 15px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .total-bar .tl{font-size:0.67rem;opacity:0.7;text-transform:uppercase;letter-spacing:1px;}
 .total-bar .tv{font-family:'Playfair Display',serif;font-size:1.4rem;color:#e0e0e0;}
@@ -712,7 +716,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else setupEverCarePWA();
 </script>
 </head>
-<body><template id="sec1UiCdnjs" data-sec1-ui="SEC1_UI" data-cache="?v=sec1-ui" data-sec1-ui-h2="SEC1_UI_H2" data-h2-cache="?v=sec1-ui-h2" data-sec1-cg2="SEC1_CG2" data-cg2-cache="?v=sec1-cg2" data-exec-off1="EXEC_OFF1" data-exec-cache="?v=exec-off1">
+<body><template id="sec1UiCdnjs" data-sec1-ui="SEC1_UI" data-cache="?v=sec1-ui" data-sec1-ui-h2="SEC1_UI_H2" data-h2-cache="?v=sec1-ui-h2" data-sec1-cg2="SEC1_CG2" data-cg2-cache="?v=sec1-cg2" data-exec-off1="EXEC_OFF1" data-exec-cache="?v=exec-off1" data-geo1="GEO1" data-geo1-cache="?v=geo1">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </template><div id="pwaBanner" style="display:none;background:var(--navy);color:white;padding:12px 14px;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:200">
@@ -791,7 +795,7 @@ else setupEverCarePWA();
   </div>
 </div>
 
-<!-- HOME ADDRESS GATE v=aide-home-addr1-autofill1 ?v=aide-home-addr1-autofill1. Where do you live? Not punch GPS. -->
+<!-- HOME ADDRESS GATE. Where do you live? Phone location is read on Continue. -->
 <div class="screen" id="homeAddrScreen" data-home-addr="v=aide-home-addr1-autofill1" data-cache="?v=aide-home-addr1-autofill1">
   <div class="homeaddr-brand">CAREGIVER · EVERCARE</div>
   <div class="homeaddr-mark" aria-hidden="true">
@@ -814,6 +818,7 @@ else setupEverCarePWA();
       <div class="field"><label for="homeAddrState">State <span class="req">*</span></label><input type="text" id="homeAddrState" autocomplete="address-level1" autocapitalize="characters" enterkeyhint="next"></div>
       <div class="field"><label for="homeAddrZip">ZIP <span class="req">*</span></label><input type="text" id="homeAddrZip" inputmode="numeric" autocomplete="postal-code" maxlength="10" enterkeyhint="done"></div>
     </div>
+    <p class="homeaddr-note" id="homeAddrNote">Do this while you're at home. Your phone's location is saved once so we can offer shifts near you.</p>
     <button class="btn btn-teal btn-full" type="submit" id="homeAddrContinue">Continue</button>
     <div class="auth-err" id="homeAddrErr"></div>
   </form>
@@ -1041,7 +1046,7 @@ else setupEverCarePWA();
   <div class="modal" style="text-align:left">
     <div class="mico" style="text-align:center">📍</div>
     <h3 style="text-align:center">Location Required</h3>
-    <p>Location is required to submit. After Deny, the phone will not ask again — turn Location on in Settings, then tap <strong>Retry</strong>.</p>
+    <p id="locHelpLead">Location is off for this site. Turn on Location in Settings, then come back home and tap Continue.</p>
     <div class="device-instructions">
       <div class="device-tab">
         <button class="device-btn active" id="locHelpIosBtn" onclick="showLocHelpInstructions('iphone')">🍎 iPhone</button>
@@ -2375,10 +2380,9 @@ async function submitAideSetup(){
 // v=aide-home-addr1. GHOST-AIDE-HOME-ADDR1-CONTRACT-v1 CALLABLE LIVE. No new Ace patch. No new SQL.
 // Caregiver JWT only (sbRest / sbUserHeaders). POST rpc/aide_get_home_address {}.
 // gate_required = !has_address || !has_coords.
-// POST rpc/aide_save_home_address {p_home_address, p_lat, p_lng} after Nominatim.
-// Nominatim matches Admin geocodeClientAddress: /search?format=json&q=
-// The gate clears only when the save has an address and coords. Not punch GPS.
-var homeAddrGate={phase:'unknown',look:'missing',record:null,busy:false,saving:false};
+// POST rpc/aide_save_home_address {p_home_address, p_lat, p_lng}. lat/lng come from the phone on Continue.
+// The gate clears only when the save has an address and coords. GPS is not requested on page load.
+var homeAddrGate={phase:'unknown',look:'missing',record:null,busy:false,saving:false,roughRetry:false};
 var homeAddrGen=0;
 function homeAddrReset(){
   homeAddrGen+=1;
@@ -2387,6 +2391,7 @@ function homeAddrReset(){
   homeAddrGate.record=null;
   homeAddrGate.busy=false;
   homeAddrGate.saving=false;
+  homeAddrGate.roughRetry=false;
   try{document.body.classList.remove('homeaddr-gate');}catch(e){}
 }
 function homeAddrNeedsGate(){
@@ -2682,17 +2687,13 @@ function beginHomeAddrGate(){
     enterHomeAfterAddr();
   });
 }
-async function homeAddrGeocode(addr){
-  const q=String(addr||'').trim();
-  if(!q)return null;
-  // Admin geocodeClientAddress: format=json and q only. lat/lon come back as strings.
-  const res=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q));
-  const data=await res.json();
-  if(!(data&&data.length>0))return null;
-  const lat=homeAddrNum(data[0].lat);
-  const lng=homeAddrNum(data[0].lon);
-  if(!homeAddrCoordsOk(lat,lng))return null;
-  return {lat:lat, lng:lng};
+function gpsFailCopy(err){
+  const code=Number(err&&err.code);
+  if(code===1)return 'Location is off for this site. Turn on Location in Settings, then come back home and tap Continue.';
+  return "Couldn't get your location. Check that Location is on and tap Continue again.";
+}
+function gpsRoughCopy(){
+  return 'Location is rough. Step near a window and tap Continue again.';
 }
 async function submitHomeAddr(){
   if(homeAddrGate.saving)return;
@@ -2725,28 +2726,45 @@ async function submitHomeAddr(){
     }
     const stateEl=document.getElementById('homeAddrState');
     if(stateEl)stateEl.value=parts.state;
-    if(btn)btn.disabled=true;
-    let coords=null;
+    if(btn){btn.disabled=true;btn.textContent='Checking location...';}
+    let pos=null;
     try{
-      coords=await homeAddrGeocode(line);
-    }catch(e){
-      coords=null;
+      pos=await getGpsPosition();
+    }catch(err){
+      const copy=gpsFailCopy(err);
+      showErr(copy);
+      if(Number(err&&err.code)===1){
+        const lead=document.getElementById('locHelpLead');
+        if(lead)lead.textContent=copy;
+        showLocHelpInstructions('iphone');
+        _locRetryFn=submitHomeAddr;
+        openModal('locHelpModal');
+      }
+      return;
     }
-    if(!coords){
-      if(btn)btn.disabled=false;
-      showErr('Check the address and try again.');
+    const accuracy=Number(pos&&pos.coords&&pos.coords.accuracy);
+    if(isFinite(accuracy)&&accuracy>200&&!homeAddrGate.roughRetry){
+      homeAddrGate.roughRetry=true;
+      showErr(gpsRoughCopy());
+      return;
+    }
+    const lat=pos&&pos.coords?pos.coords.latitude:null;
+    const lng=pos&&pos.coords?pos.coords.longitude:null;
+    if(!homeAddrCoordsOk(lat,lng)){
+      showErr(gpsFailCopy({code:2}));
       return;
     }
     const got=await sbRest('rpc/aide_save_home_address',{method:'POST',body:{
       p_home_address:line,
-      p_lat:coords.lat,
-      p_lng:coords.lng
+      p_lat:lat,
+      p_lng:lng
     }});
     if(!homeAddrSaveOk(got)){
       showErr('Could not save. Try again.');
       return;
     }
     homeAddrClearFirstLogin();
+    homeAddrGate.roughRetry=false;
     homeAddrGate.phase='clear';
     enterHomeAfterAddr();
   }catch(e){
@@ -2793,24 +2811,35 @@ async function requestLocationOnceAfterLogin(){
     openModal('alertModal');
   }catch(err){
     saveLocationStatus(err&&err.code===1?'denied':'unavailable');
-    showLocationRequiredHelp(requestLocationOnceAfterLogin);
+    showLocationRequiredHelp(requestLocationOnceAfterLogin,gpsFailCopy(err));
   }
 }
 
 function getGpsPosition(){
   return new Promise((resolve,reject)=>{
+    let done=false;
+    const finish=function(fn,val){
+      if(done)return;
+      done=true;
+      clearTimeout(timer);
+      fn(val);
+    };
+    const timer=setTimeout(function(){finish(reject,{code:3,message:'timeout'});},10000);
     if(!navigator.geolocation){
-      reject({code:0,message:'Geolocation not supported'});
+      finish(reject,{code:0,message:'Geolocation not supported'});
       return;
     }
-    navigator.geolocation.getCurrentPosition(resolve,reject,{timeout:10000,enableHighAccuracy:true,maximumAge:0});
+    navigator.geolocation.getCurrentPosition(function(pos){finish(resolve,pos);},function(err){finish(reject,err||{code:2});},{timeout:10000,enableHighAccuracy:true,maximumAge:0});
   });
 }
 
 let _locRetryFn=null;
-function showLocationRequiredHelp(retryFn){
+function showLocationRequiredHelp(retryFn,message){
   _locRetryFn=typeof retryFn==='function'?retryFn:null;
-  showTempMsg('Location is required to submit.','var(--danger)');
+  const text=message||gpsFailCopy({code:1});
+  const lead=document.getElementById('locHelpLead');
+  if(lead)lead.textContent=text;
+  showTempMsg(text,'var(--warn)');
   showLocHelpInstructions('iphone');
   openModal('locHelpModal');
 }
@@ -2827,7 +2856,7 @@ async function retryLocationForSubmit(){
     if(fn)fn(pos);
   }catch(err){
     saveLocationStatus(err&&err.code===1?'denied':'unavailable');
-    showTempMsg('Location is required to submit.','var(--danger)');
+    showTempMsg(gpsFailCopy(err),'var(--warn)');
   }finally{
     if(btn){btn.disabled=false;btn.textContent='Retry';}
   }
@@ -3122,13 +3151,7 @@ function loadCorrectionMode(){
     prefetchSigInk(d.aideSig);prefetchSigInk(d.clientSig);
     applySigDataUrl(`sp_aide_${i}`,d.aideSig);
     applySigDataUrl(`sp_client_${i}`,d.clientSig);
-    if(d.location){
-      const locEl=document.getElementById(`loc_${i}`);
-      if(locEl){
-        const badge=locDistanceBadge(d.verified,d.distanceFt);
-        locEl.innerHTML=`<span>📍</span><span id="loc_txt_${i}">${d.location}</span> ${badge}`;
-      }
-    }
+    paintDayLocation(i,d);
     if(!correctionData.correctionDays?.includes(parseInt(i))){
       const statOk=document.getElementById(`dstat_${i}`);
       if(statOk){statOk.textContent='✅ Day OK';statOk.classList.add('saved');}
@@ -3559,23 +3582,36 @@ async function captureDayLocationAndSave(){
   if(!pending)return;
   const {i,base}=pending;
   const client=getSelectedClient();
+  const day=Object.assign({},base);
+  delete day.location;
+  let gpsNote='';
   try{
+    showTempMsg('Checking your phone\'s location...','var(--teal)');
     const pos=await getGpsPosition();
     saveLocationStatus('granted');
-    const lat=pos.coords.latitude,lng=pos.coords.longitude;let address=`${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);const d=await r.json();if(d.display_name)address=d.display_name.split(',').slice(0,4).join(',').trim();}catch(e){}
-    const lt=document.getElementById(`loc_txt_${i}`);if(lt)lt.textContent=address;
+    const lat=pos.coords.latitude,lng=pos.coords.longitude;
+    const accuracyRaw=pos.coords?Number(pos.coords.accuracy):NaN;
+    const accuracyM=isFinite(accuracyRaw)?Math.round(accuracyRaw*10)/10:null;
+    const stamp=pos.timestamp!=null?pos.timestamp:Date.now();
+    const gpsAt=new Date(stamp).toISOString();
     let verified=null, distanceFt=null;
     if(client&&client.lat&&client.lng){
       distanceFt=Math.round(calcDistance(lat,lng,parseFloat(client.lat),parseFloat(client.lng)));
       verified=distanceFt<=500; // within 500 feet counts as verified
     }
-    pendingDaySave=null;
-    saveDayData(i,{...base,location:address,lat,lng,verified,distanceFt});
+    day.lat=lat;
+    day.lng=lng;
+    if(accuracyM!=null)day.accuracyM=accuracyM;
+    day.gpsAt=gpsAt;
+    day.verified=verified;
+    day.distanceFt=distanceFt;
   }catch(err){
     saveLocationStatus(err&&err.code===1?'denied':'unavailable');
-    showLocationRequiredHelp(captureDayLocationAndSave);
+    gpsNote=gpsFailCopy(err);
   }
+  pendingDaySave=null;
+  saveDayData(i,day);
+  if(gpsNote)showTempMsg(gpsNote,'var(--warn)');
 }
 
 function saveDayData(i,dayObj){
@@ -3595,12 +3631,7 @@ function saveDayData(i,dayObj){
   const wd=getUserWeekData();wd[i]={...dayObj,savedAt:new Date().toLocaleString()};saveUserWeekData(wd);
   if(typeof paintSigLock==='function'){paintSigLock('sp_aide_'+i,true);paintSigLock('sp_client_'+i,true);}
   paintDayRowStatus(i);
-  // Show verification badge (miles in UI; 500ft radius stays internal)
-  const locEl=document.getElementById(`loc_${i}`);
-  if(locEl&&dayObj.verified!==null){
-    const badge=locDistanceBadge(dayObj.verified,dayObj.distanceFt);
-    locEl.innerHTML=`<span>📍</span><span id="loc_txt_${i}">${dayObj.location}</span> ${badge}`;
-  }
+  paintDayLocation(i,wd[i]);
   document.getElementById(`dhdr_${i}`)?.classList.remove('open');document.getElementById(`dbody_${i}`)?.classList.remove('open');
   if(activeDayIdx===i)activeDayIdx=null;
   refreshSaveDayState();
@@ -3645,13 +3676,7 @@ function loadSavedWeek(){
     prefetchSigInk(d.aideSig);prefetchSigInk(d.clientSig);
     applySigDataUrl(`sp_aide_${i}`,d.aideSig);
     applySigDataUrl(`sp_client_${i}`,d.clientSig);
-    if(d.location){
-      const locEl=document.getElementById(`loc_${i}`);
-      if(locEl){
-        const badge=locDistanceBadge(d.verified,d.distanceFt);
-        locEl.innerHTML=`<span>📍</span><span id="loc_txt_${i}">${d.location}</span> ${badge}`;
-      }
-    }
+    paintDayLocation(i,d);
     const stat=document.getElementById(`dstat_${i}`);if(stat){stat.textContent=`✅ ${d.hrs}`;stat.classList.add('saved');}
   });
   updateOtherSpecifyVisibility();
@@ -3686,6 +3711,8 @@ function buildDaysPayload(){
     if(d.location)day.location=d.location;
     if(d.lat!=null)day.lat=d.lat;
     if(d.lng!=null)day.lng=d.lng;
+    if(d.accuracyM!=null)day.accuracyM=d.accuracyM;
+    if(d.gpsAt)day.gpsAt=d.gpsAt;
     if(d.verified!=null)day.verified=d.verified;
     if(d.distanceFt!=null)day.distanceFt=d.distanceFt;
     if(d.savedAt)day.savedAt=d.savedAt;
@@ -3867,14 +3894,7 @@ async function askFinalSubmit(){
   if(!requireClientSelected())return;
   if(!requireHeaderSignatures())return;
   if(!requirePaperSignatures())return;
-  try{
-    await getGpsPosition();
-    saveLocationStatus('granted');
-    openModal('areYouSureModal');
-  }catch(err){
-    saveLocationStatus(err&&err.code===1?'denied':'unavailable');
-    showLocationRequiredHelp(askFinalSubmit);
-  }
+  openModal('areYouSureModal');
 }
 
 function showFullPreview(){
@@ -3897,7 +3917,7 @@ function showFullPreview(){
     html+=`<div class="preview-day">
       <h4>📅 ${day} <span style="font-weight:400;color:var(--muted);font-size:0.78rem">${d.date||''}</span></h4>
       <div class="prow"><span>Hours:</span> ${d.tin||'—'} → ${d.tout||'—'} &nbsp;=&nbsp; <strong>${d.hrs}</strong></div>
-      <div class="prow"><span>Location:</span> <span style="color:var(--teal)">📍 ${d.location||'—'}</span></div>
+      <div class="prow"><span>Location:</span> <span style="color:var(--teal)">📍 ${dayGpsLabel(d)||'—'}</span></div>
       <div class="prow"><span>Aide Sig:</span> ${storedHasRealInk(d.aideSig,d.aideSigInk)?`<img src="${d.aideSig}" class="preview-sig">`:'Not signed'}</div>
       <div class="prow"><span>Client Sig:</span> ${storedHasRealInk(d.clientSig,d.clientSigInk)?`<img src="${d.clientSig}" class="preview-sig">`:'Not signed'}</div>
       <div class="preview-svcs">Services: ${(d.svcs||[]).join(', ')||'None'}</div>
@@ -3912,14 +3932,6 @@ async function doFinalSubmit(){
   if(!requireHeaderSignatures()){showScreen('caregiverScreen');return;}
   if(!requirePaperSignatures()){showScreen('caregiverScreen');return;}
   if(window._cgSubmitInFlight)return;
-  try{
-    await getGpsPosition();
-    saveLocationStatus('granted');
-  }catch(err){
-    saveLocationStatus(err&&err.code===1?'denied':'unavailable');
-    showLocationRequiredHelp(doFinalSubmit);
-    return;
-  }
   window._cgSubmitInFlight=true;
   const weekData=buildDaysPayload();
   const clientSel=document.getElementById('cg_client');
@@ -5274,6 +5286,8 @@ function daysPayloadFromWeekData(wd){
     if(d.location)day.location=d.location;
     if(d.lat!=null)day.lat=d.lat;
     if(d.lng!=null)day.lng=d.lng;
+    if(d.accuracyM!=null)day.accuracyM=d.accuracyM;
+    if(d.gpsAt)day.gpsAt=d.gpsAt;
     if(d.verified!=null)day.verified=d.verified;
     if(d.distanceFt!=null)day.distanceFt=d.distanceFt;
     if(d.savedAt)day.savedAt=d.savedAt;
@@ -5445,6 +5459,10 @@ function _normalizeBackupDays(days){
       clientSig:d.clientSig||'',
       location:d.location||''
     };
+    if(d.lat!=null)out[idx].lat=d.lat;
+    if(d.lng!=null)out[idx].lng=d.lng;
+    if(d.accuracyM!=null)out[idx].accuracyM=d.accuracyM;
+    if(d.gpsAt)out[idx].gpsAt=d.gpsAt;
     if(d.otherSpecify)out[idx].otherSpecify=d.otherSpecify;
   });
   return out;
@@ -5766,6 +5784,8 @@ function sbDayWire(day){
   if(day.location)out.location=day.location;
   if(day.lat!=null)out.lat=day.lat;
   if(day.lng!=null)out.lng=day.lng;
+  if(day.accuracyM!=null)out.accuracyM=day.accuracyM;
+  if(day.gpsAt)out.gpsAt=day.gpsAt;
   if(day.verified!=null)out.verified=day.verified;
   if(day.distanceFt!=null)out.distanceFt=day.distanceFt;
   if(day.distanceMi!=null)out.distanceMi=day.distanceMi;
@@ -7659,6 +7679,29 @@ function locDistanceBadge(verified,distanceFt){
   if(verified===true)return `<span style="color:var(--success);font-weight:700">&#10003; At Client Location</span>`;
   if(verified===false)return `<span style="color:var(--danger);font-weight:700">&#10007; ${formatDistanceMi(distanceFt)} from client address</span>`;
   return '';
+}
+function dayGpsLabel(d){
+  if(!d)return '';
+  const stored=String(d.location||'').trim();
+  if(stored)return stored;
+  if(d.lat==null||d.lng==null||d.lat===''||d.lng==='')return '';
+  const acc=Number(d.accuracyM);
+  if(isFinite(acc)){
+    const shown=Math.round(acc*10)/10;
+    const text=(shown%1===0)?String(shown.toFixed(0)):String(shown);
+    return 'GPS saved · ±'+text+' m';
+  }
+  return 'GPS saved';
+}
+function paintDayLocation(i,d){
+  const locEl=document.getElementById('loc_'+i);
+  if(!locEl||!d)return;
+  let label=dayGpsLabel(d);
+  if(!label&&d.savedAt)label='No phone location saved';
+  if(!label)return;
+  const badge=locDistanceBadge(d.verified,d.distanceFt);
+  const safe=String(label).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  locEl.innerHTML='<span>📍</span><span id="loc_txt_'+i+'">'+safe+'</span> '+(badge||'');
 }
 
 function openTS(id){

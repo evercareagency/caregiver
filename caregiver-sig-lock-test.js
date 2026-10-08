@@ -91,6 +91,7 @@ async function runBrowser(){
         let mode = '';
         try{mode = sessionStorage.getItem('__cgNet') || '';}catch(e){}
         const url = String(input && input.url || input || '');
+        if(/script\.google\.com/.test(url))return Promise.reject(new Error('blocked'));
         if(mode && /supabase\.co/.test(url)){
           return Promise.resolve(new Response('[]', {status:200, headers:{'Content-Type':'application/json'}}));
         }
