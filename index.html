@@ -5,6 +5,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="caregiver-shell" content="2026-09-29-pages-cache-fresh1">
+<meta name="caregiver-build" content="2026-10-08-sec1-ui">
 <meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">
 <meta name="caregiver-build" content="2026-09-29-pwa-install-copy1">
 <meta name="caregiver-build" content="2026-09-29-care-msg-send1">
@@ -159,6 +160,7 @@ function cgShellBoot(){
 // end v=pages-cache-fresh1
 cgShellBoot();
 </script>
+<!-- caregiver-build: 2026-10-08-sec1-ui v=sec1-ui ?v=sec1-ui SEC1_UI — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Pure UI. Ace NO CALLABLE. No new Ace patch. No new SQL. No Auth. No Quo. No SMS. SEC1_UI pins every cdnjs script on this page (html2canvas 1.4.1 and jspdf 2.5.1) with integrity sha384 from the exact file, crossorigin anonymous, and referrerpolicy no-referrer. #sec1UiCdnjs holds those tags. sbLoadScript copies them onto the script it appends and will not load a cdnjs URL that lacks the pin. The Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. Login, the messages composer, and the timesheet PDF layout stay. Cache bust ?v=sec1-ui. v=msg-composer-rect1, pwa-install-copy1, care-msg-send1, aide-notif-done-hide1, pages-cache-fresh1, and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-09-29-msg-composer-rect1 v=msg-composer-rect1 ?v=msg-composer-rect1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Pure UI. Ace NO CALLABLE. No new Ace patch. No new SQL. No Auth. No Quo. No SMS. Caregiver Office Messages (#messagesScreen) Type (#aideChatInput) is rectangular: border-radius 11px (10–12px max), min-height 44px, DM Sans, teal #2a7f7f, never a stadium or oval, never border-radius 999px. Send (#aideChatSend) is a rectangular button of matching height, never a circle. The aidechat-kb / visualViewport pin stays. While the phone keyboard is open, the pin measures the composer against the visual viewport and corrects the screen height until the composer bottom meets that edge within 1px, so the white gap above Safari Done is zero. .aidechat-sendrow flex is not the fix. pages-cache-fresh1, caregiver-push-sw.js, and care-msg-send1 stay. v=pwa-install-copy1 iOS install steps stay: Share, View More, Add to Home Screen, Add. Probe soft FAIL-only on the Caregiver Office thread. -->
 <!-- caregiver-build: 2026-09-29-pwa-install-copy1 v=pwa-install-copy1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. #iosInstallModal iPhone steps are exactly these, in order, with the action names in bold: 1 Share — the square with an arrow pointing up (usually at the bottom of Safari). 2 View More — if you don’t see Add to Home Screen yet, tap View More / the row that opens more actions. 3 Add to Home Screen. 4 Add — top right. Done. The second step names View More. Android Chrome footnote stays. Got it stays. Banner and CTA labels stay Add to Home Screen and Install. Ace unchanged. No new Ace patch. No new SQL. caregiver-push-sw.js stays the only worker at scope ./. The shell id stays pages-cache-fresh1. v=care-msg-send1, aide-notif-done-hide1, pages-cache-fresh1, aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, and aidechat1 unchanged. -->
 <!-- caregiver-build: 2026-09-29-care-msg-send1 v=care-msg-send1 ?v=care-msg-send1 — Tuesday 2026-09-29. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Messages (#messagesScreen) send no longer paints “The message did not send. Try again.” after Ace already stored the message. After aide_send_office_message parses ok, the follow-up aide_list_office_messages is soft: auth, network, parse, or a missing list RPC keeps the send-parsed rows via aideChatEnsureSent and stays on the success path. Never throw after a successful send parse. Before deliver and refresh, sbEnsureCaregiverJwt runs when it is present. A 401/403 or cgIsAuthErr on get_or_create or send calls sbRefreshCaregiverJwt once and retries that deliver once. A second auth failure keeps “The message did not send. Try again.” A send while aideChatBusy shows “Still loading messages…” and does not clear the composer. The send catch logs console.error aideChatSend with err.message and err.pack status and data. aideChatSendBody stays {p_body} plus optional p_escalate_kind. Stub path, phone lock, and Admin stay. Ace unchanged. No new Ace patch. No new SQL. Cache bust ?v=care-msg-send1. v=aide-notif-done-hide1, pages-cache-fresh1, aide-home-addr1-autofill1, aide-home-addr1, care-msg-safe1, punch-leftovers1, care-msg-tab1, vapid1, clienthrs1d, and aidechat1 unchanged. -->
@@ -702,7 +704,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else setupEverCarePWA();
 </script>
 </head>
-<body><div id="pwaBanner" style="display:none;background:var(--navy);color:white;padding:12px 14px;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:200">
+<body><template id="sec1UiCdnjs" data-sec1-ui="SEC1_UI" data-cache="?v=sec1-ui">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</template><div id="pwaBanner" style="display:none;background:var(--navy);color:white;padding:12px 14px;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:200">
   <p style="font-size:0.82rem;line-height:1.35;flex:1">📱 Add <strong>ECA Aide Portal</strong> to your Home Screen for one-tap login.</p>
   <button id="pwaBannerInstallBtn" onclick="installPWA()" style="background:var(--teal);border:none;color:white;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap">Install</button>
   <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:16px;cursor:pointer" aria-label="Dismiss">&#10005;</button>
@@ -6858,6 +6863,16 @@ const TS_SVC_OVERLAY=[
   {items:NUTRITION,ys:'yNutrition',xs:'dayXR'}
 ];
 const _sbPdfLibPromises={};
+function sbCdnjsPinned(src){
+  if(typeof document==='undefined'||!document.getElementById)return null;
+  const host=document.getElementById('sec1UiCdnjs');
+  if(!host||!host.content||!host.content.querySelectorAll)return null;
+  const list=host.content.querySelectorAll('script[src]');
+  for(let i=0;i<list.length;i++){
+    if(list[i].getAttribute('src')===src)return list[i];
+  }
+  return null;
+}
 function sbLoadScript(src){
   if(_sbPdfLibPromises[src])return _sbPdfLibPromises[src];
   _sbPdfLibPromises[src]=new Promise(function(resolve,reject){
@@ -6865,9 +6880,20 @@ function sbLoadScript(src){
       reject(new Error('pdf lib'));
       return;
     }
+    const pinned=sbCdnjsPinned(src);
+    const integrity=pinned&&pinned.getAttribute('integrity');
+    const cross=pinned&&pinned.getAttribute('crossorigin');
+    const referrer=pinned&&pinned.getAttribute('referrerpolicy');
+    if(!integrity||integrity.indexOf('sha384-')!==0||cross!=='anonymous'||referrer!=='no-referrer'){
+      reject(new Error('pdf lib'));
+      return;
+    }
     const s=document.createElement('script');
     s.src=src;
     s.async=true;
+    s.setAttribute('integrity',integrity);
+    s.setAttribute('crossorigin','anonymous');
+    s.setAttribute('referrerpolicy','no-referrer');
     s.onload=function(){resolve();};
     s.onerror=function(){delete _sbPdfLibPromises[src];reject(new Error('pdf lib'));};
     document.head.appendChild(s);
