@@ -13,10 +13,14 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 const metas = html.match(/<meta name="caregiver-build" content="[^"]+">/g);
 assert.ok(metas && metas.length > 2, 'caregiver-build metas');
-assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-sec1-ui">', 'sec1-ui meta is first');
+assert.strictEqual(metas[0], '<meta name="caregiver-build" content="2026-10-08-sec1-ui-h2">', 'sec1-ui-h2 meta is first');
+assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-10-08-sec1-ui">') > 0, 'sec1-ui meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-msg-composer-rect1">') > 0, 'msg-composer-rect1 meta stays');
 assert.ok(metas.indexOf('<meta name="caregiver-build" content="2026-09-29-pages-cache-fresh1">') > 0, 'pages-cache-fresh1 meta stays');
 assert.ok(html.includes('<meta name="caregiver-shell" content="2026-09-29-pages-cache-fresh1">'), 'shell id stays pages-cache-fresh1');
+assert.ok(html.includes('<!-- caregiver-build: 2026-10-08-sec1-ui-h2 v=sec1-ui-h2 ?v=sec1-ui-h2 SEC1_UI_H2 —'), 'SEC1_UI_H2 marker');
+assert.ok(html.includes('data-sec1-ui-h2="SEC1_UI_H2"'), 'SEC1_UI_H2 data marker');
+assert.ok(html.includes('?v=sec1-ui-h2'), 'cache tag ?v=sec1-ui-h2');
 assert.ok(html.includes('<!-- caregiver-build: 2026-10-08-sec1-ui v=sec1-ui ?v=sec1-ui SEC1_UI —'), 'SEC1_UI marker');
 assert.ok(html.includes('data-sec1-ui="SEC1_UI"'), 'SEC1_UI data marker');
 assert.ok(html.includes('data-cache="?v=sec1-ui"'), 'cache tag ?v=sec1-ui');
@@ -24,6 +28,7 @@ assert.ok(html.includes('https://evercareagency.github.io/caregiver/'), 'clean H
 assert.ok(html.includes('%22start_url%22:%22.%22'), 'manifest start_url stays a clean dot');
 assert.ok(html.includes("start_url:'.'"), 'runtime start_url stays a clean dot');
 assert.ok(!html.includes('start_url%22:%22?v=sec1-ui') && !html.includes("start_url:'?v=sec1-ui'"), 'Home Screen URL is not a sticky ?v=sec1-ui');
+assert.ok(!html.includes('start_url%22:%22?v=sec1-ui-h2') && !html.includes("start_url:'?v=sec1-ui-h2'"), 'Home Screen URL is not a sticky ?v=sec1-ui-h2');
 assert.ok(!/location\.(?:href|assign|replace)\([^)]*sec1-ui/.test(html), 'sec1-ui is not written onto the location');
 assert.ok(html.includes('const CG_SESSION_MS=8*60*60*1000;'), 'caregiver session length stays 8 hours');
 assert.ok(html.includes('const TS_PDF_PAGE_SLACK_PT=72;'), 'letter slack stays');

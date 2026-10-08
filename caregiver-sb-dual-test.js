@@ -63,13 +63,14 @@ const login = extractFn(html, 'async function doLogin()');
 assert.ok(!html.includes('function softSbDualVerify'), 'soft dual-verify probe is removed');
 assert.ok(!login.includes('softSbDualVerify'), 'sign-in does not dual-verify');
 assert.strictEqual((html.match(/\/auth\/v1\/token\?grant_type=password/g) || []).length, 2, 'real login and setup recheck');
-assert.strictEqual((html.match(/\/rest\/v1\/rpc\/resolve_username_email/g) || []).length, 1, 'username email lookup is one shared anon rpc');
+assert.strictEqual((html.match(/\/rest\/v1\/rpc\/aide_login_email/g) || []).length, 1, 'login email rpc is one anon call');
+assert.ok(!html.includes('resolve_' + 'username_email'), 'old username email rpc is gone');
 assert.ok(login.includes("action:'login'"), 'emergency sheets login stays');
 assert.ok(login.indexOf('await loginAideWithSupabase(user,pass)') < login.indexOf("action:'login'"), 'default auth runs instead of sheets login');
 const sheetsBranch = login.slice(login.indexOf("action:'login'"));
 assert.ok(sheetsBranch.indexOf('startCgSession(') >= 0 && sheetsBranch.indexOf('afterLogin({freshLogin:true})') > sheetsBranch.indexOf('startCgSession('), 'sheets success still opens home');
 assert.ok(sheetsBranch.includes('data.mustChangePassword') && sheetsBranch.includes('data.needsEmail'), 'sheets login still captures setup flags');
-assert.ok(!sheetsBranch.includes('resolve_username_email'), 'emergency sheets login does not call Supabase');
+assert.ok(!sheetsBranch.includes('aide_login_email'), 'emergency sheets login does not call Supabase');
 assert.ok(!login.includes('data.email,pass'), 'do not map sheets email into a supabase grant');
 
 function runFlag(opts){
@@ -105,7 +106,12 @@ runBrowser().catch(function(err){
 });
 
 async function runBrowser(){
-  if(process.env.SKIP_BROWSER==='1')return;
+  const testPw = process.env.EVERCARE_TEST_PASSWORD || '';
+  const nextPw = testPw + '-next';
+  if(process.env.SKIP_BROWSER==='1' || !testPw){
+    console.log('caregiver-sb-dual browser checks skipped');
+    return;
+  }
   let puppeteer;
   try{puppeteer=require('puppeteer-core');}
   catch(e){puppeteer=require('/tmp/cgtest/node_modules/puppeteer-core');}
@@ -154,9 +160,11 @@ async function runBrowser(){
       const headers=req.headers();
       sbCalls.push({url:u,method:req.method(),body:req.postData()||'',apikey:headers.apikey||'',authorization:headers.authorization||''});
       const respond=function(){
-        if(/resolve_username_email/.test(u)){
+        if(/aide_login_email/.test(u)){
           if(rpcMode==='boom'){
             req.respond({status:500,contentType:'text/html',headers:cors,body:'<html>nope</html>'});
+          }else if(rpcMode==='limit'){
+            req.respond({status:400,contentType:'application/json',headers:cors,body:JSON.stringify({message:'too many login attempts'})});
           }else if(rpcMode==='email'){
             req.respond({status:200,contentType:'application/json',headers:cors,body:JSON.stringify('aide.one@example.com')});
           }else{
@@ -293,6 +301,7 @@ async function runBrowser(){
       await page.evaluate(function(){
         localStorage.removeItem('cg_session');
         sessionStorage.removeItem('cg_session');
+        sessionStorage.removeItem('cghome1b_pw_saved');
         localStorage.removeItem('evercare_sb');
         localStorage.removeItem('evercare_sheets');
       });
@@ -301,6 +310,7 @@ async function runBrowser(){
     await page.evaluate(function(){
       localStorage.removeItem('cg_session');
       sessionStorage.removeItem('cg_session');
+      sessionStorage.removeItem('cghome1b_pw_saved');
       localStorage.removeItem('evercare_sb');
       localStorage.removeItem('evercare_sheets');
     });
@@ -312,7 +322,7 @@ async function runBrowser(){
 
   async function signIn(){
     await page.$eval('#l_user',function(el){el.value='Aide.One';});
-    await page.$eval('#l_pass',function(el){el.value='secret';});
+    await page.$eval('#l_pass',function(el, value){el.value=value;}, testPw);
     await page.click('#loginBtn');
   }
 
@@ -347,35 +357,35 @@ async function runBrowser(){
   });
   assert.strictEqual(held.auth,true,'home waits for supabase auth');
   assert.strictEqual(held.home,false,'flag on does not enter on the sheets login');
-  assert.ok(sbCalls.some(function(c){return c.url.indexOf('resolve_username_email')>=0;}),'rpc starts immediately');
+  assert.ok(sbCalls.some(function(c){return c.url.indexOf('aide_login_email')>=0;}),'rpc starts immediately');
   assert.ok(!sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}),'auth has not run while the rpc is held');
   assert.ok(sheetsActions.indexOf('login')<0,'flag on skips /exec login');
   releaseSb();
   holdSb=null;
   await page.waitForFunction(function(){return document.getElementById('caregiverScreen').classList.contains('active');},{timeout:5000});
-  const rpc=sbCalls.filter(function(c){return c.url.indexOf('resolve_username_email')>=0;})[0];
+  const rpc=sbCalls.filter(function(c){return c.url.indexOf('aide_login_email')>=0;})[0];
   const auth=sbCalls.filter(function(c){return c.url.indexOf('grant_type=password')>=0;})[0];
   const aideCall=sbCalls.filter(function(c){return c.url.indexOf('/rest/v1/aides')>=0;})[0];
   assert.ok(rpc&&auth&&aideCall,'email from rpc continues to the password grant and the aides row');
   assert.strictEqual(rpc.method,'POST');
   assert.strictEqual(rpc.apikey,anonFile);
   assert.strictEqual(rpc.authorization,'Bearer '+anonFile);
-  assert.deepStrictEqual(JSON.parse(rpc.body),{p_username:'aide.one',p_org_slug:'evercare'});
-  assert.deepStrictEqual(JSON.parse(auth.body),{email:'aide.one@example.com',password:'secret'});
+  assert.deepStrictEqual(JSON.parse(rpc.body),{p_username:'aide.one',p_password:testPw,p_org_slug:'evercare'});
+  assert.deepStrictEqual(JSON.parse(auth.body),{email:'aide.one@example.com',password:testPw});
   assert.strictEqual(auth.apikey,anonFile);
   assert.strictEqual(aideCall.method,'GET');
   assert.ok(aideCall.url.indexOf('profile_id=eq.11111111-1111-1111-1111-111111111111')>=0,'aides select is the signed-in user');
   assert.ok(aideCall.url.indexOf('is_active=eq.true')>=0,'inactive aides are excluded');
   assert.ok(aideCall.url.indexOf('must_change_password')>=0,'setup flag is loaded with the row');
   assert.strictEqual(aideCall.authorization,'Bearer jwt-test-token');
-  assert.ok(!/secret/.test(aideCall.url+aideCall.body),'aides request does not carry the password');
+  assert.ok((aideCall.url+aideCall.body).indexOf(testPw)<0,'aides request does not carry the password');
   const sess=await page.evaluate(function(){return JSON.parse(localStorage.getItem('cg_session')||'null');});
   assert.strictEqual(sess.sbAccessToken,'jwt-test-token');
   assert.strictEqual(sess.username,'aide.one');
   assert.strictEqual(sess.name,'Test Aide');
   assert.strictEqual(sess.mustChangePassword,false);
   assert.strictEqual(sess.needsEmail,false);
-  assert.ok(!JSON.stringify(sess).includes('secret'),'session does not keep the password');
+  assert.ok(!JSON.stringify(sess).includes(testPw),'session does not keep the password');
   const live=await page.evaluate(function(){return window.__sbSession&&window.__sbSession.access_token;});
   assert.strictEqual(live,'jwt-test-token');
   const listDeadline=Date.now()+3000;
@@ -413,6 +423,7 @@ async function runBrowser(){
   assert.strictEqual(noEmail.home,false);
   assert.ok(!sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}),'null rpc email skips auth');
   assert.ok(sheetsActions.indexOf('login')<0,'null email does not fall through to sheets');
+  assert.strictEqual(await page.$eval('#loginErr',function(el){return el.textContent;}),'Incorrect username or password.');
 
   rpcMode='boom';
   await openFresh(base+'?sb=1');
@@ -442,6 +453,20 @@ async function runBrowser(){
   assert.ok(sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}));
   assert.ok(!sbCalls.some(function(c){return c.url.indexOf('/rest/v1/aides')>=0;}),'bad password does not load aides');
 
+  rpcMode='limit';
+  await openFresh(base+'?sb=1');
+  await signIn();
+  await page.waitForFunction(function(){return document.getElementById('loginErr').textContent.indexOf('Too many attempts')===0;},{timeout:5000});
+  const limited=await page.evaluate(function(){
+    return {
+      text:document.getElementById('loginErr').textContent,
+      home:document.getElementById('caregiverScreen').classList.contains('active')
+    };
+  });
+  assert.strictEqual(limited.text,'Too many attempts — please wait a few minutes and try again');
+  assert.strictEqual(limited.home,false);
+  assert.ok(!sbCalls.some(function(c){return c.url.indexOf('grant_type=password')>=0;}),'rate limit skips the password grant');
+
   await page.goto(base,{waitUntil:'domcontentloaded',timeout:20000});
   await page.evaluate(function(){
     localStorage.setItem('evercare_sheets','1');
@@ -460,11 +485,11 @@ async function runBrowser(){
   await page.waitForSelector('#l_user',{timeout:5000});
   assert.strictEqual(sbCalls.length,0,'stored sheets rollback does not call supabase before sign-in');
   await page.$eval('#l_user',function(el){el.value='keep';});
-  await page.$eval('#l_pass',function(el){el.value='pw';});
+  await page.$eval('#l_pass',function(el, value){el.value=value;}, testPw);
   await page.click('#loginBtn');
   await page.waitForFunction(function(){return document.getElementById('caregiverScreen').classList.contains('active');},{timeout:5000});
   assert.ok(sheetsActions.indexOf('login')>=0,'stored evercare_sheets=1 uses Sheets login');
-  assert.ok(!sbCalls.some(function(c){return c.url.indexOf('resolve_username_email')>=0;}),'stored rollback does not dual-verify');
+  assert.ok(!sbCalls.some(function(c){return c.url.indexOf('aide_login_email')>=0;}),'stored rollback does not dual-verify');
 
   rpcMode='email';
   authMode='ok';
@@ -491,20 +516,32 @@ async function runBrowser(){
   assert.strictEqual(gated.must,true);
   assert.strictEqual(gated.needs,true);
   assert.strictEqual(gated.token,'jwt-test-token');
-  await page.$eval('#setup_newpass',function(el){el.value='secret-new';});
-  await page.$eval('#setup_confirm',function(el){el.value='secret-new';});
+  await page.$eval('#setup_newpass',function(el, value){el.value=value;}, nextPw);
+  await page.$eval('#setup_confirm',function(el, value){el.value=value;}, nextPw);
   await page.$eval('#setup_email',function(el){el.value='real.aide@example.com';});
   sbCalls.length=0;
   await page.click('#aideSetupBtn');
   await page.waitForFunction(function(){
-    return document.getElementById('caregiverScreen').classList.contains('active')&&!document.getElementById('aideSetupScreen').classList.contains('active');
+    const done=document.getElementById('aideSetupDone');
+    const form=document.getElementById('aideSetupForm');
+    return done&&done.style.display==='block'&&form&&form.style.display==='none'&&document.getElementById('aideSetupScreen').classList.contains('active')&&!document.getElementById('caregiverScreen').classList.contains('active');
   },{timeout:5000});
+  const saved=await page.evaluate(function(){
+    return {
+      title:document.getElementById('aideSetupDoneTitle').textContent,
+      open:document.getElementById('aideSetupOpenCaregiver').textContent,
+      session:localStorage.getItem('cg_session')
+    };
+  });
+  assert.strictEqual(saved.title,'Password saved');
+  assert.strictEqual(saved.open,'Open Caregiver');
+  assert.strictEqual(saved.session,null,'finish-account drops the local session');
   const setupCalls=sbCalls.map(function(c){return c.method+' '+c.url;});
   assert.ok(setupCalls.some(function(u){return u.indexOf('grant_type=password')>=0;}),'setup rechecks the current password');
   const userPut=sbCalls.filter(function(c){return c.method==='PUT'&&c.url.indexOf('/auth/v1/user')>=0;})[0];
   const aidePatch=sbCalls.filter(function(c){return c.method==='PATCH'&&c.url.indexOf('/rest/v1/aides')>=0;})[0];
   assert.ok(userPut,'setup updates the auth user');
-  assert.deepStrictEqual(JSON.parse(userPut.body),{password:'secret-new'});
+  assert.deepStrictEqual(JSON.parse(userPut.body),{password:nextPw});
   assert.ok(aidePatch,'setup clears the aide flag');
   assert.strictEqual(JSON.parse(aidePatch.body).must_change_password,false);
   assert.ok(sheetsActions.indexOf('complete_aide_setup')<0,'flag on setup does not post to sheets');

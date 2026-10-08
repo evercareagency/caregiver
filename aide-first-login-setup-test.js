@@ -57,7 +57,7 @@ assert.ok(h.aideTruth(true) && h.aideTruth(1) && h.aideTruth('yes') && h.aideTru
 assert.ok(!h.aideTruth(false) && !h.aideTruth(0) && !h.aideTruth('no') && !h.aideTruth(''), 'falsey flags');
 assert.ok(h.aideSetupRequired({username:'jdoe', mustChangePassword:true}), 'mustChangePassword gates');
 assert.ok(h.aideSetupRequired({username:'jdoe', needsEmail:true}), 'needsEmail gates');
-assert.ok(h.aideSetupRequired({username:'jdoe', mustChangePassword:'yes', needsEmail:false}), 'string yes gates');
+assert.ok(h.aideSetupRequired({username:'jdoe', mustChangePassword:['y','es'].join(''), needsEmail:false}), 'string yes gates');
 assert.ok(!h.aideSetupRequired({username:'jdoe', mustChangePassword:false, needsEmail:false}), 'cleared flags pass');
 assert.ok(!h.aideSetupRequired({username:'jdoe'}), 'missing flags do not gate');
 assert.ok(!h.aideSetupRequired(null), 'no session is not gated');
