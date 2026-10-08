@@ -5,6 +5,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="caregiver-shell" content="2026-09-29-pages-cache-fresh1">
+<meta name="caregiver-build" content="2026-10-08-exec-off1">
 <meta name="caregiver-build" content="2026-10-08-sec1-cg2">
 <meta name="caregiver-build" content="2026-10-08-sec1-ui-h2">
 <meta name="caregiver-build" content="2026-10-08-sec1-ui">
@@ -162,6 +163,7 @@ function cgShellBoot(){
 // end v=pages-cache-fresh1
 cgShellBoot();
 </script>
+<!-- caregiver-build: 2026-10-08-exec-off1 v=exec-off1 ?v=exec-off1 EXEC_OFF1 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Quiet Mo. Supabase is the system of record. The aide portal does not call the legacy Apps Script web app on page load, warm-up, timers, sign-in, home, timesheet fill, submit, resubmit, corrections, PDF, backups, location status, in-services, or messages. The old sheets rollback is deleted. A save that cannot reach the office shows (216) 377-5991 and keeps timesheet entries on the screen. Corrections read timesheets with status correction_requested. Save and print use the client overlay. Save and print stay one US Letter page with 5510 Pearl Rd Ste 200, Cleveland, OH 44129 on page 1. Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. SEC1_CG2 sign-in stays aide_login_email. Login look stays. Cache bust ?v=exec-off1. v=sec1-cg2 and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-10-08-sec1-cg2 v=sec1-cg2 ?v=sec1-cg2 SEC1_CG2 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Aides are created only by the office. The login screen has no Sign Up tab, no sign-up control, and no office-code field. doSignup always shows Accounts are created by the office. Contact your manager. It does not call the network and does not write a local user. Forgot password has no Username field. It still posts the typed email to /auth/v1/recover and shows the same neutral message with the office line (216) 377-5991. Too many login attempts says 15 minutes. The Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. Sign-in stays aide_login_email. Login look, remember-username, and the 1-Letter-page timesheet PDF stay. Cache bust ?v=sec1-cg2. v=sec1-ui-h2 and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-10-08-sec1-ui-h2 v=sec1-ui-h2 ?v=sec1-ui-h2 SEC1_UI_H2 — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Sign-in posts aide_login_email with the username, password, and org evercare on the anon key, then the password grant. A null result shows Incorrect username or password. HTTP 400 too many login attempts shows a wait message. Forgot password posts the typed email to /auth/v1/recover with redirect_to this page and always shows the same office message. The Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. SEC1_UI SRI pins stay. Login look, remember-username, and the timesheet PDF layout stay. Cache bust ?v=sec1-ui-h2. v=sec1-ui and earlier tips unchanged. -->
 <!-- caregiver-build: 2026-10-08-sec1-ui v=sec1-ui ?v=sec1-ui SEC1_UI — Thursday 2026-10-08. MERGE HOLD. Do not claim LIVE. Do not squash-merge. Hold until Probe PASS and Friday MERGE GO. Quiet Mo. Pure UI. Ace NO CALLABLE. No new Ace patch. No new SQL. No Auth. No Quo. No SMS. SEC1_UI pins every cdnjs script on this page (html2canvas 1.4.1 and jspdf 2.5.1) with integrity sha384 from the exact file, crossorigin anonymous, and referrerpolicy no-referrer. #sec1UiCdnjs holds those tags. sbLoadScript copies them onto the script it appends and will not load a cdnjs URL that lacks the pin. The Home Screen URL stays https://evercareagency.github.io/caregiver/ with no sticky ?v=. caregiver-shell stays pages-cache-fresh1. CG_SESSION_MS stays 8 hours. Login, the messages composer, and the timesheet PDF layout stay. Cache bust ?v=sec1-ui. v=msg-composer-rect1, pwa-install-copy1, care-msg-send1, aide-notif-done-hide1, pages-cache-fresh1, and earlier tips unchanged. -->
@@ -209,7 +211,7 @@ cgShellBoot();
 <!-- caregiver-build: 2026-09-24-save-home v=home1 — Friday GO 2026-09-24. Save Day stays on the timesheet. Successful full-week submit returns to Caregiver Home. Aide list is a client-filter (Ace: no query this slice): drafts and sent-back always, fully submitted limited to the 2 most recent week_start values. Offline queue flush, Auth seal v=sbseal1, and inservice nocert v=nocert1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-inservice-nocert v=nocert1 — Friday GO 2026-09-24. Caregiver My Inservices completed cards show a Completed badge and completion date only. Aides have no Print or View Certificate. Auth seal v=sbseal1 and Offline Save Day v=offline1 unchanged. -->
 <!-- caregiver-build: 2026-09-24-sb-seal v=sbseal1 — Friday GO 2026-09-24. No new Ace RPC. Cut forgot-password: the username email lookup, then GoTrue recover to this page, then PUT /auth/v1/user on the recovery session. Logged-in setup stays PUT /auth/v1/user. Signup on the cut does not write Sheets and does not call Auth signup. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 keeps Sheets signup, verify_reset, and reset_password. -->
-<!-- caregiver-build: 2026-09-24-offline-save v=offline1 — Offline Save Day queue. Default Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Save Day and Submit queue on the phone when offline and flush through the existing Supabase upsert then PDF upload when a caregiver JWT is valid. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec for those surfaces. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds; PDF re-queues only), bucket evercare-pdfs, SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Emergency sheets may still use /exec PDF bytes via sbPullSheetsTimesheetPdf. Unmigrated reads stay on /exec when used: get_assigned_topic, get_is_reminder, get_correction, warm ping. Broadcast on the cut is get_active_broadcast (v=bcast1); sheets rollback keeps store broadcast_msg only (no /exec invent). save_location_status posts to /exec only under the sheets rollback. -->
+<!-- caregiver-build: 2026-09-24-offline-save v=offline1 — Offline Save Day queue. Default Supabase-only: auth, list/load, Save Day, submit, soft-delete, inservice insert, PDF upload. No silent /exec dual-write on those paths. Save Day and Submit queue on the phone when offline and flush through the existing Supabase upsert then PDF upload when a caregiver JWT is valid. Rollback: ?sheets=1 OR localStorage.evercare_sheets=1 forces /exec for those surfaces. PDF: client blank-letter JPEG overlay, soft-fail (Save Day still succeeds; PDF re-queues only), bucket evercare-pdfs, SB_PDF_MAX_BYTES=25MiB, no Edge/RPC. Timesheet PDF is the client blank-letter overlay only. Unmigrated sheet reads are not called. Corrections read the aide's own timesheets. Broadcast on the cut is get_active_broadcast (v=bcast1); sheets rollback keeps store broadcast_msg only (no /exec invent). save_location_status posts to /exec only under the sheets rollback. -->
 <!-- caregiver-build: 2026-09-22-login-feel — warm /exec ping, 8h session, home before heavy lists -->
 <!-- inservice cert C2 ribbon+laurel 2026-09-21 v=c2cg721 force Pages index.html refresh -->
 <meta charset="UTF-8">
@@ -708,7 +710,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else setupEverCarePWA();
 </script>
 </head>
-<body><template id="sec1UiCdnjs" data-sec1-ui="SEC1_UI" data-cache="?v=sec1-ui" data-sec1-ui-h2="SEC1_UI_H2" data-h2-cache="?v=sec1-ui-h2" data-sec1-cg2="SEC1_CG2" data-cg2-cache="?v=sec1-cg2">
+<body><template id="sec1UiCdnjs" data-sec1-ui="SEC1_UI" data-cache="?v=sec1-ui" data-sec1-ui-h2="SEC1_UI_H2" data-h2-cache="?v=sec1-ui-h2" data-sec1-cg2="SEC1_CG2" data-cg2-cache="?v=sec1-cg2" data-exec-off1="EXEC_OFF1" data-exec-cache="?v=exec-off1">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </template><div id="pwaBanner" style="display:none;background:var(--navy);color:white;padding:12px 14px;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:200">
@@ -1105,10 +1107,6 @@ else setupEverCarePWA();
     <h3>Reset Password</h3>
     <p id="reset_blurb">Enter the email on your account.</p>
     <div class="field" style="text-align:left;margin-bottom:14px"><label>Email address</label><input type="email" id="reset_email" placeholder="Email on your account" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email"></div>
-    <div id="reset_new_pass" style="display:none">
-      <div class="field" style="text-align:left;margin-bottom:14px"><label>New Password</label><input type="password" id="reset_newpwd" placeholder="Enter new password"></div>
-      <button class="mbtn mbtn-confirm" style="width:100%;margin-bottom:8px" onclick="doResetPassword()">Set New Password</button>
-    </div>
     <div id="reset_verify_btn" style="display:flex;gap:8px;justify-content:center">
       <button type="button" class="mbtn mbtn-cancel" onclick="closeModal('resetModal')">Cancel</button>
       <button type="button" class="mbtn mbtn-confirm" id="resetVerifyBtn" onclick="verifyReset()">Send reset link →</button>
@@ -1365,7 +1363,6 @@ else setupEverCarePWA();
 <div id="tsPrintRoot" aria-hidden="true"></div>
 
 <script>
-const SHEETS_URL='https://script.google.com/macros/s/AKfycbwSZbOtThwwwiu5pojn7reMvaygQ2tDQgxfidaytVZBykIvl-yT3X0qgnpufAg6Xku4/exec';
 const SUPABASE_URL='https://zealkptwgifnkbkuavvp.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplYWxrcHR3Z2lmbmtia3VhdnZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDExMTAsImV4cCI6MjEwNTc3NzExMH0.b-3Pdb_oVR3L6JM0yd_aQcqtQH8exGV7OPwdtx0b3Xg';
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -1586,10 +1583,6 @@ function armCgSessionWatch(){
 }
 armCgSessionWatch();
 
-const GAS_HEADERS={'Content-Type':'text/plain;charset=utf-8'};
-const CACHE_TTL_MS=5*60*1000;
-const _memCache={};
-const _inflight={};
 
 
 function formatDateTimeLabel(val){
@@ -1625,81 +1618,10 @@ function formatWeekOfLabel(val){
 }
 
 
-function markAceHealthBad(){
-  if(window._aceLoginOk)return;
-  window._aceHealthBad=true;
-}
-function noteAceHealth(res){
-  if(window._aceLoginOk)return;
-  if(!res||!res.ok){markAceHealthBad();return;}
-  // Unknown ping action is not a down script. Only an explicit unhealthy body marks /exec soft.
-  let clone=null;
-  try{clone=res.clone();}catch(e){return;}
-  clone.json().then(function(data){
-    if(window._aceLoginOk)return;
-    if(!data||typeof data!=='object')return;
-    if(data.healthy===false||data.ok===false||data.health==='down'||data.health==='bad')markAceHealthBad();
-  }).catch(function(){});
-}
-function aceExecSoft(){return window._aceHealthBad===true;}
-// Wake Apps Script as soon as this file runs so a Sheets-mode login is less cold.
-// ping is the lightweight no-op; GET matches the existing doGet warm. Both soft-fail offline.
-// Supabase cut (v=warmoff1) returns before either beacon so login first paint does not hit /exec.
-// ?sheets=1 or localStorage evercare_sheets=1 (evercareSbEnabled false) still warms immediately.
-function warmUpSheets(){
-  if(window._sheetsWarmUpStarted)return;
-  if(evercareSbEnabled())return;
-  window._sheetsWarmUpStarted=true;
-  fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'ping'}),mode:'cors',cache:'no-store'})
-    .then(noteAceHealth)
-    .catch(function(){markAceHealthBad();});
-  fetch(SHEETS_URL,{method:'GET',mode:'cors',cache:'no-store'}).catch(function(){});
-}
-warmUpSheets();
-document.addEventListener('DOMContentLoaded',function(){ warmUpSheets(); });
+// exec-off1: warm-up ping, the GET beacon, and the Apps Script helper are gone. Page load does not call out.
 
-async function apiPost(payload){
-  const res=await fetch(SHEETS_URL,{method:'POST',headers:GAS_HEADERS,body:JSON.stringify(payload)});
-  return res.json();
-}
-function _cacheKey(action){return 'ec_cache_'+action;}
-function cacheGet(action){
-  const key=_cacheKey(action);
-  const mem=_memCache[key];
-  if(mem&&(Date.now()-mem.t)<CACHE_TTL_MS)return mem.v;
-  try{
-    const raw=sessionStorage.getItem(key);
-    if(!raw)return null;
-    const rec=JSON.parse(raw);
-    if(rec&&(Date.now()-rec.t)<CACHE_TTL_MS){_memCache[key]=rec;return rec.v;}
-  }catch(e){}
-  return null;
-}
-function cacheSet(action,v){
-  const key=_cacheKey(action);
-  const rec={t:Date.now(),v};
-  _memCache[key]=rec;
-  try{sessionStorage.setItem(key,JSON.stringify(rec));}catch(e){}
-}
-function cacheInvalidate(action){
-  const key=_cacheKey(action);
-  delete _memCache[key];
-  try{sessionStorage.removeItem(key);}catch(e){}
-}
-async function apiGetCached(action,extra,force){
-  if(!force){
-    const hit=cacheGet(action);
-    if(hit)return hit;
-  }
-  if(_inflight[action])return _inflight[action];
-  _inflight[action]=(async()=>{
-    try{
-      const data=await apiPost(Object.assign({action:action},extra||{}));
-      if(data&&data.success)cacheSet(action,data);
-      return data;
-    }finally{delete _inflight[action];}
-  })();
-  return _inflight[action];
+function sheetsOffMessage(){
+  return 'The office copy is unavailable. Call the office at (216) 377-5991.';
 }
 
 function syncStorage(){for(let i=0;i<sessionStorage.length;i++){const k=sessionStorage.key(i);if(!localStorage.getItem(k))localStorage.setItem(k,sessionStorage.getItem(k));}}
@@ -1828,17 +1750,6 @@ function openModal(id){
   document.getElementById(id).classList.add('show');lockBodyScroll();
 }
 function closeModal(id){document.getElementById(id).classList.remove('show');if(!document.querySelector('.modal-bg.show'))unlockBodyScroll();}
-function switchTab(tab){
-  const login=document.getElementById('loginForm');
-  const signup=document.getElementById('signupForm');
-  const tabLogin=document.getElementById('tabLogin');
-  const tabSignup=document.getElementById('tabSignup');
-  if(login)login.style.display=tab==='login'?'block':'none';
-  if(signup)signup.style.display=tab==='signup'?'block':'none';
-  if(tabLogin)tabLogin.classList.toggle('active',tab==='login');
-  if(tabSignup)tabSignup.classList.toggle('active',tab==='signup');
-  if(tab==='login'&&typeof paintSignInForm==='function')paintSignInForm();
-}
 
 // Phone Sign In keyboard (v=loginkb1). Layout only. Does not sign in, store a username, or call Auth.
 function loginKbIsPhone(width){
@@ -1992,17 +1903,10 @@ bindLoginKeyboard();
 // Assigned unlock and the home due banner read rpc my_inservice_topics (v=isassign1). No Sheets get_assigned_topic.
 // Backup UUID guard (v=bakuuid1). Phone Date.now / ts_* ids never enter uuid columns.
 // More has no office-backup delete control (v=norbkup1). Backup, Log out, and the 8h note stay.
-// Sheets warmkeep is skipped on the cut (v=warmoff1). Login first paint does not beacon /exec.
-// Auth, list/load, Save Day, submit, backup soft-delete, inservice insert, and PDF use Supabase.
-// Emergency rollback ONLY: ?sheets=1 or localStorage evercare_sheets=1 returns false so those
-// surfaces use their remaining Sheets /exec path. ?sb=1 and evercare_sb do not select the backend.
-// Missing ?sb=1 must not fall through to Sheets, and the default path does not dual-write Sheets.
+// exec-off1: Supabase is always on. The old sheets rollback is deleted, so a leftover
+// query or storage flag cannot select another backend and cannot call out.
+// ?sb=1 and evercare_sb do not select the backend. Missing ?sb=1 must not fall through.
 function evercareSbEnabled(){
-  try{
-    var search=(typeof location!=='undefined'&&location&&location.search)||'';
-    if(/(?:^|[?&])sheets=1(?:&|$)/.test(search))return false;
-    if(typeof localStorage!=='undefined'&&localStorage.getItem('evercare_sheets')==='1')return false;
-  }catch(e){}
   return true;
 }
 
@@ -2242,26 +2146,11 @@ async function doLogin(){
   const btn=document.getElementById('loginBtn');
   if(btn){btn.textContent='Signing in...';btn.disabled=true;}
   try{
-    // Default: Supabase Auth. Emergency ?sheets=1 / evercare_sheets=1 keeps Sheets login only.
-    if(evercareSbEnabled()){
-      sbClearAuth();
-      const signed=await loginAideWithSupabase(user,pass);
-      window._aceLoginOk=true;window._aceHealthBad=false;rememberSignInUsername(user);startCgSession(signed);window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
-    }
-    const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',username:user,password:pass})});
-    const data=await res.json();
-    if(data.success){
-      try{sbClearAuth();}catch(sbClr){}
-      window._aceLoginOk=true;window._aceHealthBad=false;rememberSignInUsername(user);startCgSession({username:user,name:data.name,mustChangePassword:data.mustChangePassword,needsEmail:data.needsEmail,email:data.email});window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
-    }
-    else{showLoginErr();}
+    sbClearAuth();
+    const signed=await loginAideWithSupabase(user,pass);
+    window._aceLoginOk=true;window._aceHealthBad=false;rememberSignInUsername(user);startCgSession(signed);window._aideSetupCurrentPassword=pass;document.getElementById('loginErr').style.display='none';if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;
   }catch(e){
-    if(evercareSbEnabled()){showLoginErr(e&&e.message);}
-    else{
-      const users=store.get('cg_users')||{};
-      if(users[user]&&users[user].password===pass){rememberSignInUsername(user);startCgSession({username:user,name:users[user].name});if(btn){btn.textContent='Sign In →';btn.disabled=false;}window._cgLoginInFlight=false;afterLogin({freshLogin:true});return;}
-      else{showLoginErr();}
-    }
+    showLoginErr(e&&e.message);
   }finally{
     window._cgLoginInFlight=false;
     if(btn){btn.textContent='Sign In →';btn.disabled=false;}
@@ -2402,25 +2291,6 @@ function aceActionError(data,err,action){
   }
   return text;
 }
-async function postAideAction(primary,alias,payload){
-  let data=null;
-  try{
-    data=await apiPost(Object.assign({action:primary},payload));
-  }catch(e){
-    return {data:null,err:e,action:primary};
-  }
-  if(data&&data.success)return {data:data,err:null,action:primary};
-  const why=(data&&(data.error||data.message||data.reason))||'';
-  if(alias&&aceLooksLikeUnknownAction(why)){
-    try{
-      data=await apiPost(Object.assign({action:alias},payload));
-      return {data:data,err:null,action:alias};
-    }catch(e){
-      return {data:null,err:e,action:alias};
-    }
-  }
-  return {data:data,err:null,action:primary};
-}
 function aideSetupSuccess(data){
   if(!data||typeof data!=='object')return false;
   if(data.success===false)return false;
@@ -2481,32 +2351,6 @@ async function submitAideSetup(){
       showAideSetupSaved();
       return;
     }
-    const res=await postAideAction('complete_aide_setup','set_password',{
-      username:currentUser.username,
-      currentPassword:currentPassword,
-      newPassword:newPassword,
-      email:email
-    });
-    const data=res&&res.data;
-    if(aideSetupSuccess(data)){
-      window._aceLoginOk=true;
-      window._aceHealthBad=false;
-      currentUser.email=email;
-      clearAideSetupGate();
-      window._aideSetupCurrentPassword='';
-      if(err)err.style.display='none';
-      showTempMsg('Account setup complete.','var(--success)');
-      window._cgFreshLogin=false;
-      if(typeof homeAddrMarkFirstLogin==='function')homeAddrMarkFirstLogin();
-      showAideSetupSaved();
-      return;
-    }
-    if(data&&(('mustChangePassword' in data)||('needsEmail' in data))){
-      persistAideSetupFlags(data);
-    }
-    const msg=aceActionError(data,res&&res.err,res&&res.action||'complete_aide_setup');
-    showErr(msg);
-    showTempMsg(msg,'var(--danger)');
   }catch(e){
     const msg=aceActionError(null,e,'complete_aide_setup');
     showErr(msg);
@@ -2982,9 +2826,6 @@ function saveLocationStatus(status){
   if(!currentUser)return;
   store.set(`loc_${currentUser.username}`,status);
   if(typeof clienthrsReportLocationFromStatus==='function')clienthrsReportLocationFromStatus(status);
-  // Default cut does not dual-write location to /exec during Save Day or submit.
-  if(evercareSbEnabled())return;
-  fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save_location_status',username:currentUser.username,status})}).catch(()=>{});
 }
 
 function showLocHelpInstructions(device){
@@ -3015,32 +2856,17 @@ function showInstructions(device){
   }
 }
 
-// Heavy Sheets lists (backups, corrections, clients, inservice) run after home is on screen.
-// get_users / get_all are not part of aide login. If the warm ping says /exec is down, skip them.
+// Home lists run after the screen is painted. get_users / get_all are not part of aide login.
 function scheduleHomeBackgroundLoads(){
   const restoreBackups=window._cgPendingBackupRestore!==false;
   window._cgPendingBackupRestore=false;
   const run=function(){
-    if(evercareSbEnabled()){
-      if(currentUser&&currentUser.sbAccessToken){
-        sbLoadHomeLists(restoreBackups);
-        checkISNotif();
-        if(typeof refreshMsgNavBadge==='function')refreshMsgNavBadge();
-      }
-      return;
+    if(currentUser&&currentUser.sbAccessToken){
+      sbLoadHomeLists(restoreBackups);
+      checkISNotif();
+      if(typeof refreshMsgNavBadge==='function')refreshMsgNavBadge();
+      checkForCorrection().catch(function(){});
     }
-    if(aceExecSoft())return;
-    if(restoreBackups){
-      restoreCloudBackups().then(function(rr){
-        if(rr&&rr.restored>0)showTempMsg('Restored '+rr.restored+' backup(s) from the office','var(--teal)');
-        else if(rr&&rr.kept>0)showTempMsg('Local timesheet kept — Backup available','var(--teal)');
-        renderTSHome();
-      }).catch(function(){});
-    }
-    checkForCorrection().catch(function(){});
-    checkISNotif();
-    if(typeof refreshMsgNavBadge==='function')refreshMsgNavBadge();
-    apiGetCached('get_clients').catch(function(){});
   };
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(function(){setTimeout(run,0);});
   else setTimeout(run,0);
@@ -3111,8 +2937,7 @@ async function loadBroadcastBanner(){
     }
     return;
   }
-  const bc=(typeof store!=='undefined'&&store&&store.get)?store.get('broadcast_msg'):null;
-  paintBroadcastBanner(bc);
+  paintBroadcastBanner('');
 }
 
 // CAREGIVER SCREEN
@@ -3133,7 +2958,7 @@ function loadCaregiverScreen(){
   // Important notice only after Sandata Got It — once per login, then stay dismissed
   if(isSandataAcked()&&!isNoticeAcked())setTimeout(()=>openModal('alertModal'),100);
 
-  // Broadcast — cut: get_active_broadcast; sheets rollback: store broadcast_msg only
+  // Broadcast — aide JWT get_active_broadcast only.
   loadBroadcastBanner().catch(function(){});
 
   buildDayBlocks();
@@ -3178,25 +3003,42 @@ function syncCorrectionsFromAdmin(rows){
 }
 
 async function checkForCorrection(){
+  const banner=document.getElementById('correctionBanner');
+  function emptyCorrection(){
+    if(banner)banner.classList.remove('show');
+  }
   try{
-    const res=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'get_correction',username:currentUser.username})});
-    const data=await res.json();
-    if(!data||data.success!==true||!Array.isArray(data.data))return;
-    const rows=data.data;
-    syncCorrectionsFromAdmin(rows);
-    const banner=document.getElementById('correctionBanner');
-    if(rows.length>0){
-      correctionData=rows[0];
+    // GHOST-EXEC-OFF1-CONTRACT-v1 §3.1. Aide JWT via sbRest. RLS timesheets_caregiver_select
+    // keeps this to the signed-in aide (aide_id = current_aide_id()). No new RPC.
+    if(!sbDataEnabled()){emptyCorrection();return;}
+    const rows=await sbRest('timesheets?select=id,client_id,client_name,week_start,total_hours,notes,days,correction_days,correction_note,submitted_at'
+      +'&status=eq.correction_requested&is_active=eq.true&order=submitted_at.desc');
+    const mapped=(Array.isArray(rows)?rows:[]).map(function(r){
+      return {
+        id:r.id,
+        submitted:r.submitted_at,
+        clientName:r.client_name||'',
+        weekStart:r.week_start||'',
+        totalHrs:r.total_hours||'',
+        notes:r.notes||'',
+        days:r.days||{},
+        correctionDays:r.correction_days||[],
+        correctionNote:r.correction_note||''
+      };
+    });
+    syncCorrectionsFromAdmin(mapped);
+    if(mapped.length>0){
+      correctionData=mapped[0];
       if(banner){
-        banner.textContent=`⚠️ Your timesheet for ${formatWeekOfLabel(correctionData.weekStart)} needs corrections. Tap here to fix it.`;
+        banner.textContent='⚠️ Your timesheet for '+formatWeekOfLabel(correctionData.weekStart)+' needs corrections. Tap here to fix it.';
         banner.classList.add('show');
         banner.style.display='';
       }
-    }else if(banner){
-      banner.classList.remove('show');
-    }
+    }else emptyCorrection();
     renderTSHome();
-  }catch(e){}
+  }catch(e){
+    emptyCorrection();
+  }
 }
 
 function loadCorrectionMode(){
@@ -4086,10 +3928,6 @@ async function doFinalSubmit(){
         data={success:true,id:row&&row.id};
         try{if(row&&row.id)sbRefreshTimesheetPdf(row.id,weekData);}catch(e){}
       }
-    }else if(correctionMode&&correctionData){
-      data=await apiPost({action:'resubmit',id:correctionData.id,days:weekData,total_hours:totalHrs,client_name:clientName,notes,...hdr});
-    }else{
-      data=await apiPost({action:'submit',submitted,username:currentUser.username,emp_name:currentUser.name,client_name:clientName,svc_type:svcType,week_start:weekStart,total_hours:totalHrs,notes,days:weekData,...hdr});
     }
   }catch(e){
     if(evercareSbEnabled()&&offlineSubmit&&(cgIsNetErr(e)||cgIsAuthErr(e))){
@@ -4105,7 +3943,7 @@ async function doFinalSubmit(){
         return;
       }
     }else{
-      showTempMsg((evercareSbEnabled()&&e&&e.message)||'Submit failed — check connection.','var(--danger)');
+      showTempMsg(((e&&e.message)?(e.message+' '):'')+sheetsOffMessage()+' Your entries are still on this screen.','var(--danger)');
       window._cgSubmitInFlight=false;
       return;
     }
@@ -4752,36 +4590,15 @@ async function submitRecoveryPassword(){
 function showResetModal(){
   const emailEl=document.getElementById('reset_email');
   if(emailEl)emailEl.value='';
-  if(document.getElementById('reset_newpwd'))document.getElementById('reset_newpwd').value='';
-  document.getElementById('reset_new_pass').style.display='none';document.getElementById('reset_verify_btn').style.display='flex';document.getElementById('resetErr').style.display='none';
+  const verify=document.getElementById('reset_verify_btn');
+  if(verify)verify.style.display='flex';
+  const errEl=document.getElementById('resetErr');
+  if(errEl)errEl.style.display='none';
   const blurb=document.getElementById('reset_blurb');
   const verifyBtn=document.getElementById('resetVerifyBtn');
   if(blurb)blurb.textContent='Enter the email on your account.';
   if(verifyBtn)verifyBtn.textContent='Send reset link →';
   openModal('resetModal');
-}
-// A stuck ?sheets=1 or evercare_sheets=1 used to send Forgot through Sheets
-// verify_reset, which shows "Username and email do not match." and never
-// calls /auth/v1/recover. Password reset stays on Auth.
-function releaseStuckSheetsRollback(){
-  try{
-    if(typeof localStorage!=='undefined'&&localStorage&&localStorage.getItem('evercare_sheets')==='1'){
-      localStorage.removeItem('evercare_sheets');
-    }
-  }catch(e){}
-  try{
-    const search=String((typeof location!=='undefined'&&location&&location.search)||'');
-    if(!/(?:^|[?&])sheets=1(?:&|$)/.test(search))return;
-    const params=new URLSearchParams(search.replace(/^\?/,''));
-    params.delete('sheets');
-    const qs=params.toString();
-    const path=String((location&&location.pathname)||'/');
-    const hash=String((location&&location.hash)||'');
-    const next=path+(qs?('?'+qs):'')+hash;
-    if(typeof history!=='undefined'&&history&&typeof history.replaceState==='function'){
-      history.replaceState(null,'',next);
-    }
-  }catch(e2){}
 }
 async function verifyReset(){
   const emailEl=document.getElementById('reset_email');
@@ -4792,7 +4609,6 @@ async function verifyReset(){
   const neutral='If that email is on file, a reset link is on its way. Questions? Call the office at (216) 377-5991.';
   const showErr=function(msg){if(err){err.textContent=msg;err.style.display='block';}};
   if(!email||email.indexOf('@')<0){showErr('Enter the email on your account.');return;}
-  releaseStuckSheetsRollback();
   try{
     if(verifyBtn){verifyBtn.disabled=true;verifyBtn.textContent='Sending...';}
     try{await sendAideRecoveryEmail(email);}catch(ignore){}
@@ -4803,15 +4619,8 @@ async function verifyReset(){
   }
 }
 async function doResetPassword(){
-  const userEl=document.getElementById('reset_user');
-  const user=userEl?userEl.value.trim().toLowerCase():'',newpwd=document.getElementById('reset_newpwd').value,err=document.getElementById('resetErr');
-  if(!newpwd){alert('Enter new password.');return;}
-  if(evercareSbEnabled()){
-    if(err){err.textContent='Open the link in your email to set a new password.';err.style.display='block';}
-    return;
-  }
-  try{await apiPost({action:'reset_password',username:user,password:newpwd});cacheInvalidate('get_users');}catch(e){}
-  closeModal('resetModal');showTempMsg('✅ Password reset! Please log in.','var(--success)');
+  const err=document.getElementById('resetErr');
+  if(err){err.textContent='Open the link in your email to set a new password.';err.style.display='block';}
 }
 
 function showTempMsg(msg,color){const el=document.createElement('div');el.style.cssText=`position:fixed;top:65px;left:50%;transform:translateX(-50%);background:${color};color:white;padding:9px 18px;border-radius:8px;font-weight:600;font-size:0.82rem;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.2);white-space:normal;max-width:min(90vw,420px);text-align:center`;el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),3000);}
@@ -5525,44 +5334,16 @@ async function doCloudBackup(){
       renderTSHome();
       return;
     }catch(e){
-      showTempMsg((e&&e.message)||'Backup failed — check connection.','var(--danger)');
+      showTempMsg(((e&&e.message)?(e.message+' '):'')+sheetsOffMessage(),'var(--danger)');
       return;
     }
-  }
-  const payload={
-    action:'save_timesheet_backup',
-    username:currentUser.username,
-    emp_name:currentUser.name,
-    client_name:clientName,
-    client_id:clientId,
-    svc_type:svcType,
-    week_start:weekStart,
-    total_hours:totalHrs,
-    notes:notes,
-    days:weekData
-  };
-  if(ts.cloudBackupId)payload.id=ts.cloudBackupId;
-  try{
-    showTempMsg('Backing up to office...','var(--teal)');
-    const data=await apiPost(payload);
-    if(data&&data.success){
-      if(data.id!=null)updateTSMeta(ts.id,{cloudBackupId:data.id});
-      showTempMsg('✅ Backed up to office!','var(--success)');
-    }else{
-      showTempMsg((data&&data.error)||'Backup failed. Try again.','var(--danger)');
-    }
-  }catch(e){
-    showTempMsg((evercareSbEnabled()&&e&&e.message)||'Backup failed — check connection.','var(--danger)');
   }
 }
 
 async function deleteTimesheetBackup(id){
   if(id==null||String(id).trim()==='')throw new Error('Backup id missing.');
-  if(evercareSbEnabled()){
-    if(!sbDataEnabled())throw new Error('Sign in again.');
-    return sbSoftDeleteBackup(id);
-  }
-  return apiPost({action:'delete_timesheet_backup',username:currentUser&&currentUser.username,id:id});
+  if(!sbDataEnabled())throw new Error(sheetsOffMessage());
+  return sbSoftDeleteBackup(id);
 }
 
 function _wdIsEmpty(wd){
@@ -5620,11 +5401,10 @@ function _localHasUnfinishedFor(list,clientName,weekStart){
 /** Returns {restored, kept} per Friday rule: restore only if no local unfinished for client/week; else keep local. */
 async function restoreCloudBackups(){
   if(!currentUser)return {restored:0,kept:0};
-  if(evercareSbEnabled()&&!sbDataEnabled())return {restored:0,kept:0};
+  if(!sbDataEnabled())return {restored:0,kept:0};
   let data;
   try{
-    if(sbDataEnabled())data=await sbListTimesheetsForHome();
-    else data=await apiPost({action:'get_my_backups',username:currentUser.username});
+    data=await sbListTimesheetsForHome();
   }catch(e){return {restored:0,kept:0};}
   if(!data||!data.success||!Array.isArray(data.data)||!data.data.length)return {restored:0,kept:0};
   const list=getAllTimesheets();
@@ -6783,7 +6563,6 @@ function cgRetryOfflineQueue(){
 // GHOST-TIMESHEET-PDF-WRITE-CONTRACT-v1 — client blank-letter JPEG overlay. No Edge function and no render RPC.
 // After Save Day (backup row id) or Submit, uploadTimesheetPdf with the caregiver JWT. Never blocks the save.
 // Default Supabase: overlay only. A failed overlay or upload soft-fails (Save Day still succeeds). No Sheets dual-write.
-// Emergency sheets force (?sheets=1 / evercare_sheets=1) may still pull /exec PDF bytes via sbPullSheetsTimesheetPdf.
 const SB_PDF_BUCKET='evercare-pdfs';
 const SB_PDF_MAX_BYTES=25*1024*1024;
 const SB_PDF_TARGET_BYTES=2*1024*1024;
@@ -7422,72 +7201,6 @@ async function renderTimesheetPdfBlob(r){
     if(container.parentNode)container.parentNode.removeChild(container);
   }
 }
-function sbBytesFromText(raw){
-  const s=String(raw==null?'':raw);
-  const out=new Uint8Array(s.length);
-  for(let i=0;i<s.length;i++)out[i]=s.charCodeAt(i)&255;
-  return out;
-}
-function sbPdfStarts(u8){
-  if(!u8||u8.length<5)return false;
-  return u8[0]===0x25&&u8[1]===0x50&&u8[2]===0x44&&u8[3]===0x46&&u8[4]===0x2D;
-}
-function sbB64ToBytes(b64){
-  const clean=String(b64||'').replace(/^data:application\/pdf;base64,/i,'').replace(/\s/g,'');
-  if(!clean||typeof atob!=='function')return null;
-  try{
-    const bin=atob(clean);
-    return sbBytesFromText(bin);
-  }catch(e){return null;}
-}
-function sbPdfFromExecBody(data){
-  if(!data)return null;
-  if(typeof data==='string'){
-    if(data.indexOf('%PDF-')===0)return sbBytesFromText(data);
-    return sbB64ToBytes(data);
-  }
-  if(typeof data!=='object')return null;
-  const b64=data.pdf||data.pdfBase64||data.pdf_base64||data.bytes||data.file||data.content||'';
-  if(b64){
-    const decoded=sbB64ToBytes(b64);
-    if(decoded)return decoded;
-    if(String(b64).indexOf('%PDF-')===0)return sbBytesFromText(b64);
-  }
-  if(data.data)return sbPdfFromExecBody(data.data);
-  return null;
-}
-// Temporary only: Sheets /exec already renders the archive PDF. Not an Edge function.
-async function sbPullSheetsTimesheetPdf(record){
-  if(typeof SHEETS_URL!=='string'||!SHEETS_URL)return null;
-  record=record||{};
-  const res=await fetch(SHEETS_URL,{
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({
-      action:'render_timesheet_pdf',
-      username:(currentUser&&currentUser.username)||record.username||'',
-      emp_name:record.empName||'',
-      client_name:record.clientName||'',
-      svc_type:record.svcType||'',
-      week_start:record.weekStart||'',
-      total_hours:record.totalHrs||'',
-      notes:record.notes||'',
-      days:record.days||{}
-    })
-  });
-  if(!res||!res.ok)return null;
-  let u8=null;
-  if(typeof res.arrayBuffer==='function')u8=new Uint8Array(await res.arrayBuffer());
-  else if(typeof res.text==='function')u8=sbBytesFromText(await res.text());
-  if(sbPdfStarts(u8)&&u8.length>=1024)return u8;
-  let raw='';
-  try{raw=new TextDecoder().decode(u8||new Uint8Array());}catch(e){raw='';}
-  let data=null;
-  try{data=raw?JSON.parse(raw):null;}catch(e){data=null;}
-  const parsed=sbPdfFromExecBody(data);
-  if(parsed&&sbPdfStarts(parsed)&&parsed.length>=1024)return parsed;
-  return null;
-}
 function sbPdfSize(pdfBytes){
   if(!pdfBytes)return 0;
   if(typeof pdfBytes.size==='number')return pdfBytes.size;
@@ -7575,9 +7288,6 @@ async function sbWriteTimesheetPdf(timesheetId,record){
   try{
     if(await sbEnsurePdfLibs())bytes=await renderTimesheetPdfBlob(record);
   }catch(e){bytes=null;}
-  if((!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024)&&!evercareSbEnabled()){
-    try{bytes=await sbPullSheetsTimesheetPdf(record);}catch(e){bytes=null;}
-  }
   if(!(await sbPdfMagicOk(bytes))||sbPdfSize(bytes)<1024){
     try{console.warn('timesheet pdf','overlay bytes unavailable');}catch(e){}
     return false;
@@ -7821,24 +7531,8 @@ async function loadMyClients(){
     catch(e){myClients=[];sbPaintClients();}
     return;
   }
-  if(evercareSbEnabled()){
-    myClients=[];
-    sbPaintClients();
-    return;
-  }
-  try{
-    const data=await apiGetCached('get_clients');
-    if(data.success&&data.data){
-      myClients=data.data.filter(c=>(c.assignedAides||[]).includes(currentUser.username));
-    }
-  }catch(e){myClients=[];}
-  const sel=document.getElementById('cg_client');
-  if(sel){
-    const currentVal=sel.value;
-    sel.innerHTML='<option value="">-- Select Client --</option>'+
-      myClients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-    if(currentVal)sel.value=currentVal;
-  }
+  myClients=[];
+  sbPaintClients();
 }
 
 function onClientSelected(){
@@ -10251,14 +9945,9 @@ async function submitInservice(){
       delete isData['sig_'+currentIS.id];
       delete isData['answers_'+currentIS.id];
       saveISData(isData);
-      showTempMsg((e&&e.message)||'Inservice did not reach the office.','var(--danger)');
+      showTempMsg(((e&&e.message)?(e.message+' '):'')+sheetsOffMessage(),'var(--danger)');
       return;
     }
-  }else{
-    fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({action:'submit_inservice',username:currentUser.username,emp_name:currentUser.name,
-      topic_id:currentIS.id,topic_title:currentIS.title,completed:completedTime,
-      answers:JSON.stringify(isAnswers),signature:sigData})}).catch(()=>{});
   }
   document.getElementById('isSuccessMsg').textContent='You have completed this month inservice: "'+currentIS.shortTitle+'". Great job! The office has been notified.';
   showScreen('isSuccessScreen');

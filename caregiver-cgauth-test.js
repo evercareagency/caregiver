@@ -41,8 +41,8 @@ const recoverFn = extractFn(html, 'async function sendAideRecoveryEmail(email)')
 const recoverSubmit = extractFn(html, 'async function submitRecoveryPassword()');
 assert.ok(loginFn && signupFn && verifyFn && resetFn && setupFn && authSetup && recoverFn && recoverSubmit);
 
-assert.ok(loginFn.indexOf('await loginAideWithSupabase(user,pass)') < loginFn.indexOf("action:'login'"), 'default login is Auth before Sheets');
-assert.ok(loginFn.slice(0, loginFn.indexOf("action:'login'")).includes('return;'), 'Auth login returns before Sheets');
+assert.ok(loginFn.includes('await loginAideWithSupabase(user,pass)'), 'sign-in is Supabase');
+assert.ok(!loginFn.includes("action:'login'"), 'sign-in does not post Apps Script');
 assert.ok(loginFn.includes('showLoginErr(e&&e.message)'), 'cut login errors do not read a local password');
 assert.ok(html.includes('Too many attempts — please wait 15 minutes and try again'), 'rate limit copy');
 assert.ok(html.includes('15 minutes'), 'lockout copy names 15 minutes');
@@ -54,21 +54,19 @@ assert.ok(!signupFn.includes('startCgSession'), 'signup does not create a sessio
 assert.ok(verifyFn.includes('sendAideRecoveryEmail(email)'), 'forgot sends the typed email');
 assert.ok(verifyFn.includes('If that email is on file, a reset link is on its way. Questions? Call the office at (216) 377-5991.'), 'forgot stays neutral');
 assert.ok(!verifyFn.includes('resolveAide' + 'AuthEmail'), 'forgot does not look up a username');
-assert.ok(verifyFn.includes('releaseStuckSheetsRollback()'), 'forgot clears a stuck sheets rollback');
+assert.ok(!verifyFn.includes('releaseStuckSheetsRollback()'), 'forgot does not keep a sheets rollback');
 assert.ok(!verifyFn.includes('verify_reset') && !verifyFn.includes('SHEETS_URL'), 'forgot does not call Sheets verify_reset');
 assert.ok(recoverFn.includes('/auth/v1/recover') && !recoverFn.includes('SHEETS_URL'), 'forgot email is Auth recover');
 assert.ok(recoverSubmit.includes("method:'PUT'") && recoverSubmit.includes('/auth/v1/user') && !recoverSubmit.includes('SHEETS_URL'), 'recovery save is Auth updateUser');
 
-const resetCut = resetFn.slice(0, resetFn.indexOf("action:'reset_password'"));
-assert.ok(resetCut.includes('evercareSbEnabled()') && resetCut.includes('return;'), 'cut reset_password returns before Sheets');
+assert.ok(!resetFn.includes("action:'reset_password'") && !resetFn.includes('reset_user'), 'reset does not post Apps Script or read a username');
+assert.ok(resetFn.includes('Open the link in your email to set a new password.'), 'reset points at the email link');
 
 const setupGate = setupFn.indexOf('if(evercareSbEnabled()){');
-const setupSheets = setupFn.indexOf("postAideAction('complete_aide_setup','set_password'");
-assert.ok(setupGate > 0 && setupGate < setupSheets, 'must-change Auth branch precedes Sheets');
-const setupBetween = setupFn.slice(setupGate, setupSheets);
-assert.ok(setupBetween.includes('completeAideSetupSupabase(currentPassword,newPassword,email)'), 'cut must-change updates Auth');
-assert.ok(setupBetween.includes('return;'), 'cut must-change returns before Sheets');
-assert.ok(!setupBetween.includes('sbAccessToken'), 'a missing JWT must not skip Auth and hit Sheets');
+assert.ok(setupGate > 0, 'must-change still has the office sign-in branch');
+assert.ok(setupFn.includes('completeAideSetupSupabase(currentPassword,newPassword,email)'), 'cut must-change updates Auth');
+assert.ok(!setupFn.includes('sheetsOffMessage()'), 'setup uses Auth and does not keep a sheets branch');
+assert.ok(!setupFn.includes('postAideAction('), 'setup does not post Apps Script');
 assert.ok(authSetup.includes("method:'PUT'") && authSetup.includes('/auth/v1/user'), 'setup password is updateUser');
 assert.ok(authSetup.includes('must_change_password:false'), 'setup clears the aide flag');
 assert.ok(!authSetup.includes('SHEETS_URL') && !authSetup.includes('set_password'), 'Auth setup does not write Sheets');
@@ -77,13 +75,13 @@ const testPw = process.env.EVERCARE_TEST_PASSWORD || '';
 const nextPw = testPw ? testPw + '-next' : '';
 const urlConst = (html.match(/const SUPABASE_URL='([^']+)'/) || [])[1];
 const keyConst = (html.match(/const SUPABASE_ANON_KEY='([^']+)'/) || [])[1];
-const sheetsUrl = (html.match(/const SHEETS_URL='([^']+)'/) || [])[1];
+const sheetsUrl = 'https://sheets.example/exec';
 const aideId = '22222222-2222-2222-2222-222222222222';
 const userId = '11111111-1111-1111-1111-111111111111';
 
 const src = [
-  'const SHEETS_URL=' + JSON.stringify(sheetsUrl) + ';',
   'const SUPABASE_URL=' + JSON.stringify(urlConst) + ';',
+  extractFn(html, 'function sheetsOffMessage()'),
   'const SUPABASE_ANON_KEY=' + JSON.stringify(keyConst) + ';',
   extractFn(html, 'function evercareSbEnabled()'),
   extractFn(html, 'function sbAnonHeaders()'),
@@ -98,7 +96,6 @@ const src = [
   extractFn(html, 'function aceLooksLikeUnknownAction(text)'),
   extractFn(html, 'function aceActionError(data,err,action)'),
   extractFn(html, 'function aideSetupSuccess(data)'),
-  extractFn(html, 'async function postAideAction(primary,alias,payload)'),
   extractFn(html, 'async function completeAideSetupSupabase(currentPassword,newPassword,email)'),
   extractFn(html, 'function paintCaregiverOpenLink(id)'),
   extractFn(html, 'function passwordSavedHoldKey()'),
@@ -270,10 +267,9 @@ function harness(opts){
     }
   });
   await vm.runInContext('submitAideSetup()', sheetsMode.box);
-  assert.deepStrictEqual(sheetsMode.sheets.map(function(p){return p.action;}), ['complete_aide_setup', 'set_password']);
-  assert.strictEqual(sheetsMode.sheets[1].newPassword, nextPw);
-  assert.strictEqual(sheetsMode.calls.length, 0, 'sheets rollback does not call Auth');
-  assert.deepStrictEqual(sheetsMode.toasts, ['Account setup complete.']);
+  assert.deepStrictEqual(sheetsMode.sheets, [], 'a leftover sheets query does not post Apps Script');
+  assert.strictEqual(sheetsMode.calls.length, 0, 'missing JWT does not call Auth');
+  assert.strictEqual(sheetsMode.nodes.aideSetupErr.textContent, 'Sign in again to finish setup.');
 
   console.log('caregiver-cgauth-test: ok');
 })().catch(function(err){

@@ -52,7 +52,7 @@ assert.ok(!hydrateFn.includes('my_inservice_topics'), 'completed hydrate stays o
 assert.ok(notif.indexOf('sbHydrateInserviceCompletions') < notif.indexOf('getISData()'), 'banner sees office completions first');
 assert.ok(notif.includes('sbMyInserviceTopics()'), 'banner uses the assignment set');
 assert.ok(!/supabase/i.test(schedule), 'home scheduler must not name supabase');
-const sbBranch = schedule.slice(schedule.indexOf('if(evercareSbEnabled())'), schedule.indexOf('if(aceExecSoft())return'));
+const sbBranch = schedule.slice(schedule.indexOf('if(currentUser&&currentUser.sbAccessToken)'));
 assert.ok(sbBranch.includes('checkISNotif()'), 'home due banner runs on the default cut');
 assert.ok(!html.includes('function getAssignedIS('), 'Sheets getAssignedIS is gone');
 

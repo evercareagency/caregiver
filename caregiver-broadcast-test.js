@@ -57,9 +57,9 @@ assert.ok(!homeFn.includes("store.get('broadcast_msg')"), 'home no longer reads 
 assert.ok(getFn.includes("sbRest('rpc/get_active_broadcast',{method:'POST',body:{}})"), 'cut uses aide JWT rpc');
 assert.ok(!src.includes('send_broadcast') && !src.includes('clear_broadcast'), 'aide is read-only');
 assert.ok(!html.includes("action:'broadcast'") && !html.includes("action:'get_broadcast'") && !html.includes("action:'send_broadcast'"), 'no Sheets /exec invent');
-assert.ok(loadFn.includes('evercareSbEnabled()'), 'cut vs sheets rollback branch');
-assert.ok(loadFn.includes("store.get('broadcast_msg')"), 'sheets rollback still reads broadcast_msg');
-assert.ok(loadFn.indexOf('evercareSbEnabled()') < loadFn.indexOf("store.get('broadcast_msg')"), 'store path is rollback only');
+assert.ok(loadFn.includes('evercareSbEnabled()'), 'banner still checks the cut');
+assert.ok(!loadFn.includes("store.get('broadcast_msg')"), 'banner does not read a sheets store message');
+assert.ok(loadFn.includes("paintBroadcastBanner('')"), 'a non-cut load is an empty banner');
 assert.ok(!getFn.includes('SHEETS_URL') && !loadFn.includes('SHEETS_URL'), 'broadcast path never hits /exec');
 
 function boot(opts){
@@ -142,14 +142,14 @@ function boot(opts){
 
   const sheets = boot({sb:false, local:'Sheets-era alert'});
   await vm.runInContext('loadBroadcastBanner()', sheets);
-  assert.strictEqual(sheets.calls.length, 0, 'sheets rollback does not call supabase');
-  assert.strictEqual(sheets.banner.textContent, '🚨 Sheets-era alert');
-  assert.ok(sheets.banner.classList.contains('show'), 'sheets rollback shows store msg');
+  assert.strictEqual(sheets.calls.length, 0, 'a leftover sheets flag does not call out');
+  assert.strictEqual(sheets.banner.textContent, '', 'a leftover sheets flag does not show a stored message');
+  assert.ok(!sheets.banner.classList.contains('show'), 'a leftover sheets flag leaves the banner empty');
 
   const sheetsEmpty = boot({sb:false, local:null});
   await vm.runInContext('loadBroadcastBanner()', sheetsEmpty);
-  assert.strictEqual(sheetsEmpty.banner.textContent, '', 'sheets rollback hides when store empty');
-  assert.ok(!sheetsEmpty.banner.classList.contains('show'), 'sheets empty removes show');
+  assert.strictEqual(sheetsEmpty.banner.textContent, '', 'empty banner stays empty');
+  assert.ok(!sheetsEmpty.banner.classList.contains('show'), 'empty banner stays hidden');
 
   const late = boot({token:false, data:{success:true, data:{message:'Late alert'}}});
   let tokenOn = false;

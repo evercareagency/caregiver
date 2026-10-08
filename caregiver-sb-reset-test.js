@@ -68,16 +68,16 @@ assert.ok(verifyFn.includes('sendAideRecoveryEmail(email)'), 'forgot emails the 
 assert.ok(verifyFn.includes('If that email is on file, a reset link is on its way. Questions? Call the office at (216) 377-5991.'), 'forgot stays neutral');
 assert.ok(!verifyFn.includes('resolveAide' + 'AuthEmail') && !verifyFn.includes('aide_login_email'), 'forgot does not look up a username');
 assert.ok(!html.includes('resolveAide' + 'AuthEmail') && !html.includes('resolve_' + 'username_email'), 'old username email lookup is gone');
-assert.ok(verifyFn.includes('releaseStuckSheetsRollback()'), 'forgot clears a stuck sheets rollback before recover');
+assert.ok(!verifyFn.includes('releaseStuckSheetsRollback()'), 'forgot does not keep a sheets rollback');
 assert.ok(!verifyFn.includes('reset_new_pass'), 'forgot does not open an in-modal password');
 assert.ok(!verifyFn.includes('Password reset! Please log in.'), 'forgot does not claim the password changed');
 assert.ok(!verifyFn.includes("action:'verify_reset'") && !verifyFn.includes('SHEETS_URL'), 'forgot does not call Sheets verify_reset');
 assert.ok(!verifyFn.includes('aideEmailsMatch'), 'a retyped email no longer blocks recover');
 
-const resetSb = resetFn.slice(0, resetFn.indexOf("action:'reset_password'"));
-assert.ok(resetSb.includes('return'), 'cut set-password does not fall through to Sheets');
-assert.ok(!resetSb.includes('Password reset! Please log in.'), 'cut set-password does not claim a Sheets reset');
-assert.ok(resetFn.includes("action:'reset_password'"), 'sheets rollback still resets on Sheets');
+assert.ok(!resetFn.includes("action:'reset_password'"), 'reset does not post Apps Script');
+assert.ok(!resetFn.includes('reset_user'), 'reset does not read a removed username field');
+assert.ok(resetFn.includes('Open the link in your email to set a new password.'), 'reset points at the email link');
+assert.ok(!resetFn.includes('Password reset! Please log in.'), 'reset does not claim a Sheets reset');
 
 assert.ok(signupFn.includes('Accounts are created by the office. Contact your manager.'), 'signup tells the aide to contact the office');
 assert.ok(!signupFn.includes('fetch(') && !signupFn.includes('SHEETS_URL') && !signupFn.includes('localStorage') && !signupFn.includes('store.'), 'signup does not call the network or write a local user');
@@ -240,7 +240,6 @@ function harness(opts){
     extractFn(html, 'function showAideSetupSaved()'),
     extractFn(html, 'function showRecoveryPasswordScreen()'),
     extractFn(html, 'function bootCaregiverPortal()'),
-    extractFn(html, 'function releaseStuckSheetsRollback()'),
     extractFn(html, 'async function clearAideMustChangeAfterRecovery(token)'),
     submitFn,
     verifyFn,
@@ -360,8 +359,8 @@ const neutral = 'If that email is on file, a reset link is on its way. Questions
   assert.deepStrictEqual(JSON.parse(sheetsRecover.init.body), {email: 'mo.aide@example.com'});
   assert.strictEqual(sheetsVerify.nodes.reset_blurb.textContent, neutral);
   assert.ok(!sheetsVerify.calls.some(function(c){return c.url === 'https://sheets.example/exec' || (c.body && c.body.action === 'verify_reset');}));
-  assert.strictEqual(sheetsVerify.box.localStorage.getItem('evercare_sheets'), null);
-  assert.ok(sheetsVerify.box.location.search.indexOf('sheets=1') < 0, 'sheets=1 is stripped before the next sign-in');
+  assert.strictEqual(sheetsVerify.box.localStorage.getItem('evercare_sheets'), '1', 'a leftover sheets flag is ignored');
+  assert.ok(sheetsVerify.box.location.search.indexOf('sheets=1') >= 0, 'a leftover sheets query is ignored');
   assert.ok(sheetsVerify.box.location.search.indexOf('keep=1') >= 0, 'other query params stay');
   assert.strictEqual(sheetsVerify.nodes.reset_new_pass.style.display, 'none');
 
@@ -387,8 +386,9 @@ const neutral = 'If that email is on file, a reset link is on its way. Questions
     password: sheetsPw
   });
   await sheetsReset.box.doResetPassword();
-  assert.strictEqual(JSON.stringify(sheetsReset.calls[0].body), JSON.stringify({action: 'reset_password', username: 'mossier', password: sheetsPw}));
-  assert.deepStrictEqual(sheetsReset.toasts, ['✅ Password reset! Please log in.']);
+  assert.strictEqual(sheetsReset.calls.length, 0, 'sheets=1 reset does not call out');
+  assert.strictEqual(sheetsReset.nodes.resetErr.textContent, 'Open the link in your email to set a new password.');
+  assert.deepStrictEqual(sheetsReset.toasts, []);
 
   const storedSheets = harness({
     storage: {evercare_sheets: '1'},
@@ -397,7 +397,8 @@ const neutral = 'If that email is on file, a reset link is on its way. Questions
     sheetsThrow: true
   });
   await storedSheets.box.doResetPassword();
-  assert.deepStrictEqual(storedSheets.toasts, ['✅ Password reset! Please log in.']);
+  assert.deepStrictEqual(storedSheets.toasts, []);
+  assert.strictEqual(storedSheets.calls.length, 0, 'stored sheets flag does not reset through Apps Script');
   assert.ok(!storedSheets.calls.some(function(c){return String(c.url).indexOf('supabase') >= 0;}));
 
   const aideId = '22222222-2222-2222-2222-222222222222';

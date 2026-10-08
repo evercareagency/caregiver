@@ -45,12 +45,11 @@ assert.ok(saveDay.indexOf("action:'save_timesheet_backup'") < 0, 'save day data 
 
 const fin = extractFn(html, 'async function doFinalSubmit()');
 assert.ok(fin.includes('cgEnqueueSubmit'), 'submit can queue');
-assert.ok(fin.includes("action:'submit'"), 'sheets submit stays');
+assert.ok(!fin.includes("action:'submit'"), 'submit does not post Apps Script');
 assert.ok(fin.includes('sbRefreshTimesheetPdf(row.id,weekData)'), 'online submit still refreshes the PDF');
-assert.ok(fin.indexOf('evercareSbEnabled()') < fin.indexOf("action:'submit'"));
-assert.ok(fin.indexOf('sbRefreshTimesheetPdf') < fin.indexOf("action:'submit'"));
-assert.ok(html.includes('evercare_sheets'), 'sheets rollback flag remains');
-assert.ok(html.includes('sheets=1'), 'sheets query rollback remains');
+assert.ok(fin.includes('still on this screen'), 'a blocked submit keeps the entries');
+assert.ok(!extractFn(html, 'function evercareSbEnabled()').includes('evercare_sheets'), 'the sheets flag is not a backend switch');
+assert.ok(!extractFn(html, 'function evercareSbEnabled()').includes('sheets=1'), 'the sheets query is not a backend switch');
 
 const urlConst = (html.match(/const SUPABASE_URL='([^']+)'/) || [])[1];
 const keyConst = (html.match(/const SUPABASE_ANON_KEY='([^']+)'/) || [])[1];
@@ -185,6 +184,7 @@ function run(opts){
     getUserWeekData: function(){return {};},
     saveUserWeekData: function(data){box._savedWeek = data;},
     refreshSaveDayState: function(){},
+    paintDayRowStatus: function(){},
     showTempMsg: function(msg){box.msgs.push(msg);},
     getAllTimesheets: function(){return [{id:'local-1', clientId:'af44b579-5881-46ea-8cb8-83a33c0af200', clientName:'Ada Client', weekStart:'2026-09-20'}];},
     getSelectedClient: function(){return {id:'af44b579-5881-46ea-8cb8-83a33c0af200', name:'Ada Client'};},
@@ -277,8 +277,8 @@ function queueOf(box){
 
   const sheets = run({onLine:false, search:'?sheets=1'});
   vm.runInContext('saveDayData(0,{tin:"08:00",tout:"12:00",hrs:"4:00",svcs:["Bathing"],aideSig:"a",clientSig:"c",verified:null})', sheets);
-  assert.strictEqual(sheets.calls.length, 0, 'sheets rollback Save Day does not call Supabase');
-  assert.strictEqual(sheets.localStorage.getItem('evercare_offline_ops'), null, 'sheets rollback does not queue');
+  assert.strictEqual(sheets.calls.length, 0, 'a leftover sheets query does not call out while offline');
+  assert.strictEqual(queueOf(sheets).length, 2, 'a leftover sheets query still queues the phone save');
 
   const live = run({onLine:true});
   vm.runInContext('saveDayData(1,{tin:"09:00",tout:"12:00",hrs:"3:00",svcs:["Bathing"],aideSig:"a",clientSig:"c",verified:null})', live);
