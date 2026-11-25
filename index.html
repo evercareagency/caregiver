@@ -9704,16 +9704,13 @@ function evvClientsForAide(list, user){
   var rows=Array.isArray(list)?list:[];
   var who=user||{};
   var aide=who.sbAideId?String(who.sbAideId):'';
-  var uid=who.sbUserId?String(who.sbUserId):'';
   return rows.filter(function(c){
     if(!c||!c.id||c.is_active===false)return false;
     var asg=Array.isArray(c.assignments)?c.assignments:[];
     if(!asg.length)return true;
     return asg.some(function(a){
       if(!a||a.is_active===false)return false;
-      var id=String(a.aide_id||'');
-      if(!id)return false;
-      return (aide&&id===aide)||(uid&&id===uid);
+      return !!(aide&&String(a.aide_id||'')===aide);
     });
   });
 }
@@ -9861,19 +9858,13 @@ async function evvQueryClients(aideId){
   return sbRest(q);
 }
 async function evvLoadClients(){
-  var ids=[];
-  if(currentUser&&typeof sbIsUuid==='function'){
-    if(sbIsUuid(currentUser.sbAideId))ids.push(String(currentUser.sbAideId));
-    if(sbIsUuid(currentUser.sbUserId)&&ids.indexOf(String(currentUser.sbUserId))<0)ids.push(String(currentUser.sbUserId));
-  }
-  if(typeof sbRest==='function'&&typeof sbDataEnabled==='function'&&sbDataEnabled()){
-    for(var i=0;i<ids.length;i++){
-      try{
-        var rows=await evvQueryClients(ids[i]);
-        var list=evvClientsForAide(Array.isArray(rows)?rows:[], currentUser);
-        if(list.length)return list;
-      }catch(e){}
-    }
+  var aideId=currentUser&&typeof sbIsUuid==='function'&&sbIsUuid(currentUser.sbAideId)?String(currentUser.sbAideId):'';
+  if(aideId&&typeof sbRest==='function'&&typeof sbDataEnabled==='function'&&sbDataEnabled()){
+    try{
+      var rows=await evvQueryClients(aideId);
+      var list=evvClientsForAide(Array.isArray(rows)?rows:[], currentUser);
+      if(list.length)return list;
+    }catch(e){}
   }
   if(typeof loadMyClients==='function'){
     try{await loadMyClients();}catch(e){}
@@ -10045,7 +10036,6 @@ async function evvInsertVisit(client, service, loc){
       client_name:String(client.name||'').trim(),
       service_name:service,
       status:'open',
-      clock_in_at:new Date().toISOString(),
       in_lat:loc.lat,
       in_lng:loc.lng
     }
@@ -10063,7 +10053,6 @@ async function evvPatchOut(visit, loc){
     headers:{Prefer:'return=representation'},
     body:{
       status:'ready',
-      clock_out_at:new Date().toISOString(),
       out_lat:loc.lat,
       out_lng:loc.lng
     }

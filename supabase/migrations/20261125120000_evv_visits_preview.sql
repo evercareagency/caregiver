@@ -13,11 +13,15 @@
 --   aides.profile_id    = auth.uid() = currentUser.sbUserId
 --   aides.org_id        = currentUser.sbOrgId
 --   clients.id          = the timesheet client id
---   assignments.aide_id = aides.id or, if the office stored it that way, auth.uid()
+--   clients.org_id      = aides.org_id
+--   assignments.aide_id = aides.id (not auth.uid())
+--   assignments.org_id  = aides.org_id
 --   assignments.client_id, assignments.is_active
--- Office read: a profile in the same org that is not an aide row.
--- If office staff are also stored in aides, replace evv_visits_office_read
--- with a policy that matches the real staff role column before relying on it.
+-- Clock-in and clock-out times are database now(). The phone cannot set them.
+-- Office read calls public.current_org_id() and public.is_scheduler_office().
+-- The audit trigger calls public._audit_row_change().
+-- This caregiver repo does not define those three helpers. They are expected
+-- to already exist in the live database. This file does not recreate them.
 
 begin;
 
@@ -90,7 +94,8 @@ begin
     select c.name into client_name_text
     from public.clients c
     where c.id = new.client_id
-      and c.is_active is true;
+      and c.is_active is true
+      and c.org_id = aide.org_id;
     if client_name_text is null or btrim(client_name_text) = '' then
       raise exception 'Pick one of your clients';
     end if;
@@ -99,8 +104,9 @@ begin
       select 1
       from public.assignments g
       where g.client_id = new.client_id
+        and g.aide_id = aide.id
+        and g.org_id = aide.org_id
         and g.is_active is not false
-        and (g.aide_id = aide.id or g.aide_id = auth.uid())
     ) into assigned;
     if not assigned then
       raise exception 'Pick one of your clients';
@@ -119,12 +125,10 @@ begin
     new.aide_name := coalesce(nullif(btrim(aide.full_name), ''), aide.username);
     new.client_name := btrim(client_name_text);
     new.status := 'open';
+    new.clock_in_at := now();
     new.clock_out_at := null;
     new.out_lat := null;
     new.out_lng := null;
-    if new.clock_in_at is null then
-      new.clock_in_at := now();
-    end if;
     new.created_at := now();
     new.updated_at := now();
     return new;
@@ -137,7 +141,7 @@ begin
     if old.status is distinct from 'open' or new.status is distinct from 'ready' then
       raise exception 'Only an open visit can be clocked out';
     end if;
-    if new.clock_out_at is null or new.out_lat is null or new.out_lng is null then
+    if new.out_lat is null or new.out_lng is null then
       raise exception 'Location is required';
     end if;
 
@@ -150,6 +154,7 @@ begin
     new.client_name := old.client_name;
     new.service_name := old.service_name;
     new.clock_in_at := old.clock_in_at;
+    new.clock_out_at := now();
     new.in_lat := old.in_lat;
     new.in_lng := old.in_lng;
     new.created_at := old.created_at;
@@ -165,6 +170,11 @@ $$;
 create trigger evv_visits_before_write
   before insert or update on public.evv_visits
   for each row execute function public.evv_visits_before_write();
+
+-- public._audit_row_change() already exists in the live schema. This repo does not define it.
+create trigger zz_audit_evv_visits
+  after insert or update or delete on public.evv_visits
+  for each row execute function public._audit_row_change();
 
 alter table public.evv_visits enable row level security;
 alter table public.evv_visits force row level security;
@@ -202,25 +212,13 @@ create policy evv_visits_aide_update
 
 -- No DELETE policy and no DELETE grant. Aides cannot delete visits.
 
--- Office / admin read, separate from the aide policies.
--- A signed-in profile in the same org who is not an aide can read visits.
--- Aides do not match this policy, so it does not widen aide access.
+-- Office read: active profiles with role admin or scheduler (public.is_scheduler_office()).
+-- Nurse is left out. Swap this predicate for public.is_org_admin()
+-- (admin, scheduler, or nurse) if the owner wants Nurse included.
 create policy evv_visits_office_read
   on public.evv_visits
   for select
   to authenticated
-  using (
-    exists (
-      select 1
-      from public.profiles p
-      where p.id = auth.uid()
-        and p.org_id = evv_visits.org_id
-        and not exists (
-          select 1
-          from public.aides a
-          where a.profile_id = auth.uid()
-        )
-    )
-  );
+  using (org_id = public.current_org_id() and public.is_scheduler_office());
 
 commit;

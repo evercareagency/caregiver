@@ -55,12 +55,27 @@ assert.ok(sql.includes('evv_visits_aide_select'), 'aide select policy');
 assert.ok(sql.includes('evv_visits_aide_insert'), 'aide insert policy');
 assert.ok(sql.includes('evv_visits_aide_update'), 'aide update policy');
 assert.ok(sql.includes('evv_visits_office_read'), 'office read policy');
+assert.ok(sql.includes('using (org_id = public.current_org_id() and public.is_scheduler_office())'), 'office read uses scheduler helper');
+assert.ok(sql.includes('public.is_org_admin()'), 'nurse swap is commented');
+assert.ok(/admin, scheduler, or nurse/i.test(sql), 'nurse comment names the wider helper');
+assert.ok(!/g\.aide_id = auth\.uid\(\)/.test(sql), 'assignment aide id is aides.id only');
+assert.ok(sql.includes('g.aide_id = aide.id'), 'assignment matches the aide row');
+assert.ok(sql.includes('g.org_id = aide.org_id'), 'assignment stays in the aide org');
+assert.ok(sql.includes('c.org_id = aide.org_id'), 'client stays in the aide org');
+assert.ok(/new\.clock_in_at := now\(\)/.test(sql), 'insert time is server now');
+assert.ok(/new\.clock_out_at := now\(\)/.test(sql), 'clock-out time is server now');
+assert.ok(!/if new\.clock_in_at is null/.test(sql), 'phone clock-in is not kept');
+assert.ok(sql.includes('create trigger zz_audit_evv_visits'), 'audit trigger name');
+assert.ok(sql.includes('after insert or update or delete on public.evv_visits'), 'audit watches every write');
+assert.ok(sql.includes('execute function public._audit_row_change()'), 'audit calls the live helper');
 assert.ok(sql.includes('evv_visits_one_open_per_aide'), 'one open visit');
 assert.ok(!/create policy evv_visits_aide_delete/i.test(sql), 'no aide delete policy');
 assert.ok(/grant select, insert, update/i.test(sql), 'no delete grant');
 assert.ok(!/service_role/i.test(sql), 'migration has no service role');
 assert.ok(sql.includes('auth.uid()'), 'aide policies use the session user');
 assert.ok(sql.includes('Only an open visit can be clocked out'), 'update is clock-out only');
+assert.ok(!/clock_in_at:\s*new Date/.test(block), 'client does not send clock-in time');
+assert.ok(!/clock_out_at:\s*new Date/.test(block), 'client does not send clock-out time');
 
 const box = {
   location:{search:'?evv=1'},
@@ -117,7 +132,8 @@ const other = '66666666-6666-4666-8666-666666666666';
 const clientIds = JSON.parse(vm.runInContext('JSON.stringify(evvClientsForAide('+JSON.stringify([
   {id:'a', name:'Dorothy Hale', is_active:true, assignments:[{aide_id:aide, is_active:true}]},
   {id:'b', name:'Someone Else', is_active:true, assignments:[{aide_id:other, is_active:true}]},
-  {id:'c', name:'No embed', is_active:true, assignments:[]}
+  {id:'c', name:'No embed', is_active:true, assignments:[]},
+  {id:'d', name:'Profile id only', is_active:true, assignments:[{aide_id:'u', is_active:true}]}
 ])+','+JSON.stringify({sbAideId:aide, sbUserId:'u'})+').map(function(c){return c.id;}))', box));
 assert.deepStrictEqual(clientIds, ['a','c']);
 assert.ok(vm.runInContext('evvLocationMessage("denied")', box).indexOf('This phone did not share its location') === 0);
@@ -169,7 +185,7 @@ async function runBrowser(){
   const srv = await startServer(port);
   const shotDir = '/opt/cursor/artifacts/evv-preview';
   fs.mkdirSync(shotDir, {recursive:true});
-  const state = {visits:[], bad:[], methods:[]};
+  const state = {visits:[], bad:[], methods:[], writes:[]};
   const browser = await puppeteer.launch({
     executablePath:process.env.CHROME_PATH||'/usr/bin/google-chrome',
     headless:'new',
@@ -311,23 +327,31 @@ function mockSupabase(req, state){
       state.bad.push('DELETE evv_visits');
       data = [];
     }else if(method === 'POST'){
+      state.writes.push({method:'POST', body:body||{}});
       const row = Object.assign({
         id:'77777777-7777-4777-8777-777777777777',
         status:'open',
-        clock_out_at:null,
         out_lat:null,
         out_lng:null
       }, body||{});
       row.id = '77777777-7777-4777-8777-' + String(state.visits.length+1).padStart(12,'0');
+      row.status = 'open';
+      row.clock_in_at = new Date().toISOString();
+      row.clock_out_at = null;
       state.visits.push(row);
       data = [row];
     }else if(method === 'PATCH'){
+      state.writes.push({method:'PATCH', body:body||{}});
       const idMatch = /id=eq\.([^&]+)/.exec(u);
       const id = idMatch ? decodeURIComponent(idMatch[1]) : '';
       const row = state.visits.find(function(v){return v.id===id && v.status==='open';});
       if(!row)data = [];
       else{
+        const clockIn = row.clock_in_at;
         Object.assign(row, body||{});
+        row.clock_in_at = clockIn;
+        row.status = 'ready';
+        row.clock_out_at = new Date().toISOString();
         data = [row];
       }
     }else{
@@ -409,6 +433,7 @@ async function reachHome(page, opts){
 async function shotFlow(page, port, label, viewport, shotDir, state, sandataShot){
   await page.setViewport(viewport);
   state.visits.length = 0;
+  state.writes.length = 0;
   await page.evaluate(function(){
     var keep=localStorage.getItem('cg_session');
     localStorage.clear();
@@ -446,6 +471,12 @@ async function shotFlow(page, port, label, viewport, shotDir, state, sandataShot
   assert.strictEqual(state.visits[state.visits.length-1].status, 'open');
   assert.strictEqual(state.visits[state.visits.length-1].client_id, CLIENT);
   assert.strictEqual(state.visits[state.visits.length-1].service_name, 'Personal care');
+  const posted = state.writes.filter(function(w){return w.method==='POST';}).pop();
+  assert.ok(posted, 'clock in posted a visit');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(posted.body, 'clock_in_at'), false, 'clock in leaves the time to the server');
+  const shownIn = await page.$eval('.evv-live', function(el){return el.textContent;});
+  const serverIn = await page.evaluate(function(iso){return evvNyParts(iso).clock;}, state.visits[state.visits.length-1].clock_in_at);
+  assert.ok(shownIn.indexOf(serverIn) >= 0, 'clock-out screen shows the server clock-in');
   const locked = await page.$$eval('#evvClockBody select', function(nodes){return nodes.length;});
   assert.strictEqual(locked, 0, 'clock out locks the visit fields');
   await page.waitForFunction(function(){
@@ -463,6 +494,15 @@ async function shotFlow(page, port, label, viewport, shotDir, state, sandataShot
   assert.strictEqual(send.onclick, null);
   assert.strictEqual(state.visits[state.visits.length-1].status, 'ready');
   assert.ok(state.visits[state.visits.length-1].clock_out_at);
+  const patched = state.writes.filter(function(w){return w.method==='PATCH';}).pop();
+  assert.ok(patched, 'clock out patched the open visit');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(patched.body, 'clock_out_at'), false, 'clock out leaves the time to the server');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(patched.body, 'clock_in_at'), false, 'clock out does not resend the in time');
+  const shownTimes = await page.$$eval('.evv-timebox .v', function(els){return els.map(function(el){return el.textContent;});});
+  const serverTimes = await page.evaluate(function(row){
+    return {inn:evvNyParts(row.clock_in_at).clock, out:evvNyParts(row.clock_out_at).clock};
+  }, state.visits[state.visits.length-1]);
+  assert.deepStrictEqual(shownTimes, [serverTimes.inn, serverTimes.out], 'ready screen shows the server times');
   const methodsBefore = state.methods.length;
   await page.$eval('#evvSendBtn', function(btn){btn.click();});
   await new Promise(function(r){setTimeout(r, 300);});
