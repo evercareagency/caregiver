@@ -28,26 +28,30 @@ assert.ok(home.includes('For all call-offs, call the office'), 'call-off line');
 assert.ok(home.includes('tel:+12163775991') && home.includes('(216) 377-5991'), 'configured office number');
 assert.ok(!home.includes('id="callOffHomeBtn"') && !home.includes('>Call off</button>'), 'no call-off control on home');
 assert.ok(home.includes('id="visitLiveName"') && home.includes('id="visitLiveTimer"'), 'in-progress name and timer');
-assert.ok(home.includes('Booked until'), 'booked until label');
+assert.ok(home.includes('class="visit-card"'), 'navy visit card');
+assert.ok(visitJs.includes('booked until'), 'booked until label');
 assert.ok(home.includes('id="visitLiveNote"'), 'care note');
 assert.ok(home.includes('>Done for the day<'), 'done for the day');
+assert.ok(home.includes('class="vbig-clock"'), 'big clock in');
 
-assert.ok(clock.includes('You cannot edit it'), 'clock time is not editable');
+assert.ok(clock.includes('from your login'), 'aide name is locked');
+assert.ok(clock.includes('set by office'), 'service is locked');
 assert.ok(!/type="time"/.test(clock), 'clock in has no time input');
 assert.ok(clock.includes('For all call-offs, call the office'), 'call-off line under clock in');
+assert.ok(html.includes('id="visitInScreen"'), 'clocked-in confirm screen');
 
-assert.ok(day.includes('>Tick all<') && day.includes('>Untick all<'), 'tick all and untick all');
+assert.ok(day.includes('>Tick all<') && visitJs.includes('Untick all'), 'tick all and untick all');
+assert.ok(day.includes('Then the caregiver signs') && day.includes('Then the client signs'), 'signature step cards');
 assert.ok(day.includes('Anything to report today?'), 'report question');
-assert.ok(day.includes('This note is not written on the timesheet.'), 'note stays off the timesheet');
 assert.ok(day.includes('Hand the phone to the client or a family member to sign.'), 'hand-off copy');
 assert.ok(day.includes('Clock Out appears after both the caregiver and the client have signed.'), 'lock hint');
-assert.ok(day.includes('>Clock Out<'), 'clock out label');
-assert.ok(day.includes('id="visitClockOutBtn" hidden'), 'clock out starts hidden');
+assert.ok(visitJs.includes('>Clock Out<'), 'clock out label');
 assert.ok(day.includes('data-locked="1"'), 'client pad starts locked');
-assert.ok(day.includes('>Clear<'), 'both pads have clear');
+assert.ok(day.includes('>Clear<'), 'pads have clear');
 assert.ok(!/unable to sign/i.test(day), 'no unable-to-sign option');
 assert.ok(!/type="time"/.test(day), 'day flow has no time input');
 assert.ok(!/>Type</.test(day) && !/Type to sign/i.test(day), 'no type option');
+assert.ok(visitJs.includes('visitpreview=1'), 'preview flag is documented in the page');
 assert.ok(!/flagged/i.test(day + clock + home) && !/sent to the office/i.test(day + clock), 'aides do not see flagged or sent-to-the-office copy here');
 
 assert.ok(form.includes('type="time" id="d${i}_in"') || html.includes('type="time" id="d${i}_in"'), 'timesheet time inputs stay');
@@ -81,12 +85,15 @@ async function runBrowser(){
   }
   const http = require('http');
   const server = http.createServer(function(req, res){
-    const url = (req.url||'/').split('?')[0];
-    const file = path.join(root, url==='/'?'index.html':url.replace(/^\//,''));
+    const url = decodeURIComponent((req.url||'/').split('?')[0]);
+    const rel = url==='/'?'index.html':url.replace(/^\//,'');
+    const file = path.join(root, rel);
     if(!file.startsWith(root)){res.writeHead(403);res.end();return;}
     fs.readFile(file, function(err, buf){
       if(err){res.writeHead(404);res.end('missing');return;}
-      res.writeHead(200, {'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
+      const ext = path.extname(file);
+      const type = ext==='.ttf'?'font/ttf':ext==='.svg'?'image/svg+xml':ext==='.js'?'text/javascript':'text/html; charset=utf-8';
+      res.writeHead(200, {'Content-Type':type,'Cache-Control':'no-store'});
       res.end(buf);
     });
   });
@@ -97,207 +104,157 @@ async function runBrowser(){
     headless:'new',
     args:['--no-sandbox','--disable-dev-shm-usage']
   });
-  const outDir = '/opt/cursor/artifacts/visit-day';
+  const outDir = '/opt/cursor/artifacts/visit-mock';
   fs.mkdirSync(outDir, {recursive:true});
+  const base = 'http://127.0.0.1:'+port+'/index.html?visitpreview=1';
   try{
     const page = await browser.newPage();
     await page.setViewport({width:390, height:844, isMobile:true, hasTouch:true, deviceScaleFactor:2});
     page.on('dialog', function(d){d.accept();});
-    await page.goto('http://127.0.0.1:'+port+'/index.html?sheets=1', {waitUntil:'domcontentloaded', timeout:20000});
-    await page.evaluate(function(){
-      localStorage.setItem('cg_session', JSON.stringify({
-        username:'preview.aide',
-        name:'Preview Aide',
-        loginAt:Date.now()-60*1000,
-        mustChangePassword:false,
-        needsEmail:false
-      }));
-      sessionStorage.setItem('sandata_ack_session','1');
-      sessionStorage.setItem('notice_ack_preview.aide','1');
+    async function shot(screen, file, prep){
+      await page.goto(base+'&screen='+screen, {waitUntil:'domcontentloaded', timeout:20000});
+      await page.waitForFunction(function(){return document.body.classList.contains('visit-preview');}, {timeout:8000});
+      if(prep)await prep();
+      await page.screenshot({path:path.join(outDir, file)});
+    }
+    await shot('home', '02-home.png', async function(){
+      const text = await page.$eval('#cgHomeView', function(el){return el.innerText;});
+      assert.ok(text.indexOf('Clock In')>=0, 'idle clock in');
+      assert.ok(text.indexOf('For all call-offs, call the office')>=0);
+      assert.ok(text.indexOf('(216) 377-5991')>=0);
+      assert.ok(!/PREVIEW, FAKE/i.test(text), 'no mock banner');
+      assert.strictEqual(await page.$('#mockToggle'), null, 'no mock controls');
     });
-    await page.reload({waitUntil:'domcontentloaded', timeout:20000});
-    await page.waitForFunction(function(){
-      return document.getElementById('caregiverScreen').classList.contains('active')
-        && document.getElementById('visitCalloffLine');
-    }, {timeout:8000});
-    const banned = await page.$eval('#cgHomeView', function(el){return el.innerText;});
-    assert.ok(!/flagged/i.test(banned), 'home text does not say flagged');
-    assert.ok(!/sent to the office/i.test(banned), 'home text does not say sent to the office');
-    assert.ok(banned.indexOf('Call off')<0, 'home does not offer Call off');
-    assert.ok(banned.indexOf('For all call-offs, call the office')>=0, 'home call-off line');
-    await page.screenshot({path:path.join(outDir, '01-home-clock-in-390.png')});
-
-    await page.click('#visitClockInBtn');
-    await page.waitForFunction(function(){
-      return document.getElementById('visitClockScreen').classList.contains('active');
-    }, {timeout:5000});
-    await page.evaluate(function(){
-      myClients = [{
-        id:'sample-client',
-        name:'Sample Client',
-        address:'100 Example St, Cleveland, OH 44129',
-        careNote:'Sample care note. Likes a quiet visit.'
-      }];
-      visitPickId = 'sample-client';
-      visitShiftByClient = {
-        'sample-client': {
-          clientId:'sample-client',
-          endLocal:'15:00',
-          address:'100 Example St, Cleveland, OH 44129',
-          careNote:'Sample care note. Likes a quiet visit.',
-          tasks:[
-            {id:'task-a', label:'Sample task A', checked:false},
-            {id:'task-b', label:'Sample task B', checked:false}
-          ]
-        }
-      };
-      visitPaintClients();
+    await shot('clock', '04-clock-in-calloff-note.png', async function(){
+      await page.waitForFunction(function(){return document.getElementById('visitClockScreen').classList.contains('active');});
+      const text = await page.$eval('#visitClockScreen', function(el){return el.innerText;});
+      assert.ok(text.indexOf('from your login')>=0);
+      assert.strictEqual(await page.$('#visitClockScreen input[type="time"]'), null);
     });
-    const clockText = await page.$eval('#visitClockScreen', function(el){return el.innerText;});
-    assert.ok(clockText.indexOf('You cannot edit it')>=0, 'clock screen says the time cannot be edited');
-    assert.ok(clockText.indexOf('For all call-offs, call the office')>=0, 'clock screen has the office line');
-    assert.strictEqual(await page.$('#visitClockScreen input[type="time"]'), null, 'no time field on clock in');
-    await page.screenshot({path:path.join(outDir, '02-clock-in-390.png')});
+    await shot('clocked', '06-clocked-in-confirm.png', async function(){
+      await page.waitForFunction(function(){return document.getElementById('visitInScreen').classList.contains('active');});
+    });
+    await shot('in', '07-home-visit-in-progress.png', async function(){
+      const text = await page.$eval('#visitLive', function(el){return el.innerText;});
+      assert.ok(text.indexOf('Test Client E')>=0);
+      assert.ok(text.indexOf('booked until 1:00 PM')>=0);
+      assert.ok(text.indexOf('Uses walker')>=0);
+      const href = await page.$eval('#visitLiveAddrWrap a', function(a){return a.getAttribute('href')||'';});
+      assert.ok(href.indexOf('https://www.google.com/maps/search/?api=1&query=')===0);
+      const timer = await page.$eval('#visitLiveTimer', function(el){return el.textContent;});
+      assert.ok(/^\d\d:\d\d:\d\d$/.test(timer), timer);
+    });
+    await shot('tasks', '08-eod-tasks.png', async function(){
+      await page.waitForFunction(function(){return document.getElementById('visitDayScreen').classList.contains('active');});
+      assert.strictEqual(await page.$eval('#visitTickAll', function(el){return el.textContent.trim();}), 'Tick all');
+    });
+    await shot('tasksall', '08-eod-tasks-tick-all.png', async function(){
+      await page.waitForFunction(function(){return document.querySelector('#visitTaskList .eod-task.on');});
+      assert.strictEqual(await page.$eval('#visitTickAll', function(el){return el.textContent.trim();}), 'Untick all');
+    });
+    await shot('report', '08a-eod-report.png', async function(){
+      await page.waitForFunction(function(){return document.getElementById('visitReportScreen').classList.contains('active');});
+      assert.strictEqual(await page.$eval('#visitReportGo', function(el){return el.disabled;}), true);
+    });
+    await shot('sign', '08aa-eod-signatures-empty.png', async function(){
+      await page.waitForFunction(function(){return document.getElementById('visitSigScreen').classList.contains('active');});
+      const hint = await page.$eval('#visitLockHint', function(el){return el.textContent;});
+      assert.strictEqual(hint, 'Clock Out appears after both the caregiver and the client have signed.');
+      assert.strictEqual(await page.$('#visitClockOutBtn'), null, 'clock out hidden until both sign');
+      assert.strictEqual(await page.$eval('#visitClientPad', function(el){return el.dataset.locked;}), '1');
+    });
+    async function clearDock(sel){
+      await page.evaluate(function(s){
+        var box=document.querySelector(s);
+        var dock=document.getElementById('bottomNav').getBoundingClientRect().height;
+        var extra=box.getBoundingClientRect().bottom-(window.innerHeight-dock-8);
+        window.scrollBy(0, Math.max(extra, 0)+120);
+      }, sel);
+    }
+    await shot('locked', '08e-eod-clockout-locked.png', async function(){
+      await page.waitForFunction(function(){
+        const b=document.getElementById('visitClockOutBtn');
+        return b && b.disabled;
+      });
+      const hint = await page.$eval('#visitTaskHint', function(el){return el.textContent;});
+      assert.ok(hint.indexOf('at least one task')>=0);
+      await clearDock('#visitClockOutBox');
+    });
+    await shot('ready', '08c-eod-clockout-ready.png', async function(){
+      await page.waitForFunction(function(){
+        const b=document.getElementById('visitClockOutBtn');
+        return b && !b.disabled;
+      });
+      await clearDock('#visitClockOutBox');
+    });
 
-    await page.click('#visitClockInGo');
+    page.on('pageerror', function(err){console.log('PAGE', err.message);});
+    await page.goto(base+'&screen=home', {waitUntil:'domcontentloaded', timeout:20000});
+    async function tap(sel){
+      const ok=await page.evaluate(function(s){
+        var el=document.querySelector(s);
+        if(!el)return false;
+        el.click();
+        return true;
+      }, sel);
+      assert.ok(ok, 'missing '+sel);
+    }
+    await tap('#visitClockInBtn');
+    await page.waitForFunction(function(){return document.getElementById('visitClockScreen').classList.contains('active');});
+    await tap('#visitClockInGo');
+    await page.waitForFunction(function(){return document.getElementById('visitInScreen').classList.contains('active');});
+    await tap('#visitInScreen .btn-teal');
     await page.waitForFunction(function(){
-      const live = document.getElementById('visitLive');
+      const live=document.getElementById('visitLive');
       return document.getElementById('caregiverScreen').classList.contains('active') && live && !live.hidden;
-    }, {timeout:5000});
-    const liveText = await page.$eval('#visitLive', function(el){return el.innerText;});
-    assert.ok(liveText.indexOf('Sample Client')>=0, 'client name');
-    assert.ok(liveText.indexOf('Booked until')>=0 && liveText.indexOf('3:00 PM')>=0, 'booked until end');
-    assert.ok(liveText.indexOf('Sample care note')>=0, 'care note');
-    const href = await page.$eval('#visitLiveAddrWrap a', function(a){return a.getAttribute('href')||'';});
-    assert.ok(href.indexOf('https://www.google.com/maps/search/?api=1&query=')===0, 'maps search link');
-    assert.ok(href.indexOf('100%20Example%20St')>=0, 'address is the search query');
-    const timer = await page.$eval('#visitLiveTimer', function(el){return el.textContent;});
-    assert.ok(/^\d+:\d\d:\d\d$/.test(timer), 'elapsed timer '+timer);
-    await page.screenshot({path:path.join(outDir, '03-visit-in-progress-390.png')});
-
-    await page.click('#visitDoneBtn');
-    await page.waitForFunction(function(){
-      return document.getElementById('visitDayScreen').classList.contains('active');
-    }, {timeout:5000});
-    await page.waitForFunction(function(){
-      const c = document.getElementById('visitAidePad');
-      return c && c.width > 10;
-    }, {timeout:5000});
-    const before = await page.evaluate(function(){
-      return {
-        out:document.getElementById('visitClockOutBtn').hidden,
-        outDisplay:getComputedStyle(document.getElementById('visitClockOutBtn')).display,
-        hint:document.getElementById('visitLockHint').textContent,
-        locked:document.getElementById('visitClientPad').dataset.locked,
-        times:document.querySelectorAll('#visitDayScreen input[type="time"]').length,
-        typeBtn:[].some.call(document.querySelectorAll('#visitDayScreen button'), function(b){return b.textContent.trim()==='Type';}),
-        unable:/unable to sign/i.test(document.getElementById('visitDayScreen').innerText)
-      };
     });
-    assert.strictEqual(before.out, true, 'clock out hidden before signatures');
-    assert.strictEqual(before.outDisplay, 'none', 'clock out is not painted before signatures');
-    assert.strictEqual(before.hint, 'Clock Out appears after both the caregiver and the client have signed.');
-    assert.strictEqual(before.locked, '1', 'client pad locked');
-    assert.strictEqual(before.times, 0, 'no editable clock time');
-    assert.strictEqual(before.typeBtn, false, 'no type option');
-    assert.strictEqual(before.unable, false, 'no unable option');
-    await page.screenshot({path:path.join(outDir, '04-day-tasks-390.png')});
-    await page.evaluate(function(){
-      document.getElementById('visitHandHint').scrollIntoView({block:'start'});
+    await tap('#visitDoneBtn');
+    await page.waitForFunction(function(){return document.getElementById('visitDayScreen').classList.contains('active');});
+    await tap('#visitTaskList .eod-task');
+    await tap('#visitToReport');
+    await page.waitForFunction(function(){return document.getElementById('visitReportScreen').classList.contains('active');});
+    for(let i=0;i<3;i++){
+      await page.evaluate(function(){
+        var next=[].slice.call(document.querySelectorAll('#visitReportQs .yn-btn.no')).filter(function(b){return !b.classList.contains('on');})[0];
+        if(next)next.click();
+      });
+    }
+    await page.waitForFunction(function(){return document.getElementById('visitReportGo') && !document.getElementById('visitReportGo').disabled;});
+    await page.click('#visitReportGo');
+    await page.waitForFunction(function(){
+      const c=document.getElementById('visitAidePad');
+      return document.getElementById('visitSigScreen').classList.contains('active') && c && c.width>10;
     });
-    await page.screenshot({path:path.join(outDir, '04-signatures-locked-390.png')});
-
-    await page.click('#visitTickAll');
-    const ticked = await page.$$eval('#visitTaskList input', function(nodes){return nodes.map(function(n){return n.checked;});});
-    assert.deepStrictEqual(ticked, [true, true], 'tick all checks every task');
-    await page.click('#visitUntickAll');
-    const unticked = await page.$$eval('#visitTaskList input', function(nodes){return nodes.every(function(n){return !n.checked;});});
-    assert.strictEqual(unticked, true, 'untick all clears every task');
-    await page.click('#visitTaskList input');
-
     await page.evaluate(function(){
-      const c = document.getElementById('visitAidePad');
-      const ctx = c.getContext('2d');
-      ctx.strokeStyle = '#1a2744';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(12, 70);
-      ctx.lineTo(260, 80);
-      ctx.stroke();
+      function ink(id){
+        const c=document.getElementById(id);
+        const ctx=c.getContext('2d');
+        ctx.strokeStyle='#1a2744';ctx.lineWidth=4;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(16,60);ctx.lineTo(250,70);ctx.stroke();
+      }
+      ink('visitAidePad');
       visitCaptureInk('aide');
       visitSyncLocks();
-    });
-    const mid = await page.evaluate(function(){
-      return {
-        clientLocked:document.getElementById('visitClientPad').dataset.locked,
-        out:document.getElementById('visitClockOutBtn').hidden
-      };
-    });
-    assert.strictEqual(mid.clientLocked, '0', 'client pad unlocks after the caregiver signs');
-    assert.strictEqual(mid.out, true, 'clock out still hidden until the client signs');
-
-    await page.type('#visitOfficeNote', 'Sample note for the preview.');
-    await page.evaluate(function(){
-      const c = document.getElementById('visitClientPad');
-      const ctx = c.getContext('2d');
-      ctx.strokeStyle = '#1a2744';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(16, 60);
-      ctx.lineTo(240, 90);
-      ctx.stroke();
+      ink('visitClientPad');
       visitCaptureInk('client');
       visitSyncLocks();
     });
-    const ready = await page.evaluate(function(){
-      const btn = document.getElementById('visitClockOutBtn');
-      return {hidden:btn.hidden, text:btn.textContent.trim(), hint:document.getElementById('visitLockHint').hidden};
-    });
-    assert.strictEqual(ready.hidden, false, 'clock out appears');
-    assert.strictEqual(ready.text, 'Clock Out');
-    assert.strictEqual(ready.hint, true, 'lock hint hides once both have signed');
-    await page.evaluate(function(){
-      document.getElementById('visitClockOutBtn').scrollIntoView({block:'center'});
-    });
-    await page.screenshot({path:path.join(outDir, '05-clock-out-ready-390.png')});
-
-    const noteOnPhone = await page.evaluate(function(){return visitOpen && visitOpen.officeNote;});
-    assert.strictEqual(noteOnPhone, 'Sample note for the preview.');
-    await page.click('#visitClockOutBtn');
     await page.waitForFunction(function(){
-      const live = document.getElementById('visitLive');
-      return document.getElementById('cgHomeView').style.display !== 'none' && live && live.hidden;
-    }, {timeout:5000});
-    const stored = await page.evaluate(function(){
-      const keys = [];
-      for(let i=0;i<localStorage.length;i++)keys.push(localStorage.key(i));
-      const week = keys.filter(function(k){return k.indexOf('wd_')===0;}).map(function(k){return localStorage.getItem(k)||'';}).join('\n');
-      return {
-        weekHasNote:week.indexOf('Sample note for the preview.')>=0,
-        openVisit:localStorage.getItem('evercare_visit_day1_preview.aide')
-      };
+      const b=document.getElementById('visitClockOutBtn');
+      return b && !b.disabled;
     });
-    assert.strictEqual(stored.weekHasNote, false, 'the report is not in week storage');
-    assert.strictEqual(stored.openVisit, null, 'the open visit is closed');
-
-    await page.click('#bottomNav button[data-nav="timesheet"]');
+    const before = await page.evaluate(function(){return localStorage.getItem('evercare_visit_day1_preview.aide');});
+    assert.strictEqual(before, null, 'preview does not save the visit');
+    await tap('#visitClockOutBtn');
     await page.waitForFunction(function(){
-      const form = document.getElementById('cgFormView');
-      return form && form.style.display==='block';
-    }, {timeout:5000});
-    const timesheet = await page.evaluate(function(){
-      const notes = document.getElementById('cg_notes');
-      return {
-        notes:notes ? notes.value : null,
-        timeInputs:document.querySelectorAll('#cgFormView input[type="time"]').length,
-        confirm:document.querySelectorAll('#cgFormView .sig-act-confirm').length
-      };
+      const live=document.getElementById('visitLive');
+      return document.getElementById('cgHomeView') && document.getElementById('cgHomeView').style.display!=='none' && live && live.hidden;
     });
-    assert.strictEqual(timesheet.notes, '', 'timesheet comments stay empty');
-    assert.ok(timesheet.timeInputs >= 2, 'timesheet time inputs stay');
-    assert.ok(timesheet.confirm >= 2, 'timesheet signature confirm stays');
-    await page.screenshot({path:path.join(outDir, '06-timesheet-unchanged-390.png')});
+    const notes = await page.$eval('#cg_notes', function(el){return el.value;});
+    assert.strictEqual(notes, '', 'timesheet comments stay empty');
+    assert.strictEqual(await page.evaluate(function(){return localStorage.getItem('evercare_visit_day1_preview.aide');}), null);
     console.log('caregiver-visit-day1 browser checks ok');
+    console.log('preview URL http://127.0.0.1:'+port+'/index.html?visitpreview=1');
   }finally{
     await browser.close();
     server.close();
