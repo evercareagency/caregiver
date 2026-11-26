@@ -220,8 +220,11 @@ async function runBrowser(){
     assert.ok(moreText.indexOf('Call off')<0, 'account does not duplicate call off');
     assert.ok(moreText.indexOf('Back up this week')<0, 'account does not duplicate backup');
     assert.ok(moreText.indexOf('Log out')>=0, 'more can log out');
-    const homeCallOff = await page.$eval('#callOffHomeBtn', function(el){return el.textContent.trim();});
-    assert.strictEqual(homeCallOff, 'Call off', 'home still has call off');
+    const homeCallOff = await page.$('#callOffHomeBtn');
+    assert.strictEqual(homeCallOff, null, 'home has no call-off button');
+    const callLine = await page.$eval('#visitCalloffLine', function(el){return el.textContent.replace(/\s+/g,' ').trim();});
+    assert.ok(callLine.indexOf('For all call-offs, call the office')>=0, 'clock in says to call the office');
+    assert.ok(callLine.indexOf('(216) 377-5991')>=0, 'office number stays under clock in');
     const homeBackupLabel = await page.$eval('#cgBackupBtn', function(el){return el.textContent.replace(/\s+/g,' ').trim();});
     assert.ok(homeBackupLabel.indexOf("Back up this week's draft")>=0, 'home still has backup');
     assert.ok(moreText.indexOf('Remove office backup')<0, 'more has no remove office backup');

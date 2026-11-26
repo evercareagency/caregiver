@@ -72,7 +72,8 @@ assert.ok(!nav.includes('>Call off<'), 'call off stays off the nav');
 
 const home = html.slice(html.indexOf('id="cgHomeView"'), html.indexOf('id="cgFormView"'));
 assert.ok(!home.includes('id="aideChatHomeCard"') && !home.includes('id="aideChatHomeBtn"'), 'home messages card is gone');
-assert.ok(home.includes('id="callOffHomeCard"') && home.includes('id="callOffHomeBtn"'), 'call off stays on home');
+assert.ok(!home.includes('id="callOffHomeCard"') && !home.includes('id="callOffHomeBtn"'), 'call off is not on home');
+assert.ok(home.includes('id="visitHomeCard"'), 'visit card is on home');
 assert.ok(home.includes("Back up this week's draft"), 'home backup stays');
 
 assert.ok(html.includes("messagesScreen:'messages'"), 'messages screen highlights the Messages tab');
@@ -309,7 +310,8 @@ async function runBrowser(){
     });
     assert.deepStrictEqual(labels, ['Home','Timesheet','Messages','Inservices','More']);
     assert.strictEqual(await page.$('#aideChatHomeCard'), null, 'messages card is not on home');
-    assert.ok(await page.$('#callOffHomeCard'), 'call off card stays');
+    assert.strictEqual(await page.$('#callOffHomeCard'), null, 'call off card is not on home');
+    assert.ok(await page.$('#visitHomeCard'), 'visit card is on home');
     const off = await page.$eval('#msgNavBadge', function(el){
       const style = getComputedStyle(el);
       return {hidden:el.hidden, text:el.textContent, pe:style.pointerEvents, bg:style.backgroundColor};

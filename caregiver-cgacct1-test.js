@@ -15,8 +15,9 @@ assert.ok(html.includes('v=cgsave1') && html.includes('v=coveraide1') && html.in
 assert.ok(html.includes('v=cgauth1') && html.includes('v=offline1'), 'auth and offline markers stay');
 
 const home = html.slice(html.indexOf('id="cgHomeView"'), html.indexOf('id="cgFormView"'));
-assert.ok(home.includes('id="callOffHomeBtn"'), 'home call off stays');
-assert.ok(home.includes('>Call off</button>'), 'home call off label');
+assert.ok(!home.includes('id="callOffHomeBtn"') && !home.includes('>Call off</button>'), 'home has no call-off button');
+assert.ok(home.includes('For all call-offs, call the office'), 'clock in shows the office call-off line');
+assert.ok(home.includes('(216) 377-5991'), 'home keeps the office number');
 assert.ok(home.includes('id="cgBackupBtn"'), 'home backup stays');
 assert.ok(home.includes("Back up this week's draft"), 'home backup label');
 assert.ok(home.includes('onclick="askCloudBackup()"'), 'home backup action stays');

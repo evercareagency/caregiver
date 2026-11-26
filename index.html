@@ -605,6 +605,27 @@ a.aidechat-phone{display:inline-block;min-height:44px;line-height:44px;padding:0
   }
 }
 .is-quiz-choice{min-height:44px;overflow-wrap:anywhere;}
+/* visit-day1. Phone-first visit card. Does not restyle the timesheet or the PDF sheet. */
+.visit-lead,.visit-help,.visit-calloff{font-size:0.95rem;line-height:1.45;color:var(--navy);margin:0 0 12px;}
+.visit-calloff{margin:12px 0 0;font-size:0.92rem;}
+.visit-name{font-family:'Playfair Display',serif;font-size:1.35rem;color:var(--navy);line-height:1.2;margin:0 0 2px;}
+.visit-timer{font-variant-numeric:tabular-nums;font-size:1.7rem;font-weight:700;color:var(--teal-dark);letter-spacing:0.02em;margin:2px 0 8px;}
+.visit-meta{font-size:0.95rem;line-height:1.4;color:var(--text);margin:4px 0;}
+.visit-addr{color:var(--teal-dark);font-weight:700;text-decoration:underline;min-height:44px;display:inline-flex;align-items:center;}
+.visit-kicker{font-size:0.67rem;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--muted);margin:12px 0 6px;}
+.visit-note{background:var(--off);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.98rem;line-height:1.5;color:var(--text);white-space:pre-wrap;}
+.visit-client{display:block;width:100%;text-align:left;min-height:56px;margin:0 0 8px;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;}
+.visit-client.is-on{border-color:var(--teal);background:var(--teal-light);}
+.visit-client small{display:block;font-weight:600;color:var(--muted);font-size:0.82rem;margin-top:2px;}
+.visit-task-actions{display:flex;gap:8px;margin:0 0 8px;}
+.visit-task-actions .btn{flex:1;min-height:48px;justify-content:center;}
+.visit-task{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 0;border-bottom:1px solid var(--border);font-size:1rem;font-weight:600;color:var(--navy);text-transform:none;letter-spacing:0;}
+.visit-task input{width:28px;height:28px;min-width:28px;min-height:28px;accent-color:var(--teal);}
+#visitClockOutBtn[hidden],#visitLockHint[hidden],#visitTaskHint[hidden],#visitTaskEmpty[hidden],#visitLive[hidden],#visitIdle[hidden]{display:none !important;}
+.visit-pad canvas.sigpad{height:140px;min-height:140px;touch-action:none;}
+.visit-pad[data-locked="1"] canvas{pointer-events:none;opacity:0.4;}
+.visit-hint{font-size:0.9rem;color:var(--muted);line-height:1.45;margin:12px 0;}
+#visitClockInBtn,#visitClockInGo,#visitDoneBtn,#visitClockOutBtn{min-height:52px;font-size:1.05rem;}
 </style>
 
 <!-- PWA -->
@@ -873,10 +894,24 @@ else setupEverCarePWA();
         &#128218; <strong>You have an inservice due this month!</strong> Tap here to complete it.
       </div>
       <div class="correction-banner" id="correctionBanner" onclick="loadCorrectionMode()"></div>
-      <div class="card calloff-home" id="callOffHomeCard">
-        <div class="card-title"><span class="ico">&#128222;</span> Call off</div>
-        <p>Cannot work an upcoming shift? Tell the office here. It is listed as an open shift.</p>
-        <button class="btn btn-navy btn-full" type="button" id="callOffHomeBtn" onclick="openCallOff()">Call off</button>
+      <!-- visit-day1. Clock in lives here. Call-off is not a form in this app. -->
+      <div class="card" id="visitHomeCard" data-visit="v=visit-day1">
+        <div id="visitIdle">
+          <div class="card-title"><span class="ico">&#9201;</span> Clock in</div>
+          <p class="visit-lead">Clock in when you arrive. The time is set for you.</p>
+          <button class="btn btn-teal btn-full" type="button" id="visitClockInBtn" onclick="openVisitClockIn()">Clock in</button>
+          <p class="visit-calloff" id="visitCalloffLine">For all call-offs, call the office <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a></p>
+        </div>
+        <div id="visitLive" hidden>
+          <div class="card-title"><span class="ico">&#9200;</span> Visit in progress</div>
+          <p class="visit-name" id="visitLiveName"></p>
+          <p class="visit-timer" id="visitLiveTimer" aria-live="polite">0:00:00</p>
+          <p class="visit-meta">Booked until <strong id="visitLiveUntil">—</strong></p>
+          <p class="visit-meta" id="visitLiveAddrWrap"></p>
+          <p class="visit-kicker">Care note</p>
+          <div class="visit-note" id="visitLiveNote"></div>
+          <button class="btn btn-navy btn-full" type="button" id="visitDoneBtn" style="margin-top:14px" onclick="openVisitDay()">Done for the day</button>
+        </div>
       </div>
       <div class="card" style="background:var(--teal-light);border-color:var(--teal)">
         <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a card below to continue a <strong>draft</strong> or a week the office <strong>sent back</strong>. The two most recent <strong>submitted</strong> weeks stay listed. <strong>+ Start Another Timesheet</strong> always starts a <strong>new blank week and client</strong> — it does not reopen a submitted week.</p>
@@ -970,7 +1005,7 @@ else setupEverCarePWA();
       <div class="success-wrap">
         <div class="sico">✅</div>
         <h2>Timesheet Submitted!</h2>
-        <p>Your timesheet has been sent to the office and is locked. Call <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a> with any corrections needed.</p>
+        <p>Your timesheet is locked. Call <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a> with any corrections needed.</p>
         <button class="btn btn-teal" onclick="cgNewWeek()">Start New Week</button>
       </div>
     </div>
@@ -1205,6 +1240,65 @@ else setupEverCarePWA();
       <h2>Inservice Completed!</h2>
       <p id="isSuccessMsg">You have completed this month inservice. Great job!</p>
       <button class="btn btn-ghost btn-full" onclick="showCaregiverHome()">Back to Home</button>
+    </div>
+  </div>
+</div>
+<!-- VISIT CLOCK v=visit-day1. Draw-only pads. Not the timesheet signature boxes. -->
+<div class="screen" id="visitClockScreen" data-visit="v=visit-day1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Clock in</h2><p id="visitClockAideName">ECA Aide Portal</p></div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="card-title"><span class="ico">&#9201;</span> Who are you with?</div>
+      <p class="visit-help">Pick the client. The clock-in time is recorded when you tap Clock in. You cannot edit it.</p>
+      <div id="visitClientList"></div>
+      <p id="visitClockErr" class="auth-err" role="alert" style="display:none"></p>
+      <button class="btn btn-teal btn-full" type="button" id="visitClockInGo" onclick="visitClockIn()">Clock in</button>
+      <p class="visit-calloff" id="visitClockCalloffLine">For all call-offs, call the office <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a></p>
+    </div>
+  </div>
+</div>
+<div class="screen" id="visitDayScreen" data-visit="v=visit-day1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Done for the day</h2><p id="visitDayAideName">ECA Aide Portal</p></div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="card-title"><span class="ico">&#9989;</span> Tasks</div>
+      <div class="visit-task-actions">
+        <button class="btn btn-ghost" type="button" id="visitTickAll" onclick="visitSetAllTasks(true)">Tick all</button>
+        <button class="btn btn-ghost" type="button" id="visitUntickAll" onclick="visitSetAllTasks(false)">Untick all</button>
+      </div>
+      <div id="visitTaskList"></div>
+      <p class="visit-hint" id="visitTaskEmpty" hidden>No tasks on file.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" id="visitReportTitle"><span class="ico">&#128221;</span> Anything to report today?</div>
+      <textarea id="visitOfficeNote" maxlength="2000" placeholder="Optional" aria-labelledby="visitReportTitle" oninput="visitNoteInput()"></textarea>
+      <p class="visit-help" style="margin-top:8px">This note is not written on the timesheet.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ico">&#9997;</span> Signatures</div>
+      <div class="visit-pad" id="visitAideLock" data-locked="0">
+        <div class="sig-lbl">Caregiver signature</div>
+        <canvas class="sigpad" id="visitAidePad" height="140"></canvas>
+        <button class="sig-clear" type="button" onclick="visitClearPad('aide')">Clear</button>
+      </div>
+      <p class="visit-help" id="visitHandHint">Hand the phone to the client or a family member to sign.</p>
+      <div class="visit-pad" id="visitClientLock" data-locked="1">
+        <div class="sig-lbl">Client signature</div>
+        <canvas class="sigpad" id="visitClientPad" height="140" data-locked="1"></canvas>
+        <button class="sig-clear" type="button" id="visitClientClear" onclick="visitClearPad('client')">Clear</button>
+      </div>
+      <p class="visit-hint" id="visitLockHint">Clock Out appears after both the caregiver and the client have signed.</p>
+      <p class="visit-hint" id="visitTaskHint" hidden>Check at least one task.</p>
+      <button class="btn btn-teal btn-full" type="button" id="visitClockOutBtn" hidden onclick="visitClockOut()">Clock Out</button>
+      <p id="visitDayErr" class="auth-err" role="alert" style="display:none"></p>
     </div>
   </div>
 </div>
@@ -1723,6 +1817,8 @@ function showScreen(id){
 const PORTAL_NAV_SCREENS={
   caregiverScreen:'home',
   callOffScreen:'home',
+  visitClockScreen:'home',
+  visitDayScreen:'home',
   previewScreen:'timesheet',
   inserviceScreen:'inservices',
   isReadScreen:'inservices',
@@ -2288,6 +2384,7 @@ function headerBack(){
 }
 
 function caregiverLogout(){
+  if(typeof visitStopTimer==='function')visitStopTimer();
   const openModals=document.querySelectorAll('.modal-bg.show');
   for(let i=0;i<openModals.length;i++)openModals[i].classList.remove('show');
   if(typeof unlockBodyScroll==='function')unlockBodyScroll();
@@ -3261,7 +3358,7 @@ function loadCorrectionMode(){
   });
   updateTotal();
   document.getElementById('correctionBanner').style.display='none';
-  showTempMsg('⚠️ Correction mode — only flagged days are unlocked','var(--warn)');
+  showTempMsg('⚠️ Correction mode — only the days that need a fix are unlocked','var(--warn)');
 }
 
 // DAY BLOCKS
@@ -9492,6 +9589,7 @@ function showCaregiverHome(){
   if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
   if(typeof checkISNotif==='function')checkISNotif();
   if(typeof refreshMsgNavBadge==='function')refreshMsgNavBadge();
+  if(typeof visitRefreshHome==='function')visitRefreshHome();
 }
 
 // v=clienthrs1d GHOST-CLIENTHRS1D-CONTRACT-v1 CALLABLE.
@@ -10628,6 +10726,578 @@ window.addEventListener('resize',()=>{
     }
   });
 });
+
+// visit-day1. Clock, tasks, and draw-only signatures. Never writes the timesheet, the day grid, or the PDF.
+var VISIT_OFFICE_DISPLAY='(216) 377-5991';
+var VISIT_OFFICE_TEL='tel:+12163775991';
+var visitOpen=null;
+var visitPickId='';
+var visitShiftByClient={};
+var visitTimer=null;
+var visitBusy=false;
+function visitKey(){
+  const u=currentUser&&currentUser.username?String(currentUser.username):'session';
+  return 'evercare_visit_day1_'+u;
+}
+function visitRead(){
+  try{
+    const raw=store.get(visitKey());
+    if(!raw||typeof raw!=='object'||raw.clockOutAt)return null;
+    if(!raw.clientId||!raw.clockInAt)return null;
+    return raw;
+  }catch(e){return null;}
+}
+function visitPersist(){
+  if(!visitOpen){try{store.del(visitKey());}catch(e){}return;}
+  try{store.set(visitKey(), visitOpen);}catch(e){}
+}
+function visitStopTimer(){
+  if(visitTimer){clearInterval(visitTimer);visitTimer=null;}
+}
+function visitRpcMissing(err){
+  const st=err&&err.pack&&Number(err.pack.status);
+  if(st===404||st===400){
+    const msg=String(err&&err.message||'');
+    if(st===404||/PGRST202|could not find|schema cache|function/i.test(msg))return true;
+  }
+  const msg=String(err&&err.message||'');
+  return /PGRST202|could not find the function|schema cache/i.test(msg);
+}
+function visitClockText(iso){
+  const d=new Date(iso);
+  if(isNaN(d.getTime()))return '';
+  try{
+    return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'}).format(d);
+  }catch(e){
+    return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  }
+}
+function visitEndText(raw){
+  const s=String(raw==null?'':raw).trim();
+  if(!s)return '';
+  const m=/^(\d{1,2}):(\d{2})/.exec(s);
+  if(!m)return s;
+  let h=Number(m[1]);
+  const ap=h>=12?'PM':'AM';
+  h=h%12;
+  if(h===0)h=12;
+  return h+':'+m[2]+' '+ap;
+}
+function visitElapsed(iso){
+  const t=Date.parse(iso);
+  if(!isFinite(t))return '0:00:00';
+  let sec=Math.max(0, Math.floor((Date.now()-t)/1000));
+  const h=Math.floor(sec/3600);
+  sec-=h*3600;
+  const m=Math.floor(sec/60);
+  sec-=m*60;
+  return h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+function visitMapsHref(address){
+  const q=String(address||'').trim();
+  if(!q)return '';
+  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
+}
+function visitShowErr(id,msg){
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(!msg){el.style.display='none';el.textContent='';return;}
+  el.style.display='block';
+  el.textContent=msg;
+}
+function visitClientById(id){
+  const list=(typeof myClients!=='undefined'&&Array.isArray(myClients))?myClients:[];
+  for(let i=0;i<list.length;i++){
+    if(String(list[i].id)===String(id))return list[i];
+  }
+  return null;
+}
+function visitTasksFrom(raw){
+  const rows=raw&&Array.isArray(raw.tasks)?raw.tasks:(Array.isArray(raw)?raw:[]);
+  return rows.map(function(t, i){
+    if(!t)return null;
+    const label=String(t.label||t.name||t.task||'').trim();
+    if(!label)return null;
+    return {id:String(t.id||('task-'+i)), label:label, checked:!!t.checked};
+  }).filter(Boolean);
+}
+function visitNormalizeShift(node){
+  if(!node||typeof node!=='object')return null;
+  const id=node.client_id||node.clientId||'';
+  if(!id)return null;
+  return {
+    clientId:String(id),
+    clientName:String(node.client_name||node.clientName||''),
+    address:String(node.address||''),
+    careNote:String(node.care_note||node.careNote||''),
+    endLocal:String(node.end_local||node.endLocal||''),
+    tasks:visitTasksFrom(node)
+  };
+}
+async function visitLoadShift(){
+  if(typeof sbDataEnabled!=='function'||!sbDataEnabled())return;
+  try{
+    const data=await sbRest('rpc/aide_today_shift',{method:'POST',body:{}});
+    let node=data;
+    if(Array.isArray(node))node=node[0]||{};
+    if(typeof node==='string'){try{node=JSON.parse(node);}catch(e){node={};}}
+    const shifts=node&&Array.isArray(node.shifts)?node.shifts:[];
+    const next={};
+    shifts.forEach(function(row){
+      const shift=visitNormalizeShift(row);
+      if(!shift)return;
+      const prev=next[shift.clientId];
+      if(!prev||(shift.endLocal&&!prev.endLocal))next[shift.clientId]=shift;
+    });
+    visitShiftByClient=next;
+    const open=node&&node.open_visit;
+    if(open&&open.client_id&&open.clock_in_at&&!open.clock_out_at){
+      const local=visitOpen||visitRead();
+      const same=local&&String(local.clientId)===String(open.client_id);
+      const client=visitClientById(open.client_id);
+      const shift=next[String(open.client_id)]||null;
+      visitOpen={
+        id:String(open.id||''),
+        local:!open.id,
+        clientId:String(open.client_id),
+        clientName:(shift&&shift.clientName)||(client&&client.name)||(same?local.clientName:''),
+        address:(shift&&shift.address)||(client&&client.address)||(same?local.address:''),
+        careNote:(shift&&shift.careNote)||(client&&(client.careNote||client.care_note))||(same?local.careNote:''),
+        bookedUntil:visitEndText(shift&&shift.endLocal)|| (same?local.bookedUntil:''),
+        clockInAt:String(open.clock_in_at),
+        tasks:same&&local.tasks&&local.tasks.length?local.tasks:((shift&&shift.tasks)||[]),
+        officeNote:same&&local.officeNote?local.officeNote:'',
+        aideInk:same&&local.aideInk?local.aideInk:'',
+        clientInk:same&&local.clientInk?local.clientInk:''
+      };
+      visitPersist();
+    }
+    visitMergeCareNotes(shifts);
+  }catch(e){
+    if(!visitRpcMissing(e)){}
+  }
+}
+function visitMergeCareNotes(shifts){
+  if(typeof myClients==='undefined'||!Array.isArray(myClients))return;
+  (shifts||[]).forEach(function(row){
+    const id=row&&(row.client_id||row.clientId);
+    const note=row&&(row.care_note||row.careNote);
+    if(!id||note==null||note==='')return;
+    const client=visitClientById(id);
+    if(client)client.careNote=String(note);
+  });
+}
+async function visitTryCareColumn(){
+  if(typeof sbDataEnabled!=='function'||!sbDataEnabled())return;
+  try{
+    const rows=await sbRest('clients?select='+encodeURIComponent('id,care_note')+'&is_active=eq.true');
+    (Array.isArray(rows)?rows:[]).forEach(function(row){
+      const client=visitClientById(row.id);
+      if(client&&row.care_note)client.careNote=String(row.care_note);
+    });
+  }catch(e){}
+}
+function visitPaintCalloff(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(!VISIT_OFFICE_DISPLAY){
+    el.textContent='For all call-offs, call the office. Office number placeholder: not configured.';
+    return;
+  }
+  el.textContent='';
+  el.appendChild(document.createTextNode('For all call-offs, call the office '));
+  const a=document.createElement('a');
+  a.className='aidechat-phone';
+  a.href=VISIT_OFFICE_TEL;
+  a.textContent=VISIT_OFFICE_DISPLAY;
+  el.appendChild(a);
+}
+function visitPaintLive(){
+  const idle=document.getElementById('visitIdle');
+  const live=document.getElementById('visitLive');
+  if(!idle||!live)return;
+  if(!visitOpen){
+    visitStopTimer();
+    idle.hidden=false;
+    live.hidden=true;
+    return;
+  }
+  idle.hidden=true;
+  live.hidden=false;
+  const name=document.getElementById('visitLiveName');
+  const until=document.getElementById('visitLiveUntil');
+  const note=document.getElementById('visitLiveNote');
+  const wrap=document.getElementById('visitLiveAddrWrap');
+  if(name)name.textContent=visitOpen.clientName||'Client';
+  if(until)until.textContent=visitOpen.bookedUntil||'—';
+  if(note)note.textContent=visitOpen.careNote?visitOpen.careNote:'No care note yet.';
+  if(wrap){
+    wrap.textContent='';
+    const href=visitMapsHref(visitOpen.address);
+    if(href){
+      const a=document.createElement('a');
+      a.className='visit-addr';
+      a.href=href;
+      a.target='_blank';
+      a.rel='noopener noreferrer';
+      a.textContent=visitOpen.address;
+      wrap.appendChild(a);
+    }else{
+      const span=document.createElement('span');
+      span.textContent='No address on file';
+      wrap.appendChild(span);
+    }
+  }
+  const timer=document.getElementById('visitLiveTimer');
+  const tick=function(){if(timer&&visitOpen)timer.textContent=visitElapsed(visitOpen.clockInAt);};
+  tick();
+  visitStopTimer();
+  visitTimer=setInterval(tick,1000);
+}
+async function visitRefreshHome(){
+  try{
+    visitOpen=visitRead();
+    visitPaintCalloff('visitCalloffLine');
+    await visitLoadShift();
+    await visitTryCareColumn();
+    if(!visitOpen)visitOpen=visitRead();
+    visitPaintLive();
+  }catch(e){
+    try{visitPaintLive();}catch(e2){}
+  }
+}
+function visitPaintClients(){
+  const box=document.getElementById('visitClientList');
+  if(!box)return;
+  box.textContent='';
+  const list=(typeof myClients!=='undefined'&&Array.isArray(myClients))?myClients.slice():[];
+  if(!list.length){
+    const p=document.createElement('p');
+    p.className='visit-help';
+    p.textContent='No clients yet. They show here after your list loads.';
+    box.appendChild(p);
+    return;
+  }
+  if(!visitPickId||!visitClientById(visitPickId))visitPickId=String(list[0].id||'');
+  list.forEach(function(c){
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='visit-client'+(String(c.id)===String(visitPickId)?' is-on':'');
+    btn.setAttribute('data-client-id', String(c.id));
+    const name=document.createElement('span');
+    name.textContent=c.name||'Client';
+    btn.appendChild(name);
+    const shift=visitShiftByClient[String(c.id)];
+    const until=visitEndText(shift&&shift.endLocal);
+    if(until){
+      const small=document.createElement('small');
+      small.textContent='Booked until '+until;
+      btn.appendChild(small);
+    }
+    btn.addEventListener('click', function(){
+      visitPickId=String(c.id);
+      visitPaintClients();
+    });
+    box.appendChild(btn);
+  });
+}
+async function openVisitClockIn(){
+  if(!currentUser)return;
+  if(visitOpen||visitRead()){showCaregiverHome();return;}
+  visitShowErr('visitClockErr','');
+  const who=document.getElementById('visitClockAideName');
+  if(who)who.textContent=currentUser.name||currentUser.username||'ECA Aide Portal';
+  if(typeof loadMyClients==='function'){try{await loadMyClients();}catch(e){}}
+  await visitLoadShift();
+  await visitTryCareColumn();
+  visitPaintCalloff('visitClockCalloffLine');
+  visitPaintClients();
+  if(typeof showScreen==='function')showScreen('visitClockScreen');
+}
+async function visitClockIn(){
+  if(visitBusy)return;
+  const client=visitClientById(visitPickId);
+  if(!client){visitShowErr('visitClockErr','Pick a client.');return;}
+  visitBusy=true;
+  visitShowErr('visitClockErr','');
+  const go=document.getElementById('visitClockInGo');
+  if(go)go.disabled=true;
+  const shift=visitShiftByClient[String(client.id)]||null;
+  let serverId='';
+  let clockInAt=new Date().toISOString();
+  let fromServer=false;
+  if(typeof sbDataEnabled==='function'&&sbDataEnabled()){
+    try{
+      const data=await sbRest('rpc/aide_clock_in',{method:'POST',body:{p_client_id:client.id}});
+      let node=data;
+      if(Array.isArray(node))node=node[0]||{};
+      if(typeof node==='string'){try{node=JSON.parse(node);}catch(e){node={};}}
+      if(node&&node.clock_in_at){
+        fromServer=true;
+        clockInAt=String(node.clock_in_at);
+        serverId=node.id?String(node.id):'';
+      }
+    }catch(e){
+      if(!visitRpcMissing(e)){
+        visitShowErr('visitClockErr','Clock in did not save. Try again.');
+        visitBusy=false;
+        if(go)go.disabled=false;
+        return;
+      }
+    }
+  }
+  visitOpen={
+    id:serverId,
+    local:!serverId,
+    clientId:String(client.id),
+    clientName:client.name||(shift&&shift.clientName)||'Client',
+    address:(shift&&shift.address)||client.address||'',
+    careNote:(shift&&shift.careNote)||client.careNote||client.care_note||'',
+    bookedUntil:visitEndText(shift&&shift.endLocal),
+    clockInAt:clockInAt,
+    tasks:(shift&&shift.tasks?shift.tasks:[]).map(function(t){return {id:t.id,label:t.label,checked:false};}),
+    officeNote:'',
+    aideInk:'',
+    clientInk:''
+  };
+  visitPersist();
+  visitBusy=false;
+  if(go)go.disabled=false;
+  showCaregiverHome();
+}
+function visitPad(which){
+  return document.getElementById(which==='client'?'visitClientPad':'visitAidePad');
+}
+function visitPadInk(which){
+  const c=visitPad(which);
+  if(!c||typeof isCanvasInk!=='function')return false;
+  try{return isCanvasInk(c);}catch(e){return false;}
+}
+function visitSizePad(c){
+  if(!c)return;
+  const w=Math.max(1, c.offsetWidth||280);
+  const h=Math.max(140, c.offsetHeight||140);
+  if(c.width===w&&c.height===h)return;
+  const keep=(typeof isCanvasInk==='function'&&isCanvasInk(c))?c.toDataURL('image/png'):'';
+  c.width=w;
+  c.height=h;
+  if(keep){
+    const img=new Image();
+    img.onload=function(){c.getContext('2d').drawImage(img,0,0,c.width,c.height);visitSyncLocks();};
+    img.src=keep;
+  }
+}
+function visitWirePad(which){
+  const c=visitPad(which);
+  if(!c)return;
+  visitSizePad(c);
+  if(c.dataset.visitWired==='1')return;
+  c.dataset.visitWired='1';
+  const ctx=c.getContext('2d');
+  let drawing=false;
+  function pos(e){
+    const r=c.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    return {x:(t.clientX-r.left)*(c.width/Math.max(1,r.width)), y:(t.clientY-r.top)*(c.height/Math.max(1,r.height))};
+  }
+  function down(e){
+    if(c.dataset.locked==='1')return;
+    drawing=true;
+    const p=pos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x,p.y);
+  }
+  function move(e){
+    if(!drawing||c.dataset.locked==='1')return;
+    const p=pos(e);
+    ctx.lineTo(p.x,p.y);
+    ctx.strokeStyle='#1a2744';
+    ctx.lineWidth=2.5;
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.stroke();
+  }
+  function up(){
+    if(!drawing)return;
+    drawing=false;
+    visitCaptureInk(which);
+    visitSyncLocks();
+  }
+  c.addEventListener('mousedown', down);
+  c.addEventListener('mousemove', move);
+  c.addEventListener('mouseup', up);
+  c.addEventListener('mouseleave', up);
+  c.addEventListener('touchstart', function(e){if(c.dataset.locked==='1')return;e.preventDefault();down(e);},{passive:false});
+  c.addEventListener('touchmove', function(e){if(!drawing||c.dataset.locked==='1')return;e.preventDefault();move(e);},{passive:false});
+  c.addEventListener('touchend', function(){up();});
+  c.addEventListener('touchcancel', function(){drawing=false;});
+}
+function visitPaintStoredInk(which, src){
+  const c=visitPad(which);
+  if(!c||!src)return;
+  const img=new Image();
+  img.onload=function(){
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.drawImage(img,0,0,c.width,c.height);
+    visitSyncLocks();
+  };
+  img.src=src;
+}
+function visitCaptureInk(which){
+  if(!visitOpen)return;
+  const c=visitPad(which);
+  const ink=visitPadInk(which)&&c?c.toDataURL('image/png'):'';
+  if(which==='aide')visitOpen.aideInk=ink;
+  else visitOpen.clientInk=ink;
+  visitPersist();
+}
+function visitClearPad(which){
+  const c=visitPad(which);
+  if(!c)return;
+  c.getContext('2d').clearRect(0,0,c.width,c.height);
+  if(visitOpen){
+    if(which==='aide')visitOpen.aideInk='';
+    else visitOpen.clientInk='';
+    visitPersist();
+  }
+  visitSyncLocks();
+}
+function visitCheckedCount(){
+  if(!visitOpen||!Array.isArray(visitOpen.tasks))return 0;
+  return visitOpen.tasks.filter(function(t){return t&&t.checked;}).length;
+}
+function visitSyncLocks(){
+  const aideOn=visitPadInk('aide');
+  const clientOn=visitPadInk('client');
+  const aideLock=document.getElementById('visitAideLock');
+  const clientLock=document.getElementById('visitClientLock');
+  const aidePad=visitPad('aide');
+  const clientPad=visitPad('client');
+  if(aideLock)aideLock.dataset.locked='0';
+  if(aidePad)aidePad.dataset.locked='0';
+  if(clientLock)clientLock.dataset.locked=aideOn?'0':'1';
+  if(clientPad)clientPad.dataset.locked=aideOn?'0':'1';
+  const both=aideOn&&clientOn;
+  const tasksOk=visitCheckedCount()>=1;
+  const hint=document.getElementById('visitLockHint');
+  const taskHint=document.getElementById('visitTaskHint');
+  const btn=document.getElementById('visitClockOutBtn');
+  if(hint)hint.hidden=both;
+  if(taskHint)taskHint.hidden=!(both&&!tasksOk);
+  if(btn)btn.hidden=!(both&&tasksOk);
+}
+function visitPaintTasks(){
+  const box=document.getElementById('visitTaskList');
+  const empty=document.getElementById('visitTaskEmpty');
+  if(!box)return;
+  box.textContent='';
+  const tasks=visitOpen&&Array.isArray(visitOpen.tasks)?visitOpen.tasks:[];
+  if(empty)empty.hidden=tasks.length>0;
+  tasks.forEach(function(task, idx){
+    const label=document.createElement('label');
+    label.className='visit-task';
+    const input=document.createElement('input');
+    input.type='checkbox';
+    input.checked=!!task.checked;
+    input.addEventListener('change', function(){
+      task.checked=input.checked;
+      visitPersist();
+      visitSyncLocks();
+    });
+    const span=document.createElement('span');
+    span.textContent=task.label;
+    label.appendChild(input);
+    label.appendChild(span);
+    box.appendChild(label);
+  });
+}
+function visitSetAllTasks(on){
+  if(!visitOpen||!Array.isArray(visitOpen.tasks))return;
+  visitOpen.tasks.forEach(function(t){if(t)t.checked=!!on;});
+  visitPersist();
+  visitPaintTasks();
+  visitSyncLocks();
+}
+function visitNoteInput(){
+  const el=document.getElementById('visitOfficeNote');
+  if(!visitOpen||!el)return;
+  visitOpen.officeNote=el.value||'';
+  visitPersist();
+}
+function openVisitDay(){
+  if(!visitOpen){showCaregiverHome();return;}
+  const who=document.getElementById('visitDayAideName');
+  if(who)who.textContent=visitOpen.clientName||'ECA Aide Portal';
+  const note=document.getElementById('visitOfficeNote');
+  if(note)note.value=visitOpen.officeNote||'';
+  visitShowErr('visitDayErr','');
+  if(typeof showScreen==='function')showScreen('visitDayScreen');
+  visitPaintTasks();
+  requestAnimationFrame(function(){
+    visitWirePad('aide');
+    visitWirePad('client');
+    visitSizePad(visitPad('aide'));
+    visitSizePad(visitPad('client'));
+    if(visitOpen.aideInk)visitPaintStoredInk('aide', visitOpen.aideInk);
+    if(visitOpen.clientInk)visitPaintStoredInk('client', visitOpen.clientInk);
+    visitSyncLocks();
+  });
+}
+async function visitClockOut(){
+  if(visitBusy||!visitOpen)return;
+  visitCaptureInk('aide');
+  visitCaptureInk('client');
+  if(visitCheckedCount()<1||!visitPadInk('aide')||!visitPadInk('client')){
+    visitSyncLocks();
+    return;
+  }
+  const aideInk=visitOpen.aideInk||'';
+  const clientInk=visitOpen.clientInk||'';
+  if(aideInk.indexOf('data:image/')!==0||clientInk.indexOf('data:image/')!==0){
+    visitShowErr('visitDayErr','Sign with your finger on both lines.');
+    return;
+  }
+  visitBusy=true;
+  const btn=document.getElementById('visitClockOutBtn');
+  if(btn)btn.disabled=true;
+  visitShowErr('visitDayErr','');
+  const taskIds=(visitOpen.tasks||[]).filter(function(t){return t&&t.checked&&t.id;}).map(function(t){return t.id;});
+  let saved=visitOpen.local||!visitOpen.id;
+  if(!saved&&typeof sbDataEnabled==='function'&&sbDataEnabled()){
+    try{
+      await sbRest('rpc/aide_clock_out',{method:'POST',body:{
+        p_visit_id:visitOpen.id,
+        p_task_ids:taskIds,
+        p_office_note:visitOpen.officeNote?String(visitOpen.officeNote):null,
+        p_aide_sig:aideInk,
+        p_client_sig:clientInk
+      }});
+      saved=true;
+    }catch(e){
+      if(visitRpcMissing(e))saved=true;
+      else{
+        visitShowErr('visitDayErr','Clock out did not save. Try again.');
+        visitBusy=false;
+        if(btn)btn.disabled=false;
+        return;
+      }
+    }
+  }
+  visitOpen=null;
+  visitPersist();
+  visitBusy=false;
+  if(btn)btn.disabled=false;
+  showCaregiverHome();
+  if(typeof showTempMsg==='function')showTempMsg('Clocked out.','var(--teal)');
+}
+window.addEventListener('resize', function(){
+  const day=document.getElementById('visitDayScreen');
+  if(!day||!day.classList.contains('active'))return;
+  visitSizePad(visitPad('aide'));
+  visitSizePad(visitPad('client'));
+});
+
 </script>
 </body>
 </html>
