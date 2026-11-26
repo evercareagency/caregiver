@@ -49,7 +49,8 @@ assert.ok(sign.includes('>Next<') && sign.includes('Caregiver signed'), 'next, t
 assert.ok(sign.includes('Sign here with your finger') && sign.includes('>Clear<'), 'draw pad and clear');
 assert.ok(!sign.includes('data-locked="1"'), 'client screen is its own step');
 assert.ok(!/unable to sign/i.test(sign) && !/>Type</.test(sign), 'draw only');
-assert.ok(js.includes('Personal care') && js.includes('Light housekeeping') && js.includes('Signatures apply to all'));
+assert.ok(js.includes('exemptCatalog') && js.includes('SERVICE_SECTIONS') && js.includes('Tick all') && js.includes('Signatures apply to all'));
+assert.ok(!js.includes('EXEMPT_SERVICES') && !js.includes('Light housekeeping'), 'day sheet uses the timesheet checklist');
 assert.ok(ready.includes('id="exemptReadySigs"') && done.includes('id="exemptDoneSigs"'), 'signature thumbnails');
 assert.ok(!/flagged|sent to the office/i.test(week + report + sign + ready + done + js), 'no flagged or sent-to-the-office copy');
 assert.ok(html.includes('exempt=1'), 'exempt preview flag');
@@ -133,9 +134,28 @@ async function runBrowser(){
     assert.strictEqual(await page.$eval('#exemptEnd', function(el){return el.value;}), '14:00');
     assert.ok((await page.$eval('#exemptSheet', function(el){return el.innerText;})).indexOf('Thanksgiving')>=0);
     const sheetText = await page.$eval('#exemptSheet', function(el){return el.innerText;});
-    assert.ok(/what you did/i.test(sheetText) && sheetText.indexOf('Personal care')>=0, sheetText);
+    assert.ok(/what did you do today/i.test(sheetText) && sheetText.indexOf('PERSONAL CARE')>=0 && sheetText.indexOf('Assist W/Bath-Bed/Tub/Shower')>=0, sheetText);
+    assert.ok(sheetText.indexOf('NUTRITION')>=0 && sheetText.indexOf('Encourage Fluids')>=0, sheetText);
+    assert.strictEqual(await page.$$eval('#exemptTaskList .eod-sec', function(list){return list.length;}), 6);
+    assert.strictEqual(await page.$$eval('#exemptTaskList .eod-task', function(list){return list.length;}), 36);
     assert.strictEqual(await page.$('#exemptSheet canvas'), null, 'no signature on a day');
     await page.screenshot({path:path.join(outDir, '02-day-entry.png')});
+    const taskDir = '/opt/cursor/artifacts/exempt-tasks';
+    fs.mkdirSync(taskDir, {recursive:true});
+    async function sheetScroll(ratio){
+      await page.evaluate(function(r){
+        var s=document.querySelector('#exemptSheet .xw-sheet');
+        if(!s)return;
+        s.scrollTop=r>=1?s.scrollHeight:Math.round(s.scrollHeight*r);
+      }, ratio);
+      await new Promise(function(res){setTimeout(res, 200);});
+    }
+    await sheetScroll(0);
+    await page.screenshot({path:path.join(taskDir, '02-day-top.png')});
+    await sheetScroll(0.45);
+    await page.screenshot({path:path.join(taskDir, '03-day-mid.png')});
+    await sheetScroll(1);
+    await page.screenshot({path:path.join(taskDir, '04-day-save.png')});
 
     await openExempt('full');
     const fullText = await page.$eval('#exemptWeekScreen', function(el){return el.innerText;});
@@ -166,8 +186,9 @@ async function runBrowser(){
     }
     await openExempt('full');
     const fullBody = await page.$eval('#exemptWeekScreen', function(el){return el.innerText;});
-    assert.ok(fullBody.indexOf('Personal care')>=0 && fullBody.indexOf('Meals')>=0 && fullBody.indexOf('Light housekeeping')>=0, fullBody);
-    assert.ok(!/Signed/.test(fullBody), fullBody);
+    assert.ok(fullBody.indexOf('12 tasks')>=0, fullBody);
+    assert.ok(!/Signed|Light housekeeping|Personal care/.test(fullBody), fullBody);
+    await page.screenshot({path:path.join(taskDir, '01-week-counts.png')});
     await page.screenshot({path:path.join(flowDir, '01-week-services.png')});
     await openExempt('q1');
     await page.screenshot({path:path.join(flowDir, '02-q1.png')});
@@ -208,6 +229,7 @@ async function runBrowser(){
     });
     await page.screenshot({path:path.join(outDir, '04-submitted.png'), fullPage:true});
     await page.screenshot({path:path.join(flowDir, '05-submitted.png'), fullPage:true});
+    await page.screenshot({path:path.join(taskDir, '05-submitted.png'), fullPage:true});
 
     await page.goto(base+'&exempt=0&screen=home', {waitUntil:'domcontentloaded', timeout:20000});
     await page.waitForFunction(function(){

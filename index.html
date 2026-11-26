@@ -724,6 +724,7 @@ body.visit-exempt #visitHomeCard,body.visit-exempt #visitClockInBtn,body.visit-e
 .xw-chev{color:var(--muted);font-size:1.2rem;flex-shrink:0;}
 .xw-empty{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:0.7rem;font-weight:800;background:var(--off);color:var(--muted);border:1px solid var(--border);white-space:nowrap;}
 .xw-holi{display:inline-flex;align-items:center;flex-shrink:0;border-radius:999px;padding:1px 7px;font-size:0.64rem;font-weight:800;background:#fff3d6;color:#8a5a00;border:1px solid #f0d48a;}
+.xw-tasksum{display:block;margin-top:2px;font-size:0.75rem;font-weight:800;color:var(--teal-dark);}
 .xw-svcs{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
 .xw-svc{display:inline-flex;align-items:center;border-radius:999px;padding:1px 6px;font-size:0.62rem;font-weight:800;background:var(--teal-light);color:var(--teal-dark);border:1px solid #c5dddd;line-height:1.3;}
 .xw-chips{display:flex;flex-wrap:wrap;gap:6px;}
@@ -12001,24 +12002,23 @@ window.addEventListener('resize',function(){
 });
 
 // exempt-week1. Preview-only weekly hours. Does not call timesheet or PDF functions.
-var EXEMPT_SERVICES=['Personal care','Meals','Light housekeeping'];
 var EXEMPT_PARTIAL=[
-  {id:'mon',date:'2026-11-23',dow:'Monday',short:'Mon',start:'08:00',end:'16:00',note:'',services:['Personal care','Meals']},
-  {id:'tue',date:'2026-11-24',dow:'Tuesday',short:'Tue',start:'08:00',end:'14:00',note:"Left at 2 for a doctor's appointment",services:['Personal care','Light housekeeping']},
-  {id:'wed',date:'2026-11-25',dow:'Wednesday',short:'Wed',start:'09:00',end:'13:00',note:'',services:['Meals']},
-  {id:'thu',date:'2026-11-26',dow:'Thursday',short:'Thu',start:'',end:'',note:'',holiday:'Thanksgiving',services:[]},
-  {id:'fri',date:'2026-11-27',dow:'Friday',short:'Fri',start:'',end:'',note:'',services:[]},
-  {id:'sat',date:'2026-11-28',dow:'Saturday',short:'Sat',start:'',end:'',note:'',services:[]},
-  {id:'sun',date:'2026-11-29',dow:'Sunday',short:'Sun',start:'',end:'',note:'',services:[]}
+  {id:'mon',date:'2026-11-23',dow:'Monday',short:'Mon',start:'08:00',end:'16:00',note:''},
+  {id:'tue',date:'2026-11-24',dow:'Tuesday',short:'Tue',start:'08:00',end:'14:00',note:"Left at 2 for a doctor's appointment"},
+  {id:'wed',date:'2026-11-25',dow:'Wednesday',short:'Wed',start:'09:00',end:'13:00',note:''},
+  {id:'thu',date:'2026-11-26',dow:'Thursday',short:'Thu',start:'',end:'',note:'',holiday:'Thanksgiving'},
+  {id:'fri',date:'2026-11-27',dow:'Friday',short:'Fri',start:'',end:'',note:''},
+  {id:'sat',date:'2026-11-28',dow:'Saturday',short:'Sat',start:'',end:'',note:''},
+  {id:'sun',date:'2026-11-29',dow:'Sunday',short:'Sun',start:'',end:'',note:''}
 ];
 var EXEMPT_FULL=[
-  {id:'mon',date:'2026-11-23',dow:'Monday',short:'Mon',start:'08:00',end:'16:00',note:'',services:['Personal care','Meals']},
-  {id:'tue',date:'2026-11-24',dow:'Tuesday',short:'Tue',start:'08:00',end:'14:00',note:"Left at 2 for a doctor's appointment",services:['Personal care','Light housekeeping']},
-  {id:'wed',date:'2026-11-25',dow:'Wednesday',short:'Wed',start:'09:00',end:'13:00',note:'',services:['Meals','Light housekeeping']},
-  {id:'thu',date:'2026-11-26',dow:'Thursday',short:'Thu',start:'10:00',end:'14:00',note:'Worked morning only',holiday:'Thanksgiving',services:['Personal care']},
-  {id:'fri',date:'2026-11-27',dow:'Friday',short:'Fri',start:'08:00',end:'16:00',note:'',services:['Meals','Personal care']},
-  {id:'sat',date:'2026-11-28',dow:'Saturday',short:'Sat',start:'08:00',end:'12:00',note:'',services:['Light housekeeping']},
-  {id:'sun',date:'2026-11-29',dow:'Sunday',short:'Sun',start:'09:00',end:'13:00',note:'',services:['Personal care','Meals']}
+  {id:'mon',date:'2026-11-23',dow:'Monday',short:'Mon',start:'08:00',end:'16:00',note:''},
+  {id:'tue',date:'2026-11-24',dow:'Tuesday',short:'Tue',start:'08:00',end:'14:00',note:"Left at 2 for a doctor's appointment"},
+  {id:'wed',date:'2026-11-25',dow:'Wednesday',short:'Wed',start:'09:00',end:'13:00',note:''},
+  {id:'thu',date:'2026-11-26',dow:'Thursday',short:'Thu',start:'10:00',end:'14:00',note:'Worked morning only',holiday:'Thanksgiving'},
+  {id:'fri',date:'2026-11-27',dow:'Friday',short:'Fri',start:'08:00',end:'16:00',note:''},
+  {id:'sat',date:'2026-11-28',dow:'Saturday',short:'Sat',start:'08:00',end:'12:00',note:''},
+  {id:'sun',date:'2026-11-29',dow:'Sunday',short:'Sun',start:'09:00',end:'13:00',note:''}
 ];
 var EXEMPT_QS=[
   {key:'hospital',q:'Was the member in the hospital or ER this week?'},
@@ -12026,7 +12026,24 @@ var EXEMPT_QS=[
   {key:'change',q:'Any change in how the member is doing this week?'}
 ];
 var exemptState=null;
-function exemptClone(list){return list.map(function(d){var o={};for(var k in d)o[k]=d[k];o.services=(d.services||[]).slice();return o;});}
+function exemptClone(list){return list.map(function(d){var o={};for(var k in d)o[k]=d[k];o.tasks=(d.tasks||[]).slice();return o;});}
+function exemptCatalog(){
+  var src=(typeof SERVICE_SECTIONS!=='undefined'&&SERVICE_SECTIONS)||[];
+  return src.map(function(s){return {sec:s.n,items:(s.items||[]).slice()};});
+}
+function exemptAllLabels(){
+  var all=[];
+  exemptCatalog().forEach(function(sec){(sec.items||[]).forEach(function(label){all.push(label);});});
+  return all;
+}
+function exemptTakeTasks(n,start){return exemptAllLabels().slice(start||0,(start||0)+n);}
+function exemptTaskSummary(n){return n===1?'1 task':(n+' tasks');}
+(function(){
+  var sets={mon:exemptTakeTasks(12,0),tue:exemptTakeTasks(8,12),wed:exemptTakeTasks(4,20),thu:exemptTakeTasks(6,24),fri:exemptTakeTasks(10,2),sat:exemptTakeTasks(3,30),sun:exemptTakeTasks(5,16)};
+  [EXEMPT_PARTIAL,EXEMPT_FULL].forEach(function(list){
+    list.forEach(function(d){d.tasks=d.start?(sets[d.id]||[]).slice():[];});
+  });
+})();
 function exemptEmptyReport(){return {hospital:'',hospitalNote:'',fall:'',fallNote:'',change:'',changeNote:''};}
 function exemptPad(n){return n<10?'0'+n:''+n;}
 function exemptMins(hhmm){if(!hhmm)return null;var p=String(hhmm).split(':');return (+p[0])*60+(+p[1]);}
@@ -12099,7 +12116,7 @@ function exemptReset(screen){
   if(screen==='q3')exemptState.qIndex=2;
   if(screen==='day'){
     exemptState.openDay='thu';
-    exemptState.draft={start:'10:00',end:'14:00',note:'Worked morning only',services:['Personal care']};
+    exemptState.draft={start:'10:00',end:'14:00',note:'Worked morning only',tasks:exemptTakeTasks(8,0)};
   }
 }
 function exemptPreviewBoot(){exemptShow(visitPreviewParam('screen')||'week',true);}
@@ -12189,16 +12206,11 @@ function exemptPaintWeek(){
     st.textContent=empty?'Tap to enter hours':(exemptFmt12(d.start)+'–'+exemptFmt12(d.end));
     subline.appendChild(st);
     dm.appendChild(b);dm.appendChild(subline);
-    if(!empty&&d.services&&d.services.length){
-      var chips=document.createElement('span');
-      chips.className='xw-svcs';
-      d.services.forEach(function(name){
-        var chip=document.createElement('span');
-        chip.className='xw-svc';
-        chip.textContent=name;
-        chips.appendChild(chip);
-      });
-      dm.appendChild(chips);
+    if(!empty){
+      var sum=document.createElement('span');
+      sum.className='xw-tasksum';
+      sum.textContent=exemptTaskSummary((d.tasks||[]).length);
+      dm.appendChild(sum);
     }
     btn.appendChild(dd);btn.appendChild(dm);
     if(empty){
@@ -12240,8 +12252,8 @@ function exemptOpenDay(id){
   var d=exemptState.days.filter(function(x){return x.id===id;})[0];
   if(!d)return;
   exemptState.openDay=id;
-  if(exemptState.screen==='day'&&id==='thu'&&!d.start)exemptState.draft={start:'10:00',end:'14:00',note:'Worked morning only',services:['Personal care']};
-  else exemptState.draft={start:d.start||'',end:d.end||'',note:d.note||'',services:(d.services||[]).slice()};
+  if(exemptState.screen==='day'&&id==='thu'&&!d.start)exemptState.draft={start:'10:00',end:'14:00',note:'Worked morning only',tasks:exemptTakeTasks(8,0)};
+  else exemptState.draft={start:d.start||'',end:d.end||'',note:d.note||'',tasks:(d.tasks||[]).slice()};
   exemptPaintSheet();
 }
 function exemptCloseDay(){
@@ -12293,10 +12305,15 @@ function exemptPaintSheet(){
   bar.id='exemptDayHours';
   bar.style.marginTop='10px';
   bar.innerHTML='<div><small>Hours for this day</small><div class="hv">'+(h?exemptEsc(exemptHm(h)):'0 h 00 m')+'</div></div><div class="hv">'+(h?exemptEsc(exemptDec(h)):'0.00')+'</div>';
-  var svc=document.createElement('div');svc.className='field';svc.style.marginTop='12px';
-  var svcLab=document.createElement('span');svcLab.className='sig-lbl';svcLab.textContent='What you did';
-  var svcRow=document.createElement('div');svcRow.className='xw-chips';svcRow.id='exemptServiceChips';
-  svc.appendChild(svcLab);svc.appendChild(svcRow);
+  var taskHead=document.createElement('div');taskHead.className='card-title eod-task-head';taskHead.style.marginTop='12px';
+  var taskTitle=document.createElement('span');
+  var taskIco=document.createElement('span');taskIco.className='ico';taskIco.textContent='✅';
+  taskTitle.appendChild(taskIco);
+  taskTitle.appendChild(document.createTextNode(' What did you do today?'));
+  var tick=document.createElement('button');tick.type='button';tick.className='tick-all';tick.id='exemptTickAll';tick.textContent='Tick all';
+  tick.addEventListener('click',function(){exemptToggleAllTasks();});
+  taskHead.appendChild(taskTitle);taskHead.appendChild(tick);
+  var taskList=document.createElement('div');taskList.id='exemptTaskList';
   var noteF=document.createElement('div');noteF.className='field';noteF.style.marginTop='12px';
   var nl=document.createElement('label');nl.htmlFor='exemptNote';nl.textContent='Note (optional)';
   var ta=document.createElement('textarea');ta.id='exemptNote';ta.placeholder='Anything the office should know about this day';ta.value=dr.note||'';
@@ -12306,14 +12323,14 @@ function exemptPaintSheet(){
   var cancel=document.createElement('button');cancel.type='button';cancel.className='btn btn-ghost';cancel.textContent='Cancel';cancel.addEventListener('click',exemptCloseDay);
   var save=document.createElement('button');save.type='button';save.className='btn btn-teal';save.textContent='Save day';save.addEventListener('click',exemptSaveDay);
   actions.appendChild(cancel);actions.appendChild(save);
-  sheet.appendChild(handle);sheet.appendChild(head);sheet.appendChild(times);sheet.appendChild(bar);sheet.appendChild(svc);sheet.appendChild(noteF);sheet.appendChild(actions);
+  sheet.appendChild(handle);sheet.appendChild(head);sheet.appendChild(times);sheet.appendChild(bar);sheet.appendChild(taskHead);sheet.appendChild(taskList);sheet.appendChild(noteF);sheet.appendChild(actions);
   if(d.start||d.end){
     var clear=document.createElement('button');clear.type='button';clear.className='btn btn-ghost btn-full';clear.style.marginTop='8px';clear.textContent='Clear hours';
-    clear.addEventListener('click',function(){exemptState.draft={start:'',end:'',note:'',services:[]};var day=exemptState.days.filter(function(x){return x.id===exemptState.openDay;})[0];if(day){day.start='';day.end='';day.note='';day.services=[];}exemptPaintSheet();});
+    clear.addEventListener('click',function(){exemptState.draft={start:'',end:'',note:'',tasks:[]};var day=exemptState.days.filter(function(x){return x.id===exemptState.openDay;})[0];if(day){day.start='';day.end='';day.note='';day.tasks=[];}exemptPaintSheet();});
     sheet.appendChild(clear);
   }
   bg.appendChild(sheet);root.appendChild(bg);
-  exemptPaintServiceChips();
+  exemptPaintTasks();
 }
 function exemptUpdateSheetHours(){
   var bar=document.getElementById('exemptDayHours');
@@ -12326,29 +12343,56 @@ function exemptSaveDay(){
   var d=exemptState.days.filter(function(x){return x.id===exemptState.openDay;})[0];
   var h=exemptHours(exemptState.draft.start,exemptState.draft.end);
   if((exemptState.draft.start||exemptState.draft.end)&&h<=0)return;
-  d.start=exemptState.draft.start;d.end=exemptState.draft.end;d.note=exemptState.draft.note;d.services=(exemptState.draft.services||[]).slice();
+  d.start=exemptState.draft.start;d.end=exemptState.draft.end;d.note=exemptState.draft.note;d.tasks=(exemptState.draft.tasks||[]).slice();
   exemptCloseDay();
   exemptPaintWeek();
 }
-function exemptPaintServiceChips(){
-  var row=document.getElementById('exemptServiceChips');
-  if(!row||!exemptState||!exemptState.draft)return;
-  var picked=exemptState.draft.services||[];
-  row.textContent='';
-  EXEMPT_SERVICES.forEach(function(name){
-    var b=document.createElement('button');
-    b.type='button';
-    b.className='xw-chip'+(picked.indexOf(name)>=0?' on':'');
-    b.textContent=name;
-    b.addEventListener('click',function(){
-      var list=exemptState.draft.services||[];
-      var i=list.indexOf(name);
-      if(i>=0)list.splice(i,1);else list.push(name);
-      exemptState.draft.services=list;
-      exemptPaintServiceChips();
+function exemptTasksOn(){
+  var picked=exemptState&&exemptState.draft&&exemptState.draft.tasks||[];
+  var all=exemptAllLabels();
+  return all.length>0&&all.every(function(label){return picked.indexOf(label)>=0;});
+}
+function exemptPaintTasks(){
+  var box=document.getElementById('exemptTaskList');
+  var btn=document.getElementById('exemptTickAll');
+  if(!box||!exemptState||!exemptState.draft)return;
+  var picked=exemptState.draft.tasks||[];
+  if(btn)btn.textContent=exemptTasksOn()?'Untick all':'Tick all';
+  box.textContent='';
+  exemptCatalog().forEach(function(section){
+    var wrap=document.createElement('div');
+    wrap.className='eod-sec';
+    var h=document.createElement('h3');
+    h.textContent=section.sec;
+    wrap.appendChild(h);
+    (section.items||[]).forEach(function(label){
+      var on=picked.indexOf(label)>=0;
+      var row=document.createElement('button');
+      row.type='button';
+      row.className='eod-task'+(on?' on':'');
+      row.setAttribute('aria-pressed',on?'true':'false');
+      var mark=document.createElement('span');
+      mark.className='box';
+      mark.textContent=on?'✓':'';
+      var lab=document.createElement('span');
+      lab.textContent=label;
+      row.appendChild(mark);row.appendChild(lab);
+      row.addEventListener('click',function(){
+        var list=exemptState.draft.tasks||[];
+        var i=list.indexOf(label);
+        if(i>=0)list.splice(i,1);else list.push(label);
+        exemptState.draft.tasks=list;
+        exemptPaintTasks();
+      });
+      wrap.appendChild(row);
     });
-    row.appendChild(b);
+    box.appendChild(wrap);
   });
+}
+function exemptToggleAllTasks(){
+  if(!exemptState||!exemptState.draft)return;
+  exemptState.draft.tasks=exemptTasksOn()?[]:exemptAllLabels();
+  exemptPaintTasks();
 }
 function exemptStartSubmit(){
   if(!exemptState||exemptTotals().filled<=0)return;
@@ -12626,17 +12670,10 @@ function exemptPaintDone(){
     sub.className='sub-txt';
     sub.textContent=exemptFmt12(day.start)+'–'+exemptFmt12(day.end);
     dm.appendChild(b);dm.appendChild(sub);
-    if(day.services&&day.services.length){
-      var chips=document.createElement('span');
-      chips.className='xw-svcs';
-      day.services.forEach(function(name){
-        var chip=document.createElement('span');
-        chip.className='xw-svc';
-        chip.textContent=name;
-        chips.appendChild(chip);
-      });
-      dm.appendChild(chips);
-    }
+    var sum=document.createElement('span');
+    sum.className='xw-tasksum';
+    sum.textContent=exemptTaskSummary((day.tasks||[]).length);
+    dm.appendChild(sum);
     var tick=document.createElement('span');
     tick.className='xw-signed';
     tick.textContent='✓ Signed';
