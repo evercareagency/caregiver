@@ -684,6 +684,88 @@ a.aidechat-phone{display:inline-block;min-height:44px;line-height:44px;padding:0
 #visitLive[hidden],#visitIdle[hidden],#visitTaskEmpty[hidden]{display:none !important;}
 body.visit-preview #cgHomeRest,body.visit-preview footer{display:none !important;}
 body.visit-preview #bottomNav button[data-nav="more"]{display:none;}
+body.visit-exempt #visitHomeCard,body.visit-exempt #visitClockInBtn,body.visit-exempt .vbig-clock,body.visit-exempt #visitModeBar,body.visit-exempt #visitClockScreen,body.visit-exempt #visitInScreen,body.visit-exempt #visitDayScreen,body.visit-exempt #visitReportScreen,body.visit-exempt #visitSigScreen{display:none !important;}
+.status-bar{display:flex;align-items:center;justify-content:center;gap:8px;min-height:30px;padding:5px 14px;font-family:'ECA DM Sans','DM Sans',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:.01em;line-height:1.2;flex-shrink:0;}
+.status-bar .sb-ico{width:18px;height:18px;display:block;flex-shrink:0;}
+.status-bar.exempt{background:#f3efe6;color:#3f3d6b;border-bottom:1px solid #e4d9c8;}
+.status-bar.regular{background:#e8f4f4;color:#1e6060;border-bottom:1px solid #c5dddd;}
+#visitModeBar[hidden]{display:none !important;}
+#exemptWeekScreen,#exemptReportScreen,#exemptReadyScreen,#exemptDoneScreen{font-family:'ECA DM Sans','DM Sans',system-ui,sans-serif;}
+#exemptWeekScreen .hdr,#exemptWeekScreen .status-bar{flex-shrink:0;}
+#exemptWeekScreen .hdr-text h2,#exemptReportScreen .hdr-text h2,#exemptReadyScreen .hdr-text h2,#exemptDoneScreen .hdr-text h2{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:1.02rem;font-weight:600;}
+#exemptWeekScreen .hdr-text p,#exemptReportScreen .hdr-text p,#exemptReadyScreen .hdr-text p,#exemptDoneScreen .hdr-text p{font-size:0.7rem;opacity:.72;margin-top:1px;}
+#exemptReportScreen .hdr-back,#exemptReadyScreen .hdr-back,#exemptDoneScreen .hdr-back{width:44px;height:44px;border-radius:8px;font-size:18px;}
+#exemptWeekScreen.active{display:flex !important;flex-direction:column;height:100dvh;max-height:100dvh;overflow:hidden;}
+#exemptReportScreen.active,#exemptReadyScreen.active,#exemptDoneScreen.active{display:block !important;min-height:100dvh;}
+.xw-wrap{max-width:600px;margin:0 auto;padding:8px 13px 0;width:100%;display:flex;flex-direction:column;flex:1;min-height:0;}
+.xw-callout{background:var(--teal-light);border:1.5px solid var(--teal);border-radius:10px;padding:6px 12px;font-size:0.82rem;color:var(--teal-dark);line-height:1.35;margin-bottom:6px;}
+.xw-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 8px 4px;display:flex;flex-direction:column;flex:1;min-height:0;box-shadow:0 1px 5px rgba(0,0,0,.04);}
+.xw-client{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 6px;padding:0 2px 6px;border-bottom:1px solid var(--border);}
+.xw-client .cl-name{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:0.98rem;color:var(--navy);}
+.xw-client .cl-sub{font-size:0.7rem;color:var(--muted);font-weight:600;}
+.xw-pick{display:flex;align-items:center;gap:8px;margin:0 0 4px;}
+.xw-pick .wp-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-size:1.15rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.xw-pick .wp-range{flex:1;text-align:center;min-width:0;}
+.xw-pick .wp-range b{display:block;color:var(--navy);font-size:0.92rem;font-weight:800;}
+.xw-pick .wp-range span{display:block;font-size:0.7rem;color:var(--muted);font-weight:600;}
+.xw-days{display:flex;flex-direction:column;flex:1;min-height:0;overflow:auto;}
+.xw-day{display:flex;align-items:center;gap:8px;padding:6px;border:none;border-bottom:1px solid var(--border);background:none;width:100%;text-align:left;min-height:48px;border-radius:8px;cursor:pointer;font-family:inherit;color:var(--text);}
+.xw-day:last-child{border-bottom:none;}
+.xw-day.is-today{background:#fff3d6;}
+.xw-dd{width:46px;height:46px;border-radius:10px;background:var(--teal-light);color:var(--teal-dark);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;flex-shrink:0;line-height:1.05;}
+.xw-dd small{font-size:0.6rem;font-weight:700;letter-spacing:.5px;}
+.xw-day.is-today .xw-dd{background:var(--navy);color:#fff;}
+.xw-day.is-empty .xw-dd{background:#eef0f3;color:#8b95a5;}
+.xw-dm{flex:1;min-width:0;}
+.xw-dm b{display:block;color:var(--navy);font-size:0.92rem;line-height:1.2;}
+.xw-sub{display:flex;align-items:center;gap:6px;min-width:0;margin-top:1px;}
+.xw-sub .sub-txt{font-size:0.75rem;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.xw-hrs{font-weight:800;color:var(--teal-dark);font-size:0.95rem;flex-shrink:0;}
+.xw-chev{color:var(--muted);font-size:1.2rem;flex-shrink:0;}
+.xw-empty{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:0.7rem;font-weight:800;background:var(--off);color:var(--muted);border:1px solid var(--border);white-space:nowrap;}
+.xw-holi{display:inline-flex;align-items:center;flex-shrink:0;border-radius:999px;padding:1px 7px;font-size:0.64rem;font-weight:800;background:#fff3d6;color:#8a5a00;border:1px solid #f0d48a;}
+.xw-foot{flex-shrink:0;max-width:600px;width:100%;margin:0 auto;padding:4px 13px calc(var(--eca-dock-h, 68px) + 8px);}
+.xw-total{background:var(--teal);color:#fff;border-radius:10px;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;margin:0 0 6px;}
+.xw-total .hv{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:1.2rem;}
+.xw-total small{font-size:0.72rem;opacity:.85;display:block;}
+.xw-entered{font-size:0.72rem;color:var(--muted);text-align:center;margin:0 0 6px;font-weight:600;}
+.xw-sheet-bg{position:fixed;inset:0;background:rgba(26,39,68,.55);z-index:300;display:flex;align-items:flex-end;justify-content:center;}
+.xw-sheet{background:#fff;border-radius:18px 18px 0 0;padding:8px 16px calc(14px + env(safe-area-inset-bottom,0px));width:100%;max-width:600px;max-height:min(92dvh,740px);box-shadow:0 -20px 60px rgba(0,0,0,.3);overflow:auto;}
+.xw-handle{width:40px;height:4px;border-radius:999px;background:#c5cad3;margin:4px auto 10px;}
+.xw-shead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.xw-shead h3{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:1.25rem;color:var(--navy);line-height:1.2;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.xw-shead p{font-size:0.78rem;color:var(--muted);margin-top:3px;font-weight:600;}
+.xw-x{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-size:1.2rem;cursor:pointer;flex-shrink:0;font-family:inherit;}
+.xw-times{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.xw-times .field{margin-bottom:0;}
+#exemptWeekScreen input[type=time],#exemptWeekScreen textarea{padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.95rem;min-height:46px;width:100%;font-family:inherit;background:#fff;color:var(--text);}
+#exemptWeekScreen textarea{min-height:76px;}
+.xw-actions{display:flex;gap:10px;margin-top:14px;}
+.xw-actions .btn{flex:1;min-height:50px;border-radius:10px;font-weight:700;}
+.xw-q{padding:12px 13px calc(var(--eca-dock-h, 68px) + 24px);max-width:600px;margin:0 auto;}
+.xw-step{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 10px;}
+.xw-step .step-lbl{font-size:0.78rem;font-weight:800;color:var(--navy);}
+.xw-dots{display:flex;gap:6px;}
+.xw-dots i{width:8px;height:8px;border-radius:50%;background:#c5d0da;display:block;}
+.xw-dots i.on{background:#3f3d6b;}
+.xw-qactions{display:flex;gap:10px;margin-top:14px;}
+.xw-qactions .btn{flex:1;min-height:50px;border-radius:10px;font-weight:700;}
+#exemptReportGo[disabled],#exemptSubmitFinal[disabled],#exemptSubmitWeek[disabled]{opacity:.45;cursor:not-allowed;}
+.xw-yn p{font-size:1.05rem;font-weight:700;color:var(--navy);margin:0 0 12px;line-height:1.35;text-transform:none;letter-spacing:0;}
+.xw-ynrow{display:flex;gap:8px;}
+.xw-ynrow .xw-choice{flex:1;min-height:48px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-weight:800;cursor:pointer;color:var(--navy);font-size:1rem;font-family:inherit;}
+.xw-choice.on.yes{background:#e8f8f0;border-color:#9ed8b5;color:#1e6b40;}
+.xw-choice.on.no{background:#eef2f6;border-color:#c5d0da;color:var(--navy);}
+#exemptWeekFoot .btn,#exemptReadyScreen .btn.btn-full,#exemptDoneScreen .btn.btn-full{min-height:50px;border-radius:10px;font-weight:700;font-size:0.95rem;justify-content:center;}
+#exemptReportScreen .field label{text-transform:none;letter-spacing:0;font-size:0.85rem;color:var(--navy);font-weight:700;}
+.xw-rows .vrow{display:flex;justify-content:space-between;gap:10px;font-size:0.9rem;padding:9px 0;border-bottom:1px solid var(--border);}
+.xw-rows .vrow:last-child{border-bottom:none;}
+.xw-rows .vrow span{color:var(--muted);}
+.xw-rows .vrow b{color:var(--navy);text-align:right;}
+#exemptDoneScreen .done-hero{text-align:center;padding:10px 6px 4px;}
+#exemptDoneScreen .ok{width:74px;height:74px;border-radius:50%;background:#e7f6ee;color:var(--success);font-size:2.3rem;display:flex;align-items:center;justify-content:center;margin:4px auto 10px;border:3px solid #9ed8b5;}
+#exemptDoneScreen .done-hero h3{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:1.5rem;color:var(--navy);}
+#exemptDoneScreen .when{font-size:1.05rem;font-weight:700;color:var(--teal-dark);margin-top:6px;}
 </style>
 
 <!-- PWA -->
@@ -939,6 +1021,10 @@ else setupEverCarePWA();
       <h2>ECA Aide Portal</h2>
       <p id="hdr_name">Weekly Timesheet</p>
     </div>
+  </div>
+  <div id="visitModeBar" class="status-bar regular" hidden>
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5v5l3.2 1.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Clock in at each visit</span>
   </div>
   <div id="offlineQueueBanner" role="status" style="display:none;background:#fff8f0;border-bottom:1px solid #e6c48a;padding:10px 14px;">
     <p id="offlineQueueStatus" style="font-size:0.84rem;font-weight:700;color:#1a2744;line-height:1.45;margin:0"></p>
@@ -1426,6 +1512,95 @@ else setupEverCarePWA();
       <p class="need-sigs" id="visitLockHint">Clock Out appears after both the caregiver and the client have signed.</p>
     </div>
     <p id="visitDayErr" class="auth-err" role="alert" style="display:none"></p>
+  </div>
+</div>
+<!-- EXEMPT WEEK v=exempt-week1. Preview only. Not the timesheet and not the PDF. -->
+<div class="screen" id="exemptWeekScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>ECA Aide Portal</h2><p id="exemptHdrName">Hi, Test Aide</p></div>
+  </div>
+  <div class="status-bar exempt" id="exemptBadge">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="xw-wrap">
+    <div class="xw-callout" id="exemptHint">Tap a day to enter start and end times.</div>
+    <div class="xw-card">
+      <div class="xw-client"><div><div class="cl-name">Sample Client</div><div class="cl-sub">Weekly hours</div></div></div>
+      <div class="xw-pick">
+        <button class="wp-btn" type="button" onclick="exemptShiftWeek(-1)" aria-label="Previous week">&#8249;</button>
+        <div class="wp-range"><b id="exemptWeekTitle">Mon Nov 23 – Sun Nov 29</b><span id="exemptWeekSub">This week</span></div>
+        <button class="wp-btn" type="button" onclick="exemptShiftWeek(1)" aria-label="Next week">&#8250;</button>
+      </div>
+      <div class="xw-days" id="exemptDayList"></div>
+    </div>
+  </div>
+  <div class="xw-foot" id="exemptWeekFoot"></div>
+  <div id="exemptSheet"></div>
+</div>
+<div class="screen" id="exemptReportScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="exemptShow('week')" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Anything to report this week?</h2><p>Before you submit</p></div>
+  </div>
+  <div class="status-bar exempt">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="xw-q" id="exemptReportBody"></div>
+</div>
+<div class="screen" id="exemptReadyScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="exemptShow('q3')" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Submit this week</h2><p>Week of Nov 23 – Nov 29</p></div>
+  </div>
+  <div class="status-bar exempt">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="xw-q">
+    <div class="card">
+      <div class="card-title"><span class="ico">&#128203;</span> Ready to submit</div>
+      <p class="vnote" style="text-align:left;margin:0 0 10px">You’re ready to submit this week. Questions are done.</p>
+      <div class="xw-rows">
+        <div class="vrow"><span>Client</span><b>Sample Client</b></div>
+        <div class="vrow"><span>Week</span><b>Mon Nov 23 – Sun Nov 29</b></div>
+        <div class="vrow"><span>Total hours</span><b id="exemptReadyHours">0.00</b></div>
+        <div class="vrow"><span>Days entered</span><b id="exemptReadyDays">0 of 7</b></div>
+      </div>
+    </div>
+    <button class="btn btn-teal btn-full" type="button" id="exemptSubmitFinal" onclick="exemptSubmitFinal()">Submit week</button>
+    <p class="vnote">Nothing is sent. This is a preview.</p>
+  </div>
+</div>
+<div class="screen" id="exemptDoneScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="exemptShow('week')" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Timesheet submitted</h2><p>Week of Nov 23 – Nov 29</p></div>
+  </div>
+  <div class="status-bar exempt">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="xw-q">
+    <div class="card"><div class="done-hero">
+      <div class="ok">&#10003;</div>
+      <h3>Timesheet submitted</h3>
+      <div class="when">Thursday, Nov 26 · 1:34 PM</div>
+      <p class="vnote">Thank you. Your week is in (mock). Nothing really left this phone.</p>
+    </div></div>
+    <div class="card xw-rows">
+      <div class="vrow"><span>Client</span><b>Sample Client</b></div>
+      <div class="vrow"><span>Week</span><b>Mon Nov 23 – Sun Nov 29</b></div>
+      <div class="vrow"><span>Total hours</span><b id="exemptDoneHours">38.00</b></div>
+      <div class="vrow"><span>Days entered</span><b id="exemptDoneDays">7 of 7</b></div>
+      <div class="vrow"><span>Confirmation #</span><b>MOCK-1126</b></div>
+    </div>
+    <button class="btn btn-teal btn-full" type="button" onclick="exemptShow('week')">Back to Timesheet</button>
   </div>
 </div>
 <!-- CALL OFF -->
@@ -1949,6 +2124,10 @@ const PORTAL_NAV_SCREENS={
   visitDayScreen:'home',
   visitReportScreen:'home',
   visitSigScreen:'home',
+  exemptWeekScreen:'timesheet',
+  exemptReportScreen:'timesheet',
+  exemptReadyScreen:'timesheet',
+  exemptDoneScreen:'home',
   previewScreen:'timesheet',
   inserviceScreen:'inservices',
   isReadScreen:'inservices',
@@ -2016,6 +2195,9 @@ function openTimesheetFromNav(){
   confirmNewTS();
 }
 function navGo(tab){
+  if(typeof visitExemptOn==='function'&&visitExemptOn()){
+    if(tab==='home'||tab==='timesheet'){if(typeof exemptShow==='function')exemptShow('week');return;}
+  }
   if(!currentUser){showScreen('authScreen');return;}
   if(typeof requireAideSetup==='function'&&!requireAideSetup())return;
   if(tab==='home'){
@@ -9707,6 +9889,7 @@ async function submitAideMessage(ev){
 }
 
 function showCaregiverHome(){
+  if(typeof visitExemptOn==='function'&&visitExemptOn()){if(typeof exemptShow==='function')exemptShow('week');return;}
   if(typeof showScreen==='function')showScreen('caregiverScreen');
   const home=document.getElementById('cgHomeView');
   const form=document.getElementById('cgFormView');
@@ -11649,6 +11832,7 @@ async function visitClockOut(){
   if(typeof showTempMsg==='function')showTempMsg(visitPreviewOn()?'Clocked out. Nothing was saved.':'Clocked out.','var(--teal)');
 }
 function visitOpenTimesheet(){
+  if(visitExemptOn()){exemptShow('week');return;}
   if(visitPreviewOn()){
     if(typeof showTempMsg==='function')showTempMsg('Preview only. Nothing was saved.','var(--teal)');
     return;
@@ -11682,10 +11866,20 @@ function visitSeedPreview(screen){
     visitOpen.report={hospital:'no',hospitalNote:'',fall:'no',fallNote:'',change:'no',changeNote:''};
   }
 }
+function visitExemptOn(){
+  return visitPreviewOn()&&/(?:^|[?&])exempt=1(?:&|$)/.test(String((location&&location.search)||''));
+}
 function visitPreviewBoot(){
   window._sandataAcked=true;
   document.body.classList.add('visit-preview');
   currentUser={username:'preview.aide',name:'Test Aide',mustChangePassword:false,needsEmail:false,loginAt:Date.now()};
+  if(visitExemptOn()){
+    document.body.classList.add('visit-exempt');
+    if(typeof exemptPreviewBoot==='function')exemptPreviewBoot();
+    return;
+  }
+  var modeBar=document.getElementById('visitModeBar');
+  if(modeBar)modeBar.hidden=false;
   const screen=(visitPreviewParam('screen')||'in').toLowerCase();
   visitSeedPreview(screen);
   const hdr=document.getElementById('hdr_name');
@@ -11724,6 +11918,376 @@ window.addEventListener('resize',function(){
   visitSizePad(visitPad('aide'));
   visitSizePad(visitPad('client'));
 });
+
+// exempt-week1. Preview-only weekly hours. Does not call timesheet or PDF functions.
+var EXEMPT_PARTIAL=[
+  {id:'mon',date:'2026-11-23',dow:'Monday',short:'Mon',start:'08:00',end:'16:00',note:''},
+  {id:'tue',date:'2026-11-24',dow:'Tuesday',short:'Tue',start:'08:00',end:'14:00',note:"Left at 2 for a doctor's appointment"},
+  {id:'wed',date:'2026-11-25',dow:'Wednesday',short:'Wed',start:'09:00',end:'13:00',note:''},
+  {id:'thu',date:'2026-11-26',dow:'Thursday',short:'Thu',start:'',end:'',note:'',holiday:'Thanksgiving'},
+  {id:'fri',date:'2026-11-27',dow:'Friday',short:'Fri',start:'',end:'',note:''},
+  {id:'sat',date:'2026-11-28',dow:'Saturday',short:'Sat',start:'',end:'',note:''},
+  {id:'sun',date:'2026-11-29',dow:'Sunday',short:'Sun',start:'',end:'',note:''}
+];
+var EXEMPT_FULL=[
+  {id:'mon',date:'2026-11-23',dow:'Monday',short:'Mon',start:'08:00',end:'16:00',note:''},
+  {id:'tue',date:'2026-11-24',dow:'Tuesday',short:'Tue',start:'08:00',end:'14:00',note:"Left at 2 for a doctor's appointment"},
+  {id:'wed',date:'2026-11-25',dow:'Wednesday',short:'Wed',start:'09:00',end:'13:00',note:''},
+  {id:'thu',date:'2026-11-26',dow:'Thursday',short:'Thu',start:'10:00',end:'14:00',note:'Worked morning only',holiday:'Thanksgiving'},
+  {id:'fri',date:'2026-11-27',dow:'Friday',short:'Fri',start:'08:00',end:'16:00',note:''},
+  {id:'sat',date:'2026-11-28',dow:'Saturday',short:'Sat',start:'08:00',end:'12:00',note:''},
+  {id:'sun',date:'2026-11-29',dow:'Sunday',short:'Sun',start:'09:00',end:'13:00',note:''}
+];
+var EXEMPT_QS=[
+  {key:'hospital',q:'Was the member in the hospital or ER this week?'},
+  {key:'fall',q:'Did the member fall or get hurt this week?'},
+  {key:'change',q:'Any change in how the member is doing this week?'}
+];
+var exemptState=null;
+function exemptClone(list){return list.map(function(d){var o={};for(var k in d)o[k]=d[k];return o;});}
+function exemptEmptyReport(){return {hospital:'',hospitalNote:'',fall:'',fallNote:'',change:'',changeNote:''};}
+function exemptPad(n){return n<10?'0'+n:''+n;}
+function exemptMins(hhmm){if(!hhmm)return null;var p=String(hhmm).split(':');return (+p[0])*60+(+p[1]);}
+function exemptHours(a,b){var x=exemptMins(a),y=exemptMins(b);if(x==null||y==null||y<=x)return 0;return Math.round((y-x)/60*100)/100;}
+function exemptDec(n){return (Math.round(n*100)/100).toFixed(2);}
+function exemptHm(n){var total=Math.round(n*60),h=Math.floor(total/60),m=total%60;return h+' h '+exemptPad(m)+' m';}
+function exemptFmt12(hhmm){
+  if(!hhmm)return '';
+  var p=String(hhmm).split(':'),h=+p[0],m=p[1]||'00',ap=h>=12?'PM':'AM';
+  h=h%12;if(!h)h=12;
+  return h+':'+m+' '+ap;
+}
+function exemptEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function exemptMd(s){var p=s.split('-');var mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mon[(+p[1])-1]+' '+ (+p[2]);}
+function exemptQOk(r,i){
+  var q=EXEMPT_QS[i];if(!q)return false;
+  if(r[q.key]!=='yes'&&r[q.key]!=='no')return false;
+  if(r[q.key]==='yes'&&!String(r[q.key+'Note']||'').trim())return false;
+  return true;
+}
+function exemptReportOk(r){return EXEMPT_QS.every(function(_,i){return exemptQOk(r,i);});}
+function exemptTotals(){
+  var t=0,n=0;
+  (exemptState.days||[]).forEach(function(d){var h=exemptHours(d.start,d.end);if(h>0){t+=h;n++;}});
+  return {hours:t,filled:n};
+}
+function exemptReset(screen){
+  var full=['full','q1','q2','q3','ready','submitted'].indexOf(screen)>=0;
+  exemptState={
+    screen:screen||'week',
+    days:exemptClone(full?EXEMPT_FULL:EXEMPT_PARTIAL),
+    weekOff:0,
+    openDay:null,
+    draft:null,
+    report:exemptEmptyReport(),
+    qIndex:0,
+    submitted:screen==='submitted'
+  };
+  if(screen==='q2')exemptState.report.hospital='no';
+  if(screen==='q3'){exemptState.report.hospital='no';exemptState.report.fall='no';}
+  if(screen==='ready'||screen==='submitted'){exemptState.report.hospital='no';exemptState.report.fall='no';exemptState.report.change='no';}
+  if(screen==='q1')exemptState.qIndex=0;
+  if(screen==='q2')exemptState.qIndex=1;
+  if(screen==='q3')exemptState.qIndex=2;
+  if(screen==='day'){
+    exemptState.openDay='thu';
+    exemptState.draft={start:'10:00',end:'14:00',note:'Worked morning only'};
+  }
+}
+function exemptPreviewBoot(){exemptShow(visitPreviewParam('screen')||'week',true);}
+function exemptShow(screen,force){
+  screen=String(screen||'week').toLowerCase();
+  if(!exemptState||force)exemptReset(screen);
+  exemptState.screen=screen;
+  if(screen==='day'){exemptPaintWeek();exemptPaintSheet();if(typeof showScreen==='function')showScreen('exemptWeekScreen');return;}
+  if(screen==='q1'||screen==='q2'||screen==='q3'){exemptState.qIndex=+screen.slice(1)-1;exemptPaintReport();if(typeof showScreen==='function')showScreen('exemptReportScreen');return;}
+  if(screen==='ready'){exemptPaintReady();if(typeof showScreen==='function')showScreen('exemptReadyScreen');return;}
+  if(screen==='submitted'){exemptPaintDone();if(typeof showScreen==='function')showScreen('exemptDoneScreen');return;}
+  exemptState.openDay=null;exemptState.draft=null;
+  exemptPaintWeek();
+  var sheet=document.getElementById('exemptSheet');if(sheet)sheet.textContent='';
+  if(typeof showScreen==='function')showScreen('exemptWeekScreen');
+}
+function exemptWeekLabel(){
+  if(!exemptState||exemptState.weekOff===-1)return {title:'Mon Nov 16 – Sun Nov 22',sub:'Last week · already submitted'};
+  if(exemptState&&exemptState.weekOff===1)return {title:'Mon Nov 30 – Sun Dec 6',sub:'Next week · not open yet'};
+  return {title:'Mon Nov 23 – Sun Nov 29',sub:'This week'};
+}
+function exemptShiftWeek(dir){
+  if(!exemptState)return;
+  exemptState.weekOff=Math.max(-1,Math.min(1,(exemptState.weekOff||0)+dir));
+  exemptState.openDay=null;exemptState.draft=null;
+  exemptPaintWeek();
+  var sheet=document.getElementById('exemptSheet');if(sheet)sheet.textContent='';
+}
+function exemptPaintWeek(){
+  var title=document.getElementById('exemptWeekTitle');
+  var sub=document.getElementById('exemptWeekSub');
+  var wl=exemptWeekLabel();
+  if(title)title.textContent=wl.title;
+  if(sub)sub.textContent=wl.sub;
+  var hint=document.getElementById('exemptHint');
+  if(hint)hint.hidden=!!(exemptState&&exemptState.weekOff);
+  var list=document.getElementById('exemptDayList');
+  var foot=document.getElementById('exemptWeekFoot');
+  if(!list||!foot||!exemptState)return;
+  list.textContent='';
+  foot.textContent='';
+  if(exemptState.weekOff===-1){
+    var p=document.createElement('p');
+    p.className='vnote';
+    p.style.textAlign='left';
+    p.textContent='This past week is already in. Open this week to enter new hours.';
+    list.appendChild(p);
+    return;
+  }
+  if(exemptState.weekOff===1){
+    var n=document.createElement('p');
+    n.className='vnote';
+    n.style.textAlign='left';
+    n.textContent='Next week is not open yet. Come back at the end of that week to enter hours.';
+    list.appendChild(n);
+    return;
+  }
+  exemptState.days.forEach(function(d){
+    var h=exemptHours(d.start,d.end);
+    var empty=h<=0;
+    var today=d.date==='2026-11-26';
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.className='xw-day'+(today?' is-today':'')+(empty?' is-empty':'');
+    btn.setAttribute('data-day',d.id);
+    var dd=document.createElement('span');
+    dd.className='xw-dd';
+    dd.innerHTML='<small>'+exemptEsc(d.short.toUpperCase())+'</small>'+String(d.date).slice(8).replace(/^0/,'');
+    var dm=document.createElement('span');
+    dm.className='xw-dm';
+    var b=document.createElement('b');
+    b.textContent=d.dow+(today?' · Today':'');
+    var subline=document.createElement('span');
+    subline.className='xw-sub';
+    if(d.holiday){
+      var hol=document.createElement('span');
+      hol.className='xw-holi';
+      hol.textContent=d.holiday;
+      subline.appendChild(hol);
+    }
+    var st=document.createElement('span');
+    st.className='sub-txt';
+    st.textContent=empty?'Tap to enter hours':(exemptFmt12(d.start)+'–'+exemptFmt12(d.end));
+    subline.appendChild(st);
+    dm.appendChild(b);dm.appendChild(subline);
+    btn.appendChild(dd);btn.appendChild(dm);
+    if(empty){
+      var pill=document.createElement('span');
+      pill.className='xw-empty';
+      pill.textContent='Empty';
+      btn.appendChild(pill);
+    }else{
+      var hrs=document.createElement('span');
+      hrs.className='xw-hrs';
+      hrs.textContent=exemptDec(h)+' h';
+      btn.appendChild(hrs);
+    }
+    var chev=document.createElement('span');
+    chev.className='xw-chev';
+    chev.textContent='›';
+    btn.appendChild(chev);
+    btn.addEventListener('click',function(){exemptOpenDay(d.id);});
+    list.appendChild(btn);
+  });
+  var tot=exemptTotals();
+  var bar=document.createElement('div');
+  bar.className='xw-total';
+  bar.innerHTML='<div><small>Weekly total · Sample Client</small><div class="hv">'+exemptEsc(exemptHm(tot.hours))+'</div></div><div class="hv">'+exemptEsc(exemptDec(tot.hours))+'</div>';
+  var entered=document.createElement('p');
+  entered.className='xw-entered';
+  entered.textContent=tot.filled===0?'No days entered yet · empty days stay at 0 hours':(tot.filled===7?'All 7 days entered':(tot.filled+' of 7 days entered · empty days stay at 0 hours'));
+  var go=document.createElement('button');
+  go.type='button';
+  go.className='btn btn-teal btn-full';
+  go.id='exemptSubmitWeek';
+  go.textContent='Submit week';
+  go.disabled=tot.filled<=0;
+  go.addEventListener('click',function(){exemptStartSubmit();});
+  foot.appendChild(bar);foot.appendChild(entered);foot.appendChild(go);
+}
+function exemptOpenDay(id){
+  if(!exemptState||exemptState.weekOff)return;
+  var d=exemptState.days.filter(function(x){return x.id===id;})[0];
+  if(!d)return;
+  exemptState.openDay=id;
+  if(exemptState.screen==='day'&&id==='thu'&&!d.start)exemptState.draft={start:'10:00',end:'14:00',note:'Worked morning only'};
+  else exemptState.draft={start:d.start||'',end:d.end||'',note:d.note||''};
+  exemptPaintSheet();
+}
+function exemptCloseDay(){
+  if(!exemptState)return;
+  exemptState.openDay=null;exemptState.draft=null;
+  var sheet=document.getElementById('exemptSheet');if(sheet)sheet.textContent='';
+}
+function exemptPaintSheet(){
+  var root=document.getElementById('exemptSheet');
+  if(!root||!exemptState||!exemptState.openDay||!exemptState.draft){if(root)root.textContent='';return;}
+  var d=exemptState.days.filter(function(x){return x.id===exemptState.openDay;})[0];
+  var dr=exemptState.draft;
+  var h=exemptHours(dr.start,dr.end);
+  root.textContent='';
+  var bg=document.createElement('div');
+  bg.className='xw-sheet-bg';
+  bg.addEventListener('click',function(e){if(e.target===bg)exemptCloseDay();});
+  var sheet=document.createElement('div');
+  sheet.className='xw-sheet';
+  sheet.setAttribute('role','dialog');
+  sheet.setAttribute('aria-label','Enter hours for '+d.dow);
+  var handle=document.createElement('div');handle.className='xw-handle';
+  var head=document.createElement('div');head.className='xw-shead';
+  var titles=document.createElement('div');
+  var h3=document.createElement('h3');
+  h3.appendChild(document.createTextNode(d.dow+', '+exemptMd(d.date)+' '));
+  if(d.holiday){var hol=document.createElement('span');hol.className='xw-holi';hol.textContent=d.holiday;h3.appendChild(hol);}
+  var p=document.createElement('p');p.textContent='Sample Client · enter start and end times';
+  titles.appendChild(h3);titles.appendChild(p);
+  var x=document.createElement('button');x.type='button';x.className='xw-x';x.setAttribute('aria-label','Close');x.textContent='×';
+  x.addEventListener('click',exemptCloseDay);
+  head.appendChild(titles);head.appendChild(x);
+  var times=document.createElement('div');times.className='xw-times';
+  function timeField(id,label,val){
+    var f=document.createElement('div');f.className='field';
+    var lab=document.createElement('label');lab.htmlFor=id;lab.textContent=label;
+    var input=document.createElement('input');input.type='time';input.id=id;input.value=val||'';
+    input.addEventListener('input',function(){
+      if(id==='exemptStart')exemptState.draft.start=input.value;
+      else exemptState.draft.end=input.value;
+      exemptUpdateSheetHours();
+    });
+    f.appendChild(lab);f.appendChild(input);return f;
+  }
+  times.appendChild(timeField('exemptStart','Start',dr.start));
+  times.appendChild(timeField('exemptEnd','End',dr.end));
+  var bar=document.createElement('div');
+  bar.className='xw-total';
+  bar.id='exemptDayHours';
+  bar.style.marginTop='10px';
+  bar.innerHTML='<div><small>Hours for this day</small><div class="hv">'+(h?exemptEsc(exemptHm(h)):'0 h 00 m')+'</div></div><div class="hv">'+(h?exemptEsc(exemptDec(h)):'0.00')+'</div>';
+  var noteF=document.createElement('div');noteF.className='field';noteF.style.marginTop='12px';
+  var nl=document.createElement('label');nl.htmlFor='exemptNote';nl.textContent='Note (optional)';
+  var ta=document.createElement('textarea');ta.id='exemptNote';ta.placeholder='Anything the office should know about this day';ta.value=dr.note||'';
+  ta.addEventListener('input',function(){exemptState.draft.note=ta.value;});
+  noteF.appendChild(nl);noteF.appendChild(ta);
+  var actions=document.createElement('div');actions.className='xw-actions';
+  var cancel=document.createElement('button');cancel.type='button';cancel.className='btn btn-ghost';cancel.textContent='Cancel';cancel.addEventListener('click',exemptCloseDay);
+  var save=document.createElement('button');save.type='button';save.className='btn btn-teal';save.textContent='Save day';save.addEventListener('click',exemptSaveDay);
+  actions.appendChild(cancel);actions.appendChild(save);
+  sheet.appendChild(handle);sheet.appendChild(head);sheet.appendChild(times);sheet.appendChild(bar);sheet.appendChild(noteF);sheet.appendChild(actions);
+  if(d.start||d.end){
+    var clear=document.createElement('button');clear.type='button';clear.className='btn btn-ghost btn-full';clear.style.marginTop='8px';clear.textContent='Clear hours';
+    clear.addEventListener('click',function(){exemptState.draft={start:'',end:'',note:''};var day=exemptState.days.filter(function(x){return x.id===exemptState.openDay;})[0];if(day){day.start='';day.end='';day.note='';}exemptPaintSheet();});
+    sheet.appendChild(clear);
+  }
+  bg.appendChild(sheet);root.appendChild(bg);
+}
+function exemptUpdateSheetHours(){
+  var bar=document.getElementById('exemptDayHours');
+  if(!bar||!exemptState||!exemptState.draft)return;
+  var h=exemptHours(exemptState.draft.start,exemptState.draft.end);
+  bar.innerHTML='<div><small>Hours for this day</small><div class="hv">'+(h?exemptEsc(exemptHm(h)):'0 h 00 m')+'</div></div><div class="hv">'+(h?exemptEsc(exemptDec(h)):'0.00')+'</div>';
+}
+function exemptSaveDay(){
+  if(!exemptState||!exemptState.openDay||!exemptState.draft)return;
+  var d=exemptState.days.filter(function(x){return x.id===exemptState.openDay;})[0];
+  var h=exemptHours(exemptState.draft.start,exemptState.draft.end);
+  if((exemptState.draft.start||exemptState.draft.end)&&h<=0)return;
+  d.start=exemptState.draft.start;d.end=exemptState.draft.end;d.note=exemptState.draft.note;
+  exemptCloseDay();
+  exemptPaintWeek();
+}
+function exemptStartSubmit(){
+  if(!exemptState||exemptTotals().filled<=0)return;
+  if(exemptReportOk(exemptState.report)){exemptShow('ready');return;}
+  exemptState.qIndex=0;
+  exemptState.screen='q1';
+  exemptPaintReport();
+  if(typeof showScreen==='function')showScreen('exemptReportScreen');
+}
+function exemptPaintReport(){
+  var box=document.getElementById('exemptReportBody');
+  if(!box||!exemptState)return;
+  var i=exemptState.qIndex||0;
+  if(i<0)i=0;if(i>2)i=2;exemptState.qIndex=i;
+  var q=EXEMPT_QS[i],r=exemptState.report,v=r[q.key],ok=exemptQOk(r,i);
+  box.textContent='';
+  var step=document.createElement('div');step.className='xw-step';
+  var lbl=document.createElement('span');lbl.className='step-lbl';lbl.textContent='Question '+(i+1)+' of 3';
+  var dots=document.createElement('span');dots.className='xw-dots';
+  [0,1,2].forEach(function(n){var dot=document.createElement('i');if(n===i)dot.className='on';dots.appendChild(dot);});
+  step.appendChild(lbl);step.appendChild(dots);
+  var card=document.createElement('div');card.className='card';
+  var lead=document.createElement('p');lead.className='vnote';lead.style.cssText='text-align:left;margin:0 0 12px';
+  lead.textContent='Answer each question for Sample Client this week.';
+  var qEl=document.createElement('div');qEl.className='xw-yn';
+  var qp=document.createElement('p');qp.textContent=q.q;qEl.appendChild(qp);
+  var row=document.createElement('div');row.className='xw-ynrow';
+  ['yes','no'].forEach(function(val){
+    var b=document.createElement('button');b.type='button';b.className='xw-choice '+val+(v===val?' on':'');b.textContent=val==='yes'?'Yes':'No';
+    b.addEventListener('click',function(){exemptState.report[q.key]=val;if(val!=='yes')exemptState.report[q.key+'Note']='';exemptPaintReport();});
+    row.appendChild(b);
+  });
+  qEl.appendChild(row);
+  if(v==='yes'){
+    var note=document.createElement('div');note.className='field';note.style.marginTop='12px';
+    var lab=document.createElement('label');lab.textContent='Tell us what happened';
+    var ta=document.createElement('textarea');ta.value=r[q.key+'Note']||'';ta.placeholder='Tell us what happened';
+    ta.addEventListener('input',function(){exemptState.report[q.key+'Note']=ta.value;exemptPaintReportBtn();});
+    note.appendChild(lab);note.appendChild(ta);qEl.appendChild(note);
+  }
+  card.appendChild(lead);card.appendChild(qEl);
+  var actions=document.createElement('div');actions.className='xw-qactions';
+  var back=document.createElement('button');back.type='button';back.className='btn btn-ghost';back.textContent='Back';
+  back.addEventListener('click',function(){if(i===0)exemptShow('week');else{exemptState.qIndex=i-1;exemptState.screen='q'+(exemptState.qIndex+1);exemptPaintReport();}});
+  var next=document.createElement('button');next.type='button';next.className='btn btn-teal';next.id='exemptReportGo';next.textContent=i===2?'Continue':'Next';next.disabled=!ok;
+  next.addEventListener('click',function(){
+    if(!exemptQOk(exemptState.report,exemptState.qIndex))return;
+    if(exemptState.qIndex>=2){exemptShow('ready');return;}
+    exemptState.qIndex++;exemptState.screen='q'+(exemptState.qIndex+1);exemptPaintReport();
+  });
+  actions.appendChild(back);actions.appendChild(next);
+  box.appendChild(step);box.appendChild(card);box.appendChild(actions);
+  if(!ok){
+    var hint=document.createElement('p');hint.className='need-sigs';hint.id='exemptReportHint';
+    hint.textContent=v==='yes'?'Tell us what happened.':'Answer this question to continue.';
+    box.appendChild(hint);
+  }
+}
+function exemptPaintReportBtn(){
+  var next=document.getElementById('exemptReportGo');
+  var hint=document.getElementById('exemptReportHint');
+  if(!exemptState)return;
+  var ok=exemptQOk(exemptState.report,exemptState.qIndex);
+  if(next)next.disabled=!ok;
+  if(hint)hint.hidden=ok;
+}
+function exemptPaintReady(){
+  var tot=exemptTotals();
+  var h=document.getElementById('exemptReadyHours');
+  var d=document.getElementById('exemptReadyDays');
+  var b=document.getElementById('exemptSubmitFinal');
+  if(h)h.textContent=exemptDec(tot.hours);
+  if(d)d.textContent=tot.filled+' of 7';
+  if(b)b.disabled=!(exemptReportOk(exemptState.report)&&tot.filled>0);
+}
+function exemptSubmitFinal(){
+  if(!exemptState||!exemptReportOk(exemptState.report)||exemptTotals().filled<=0)return;
+  exemptState.submitted=true;
+  exemptShow('submitted');
+}
+function exemptPaintDone(){
+  var tot=exemptTotals();
+  var h=document.getElementById('exemptDoneHours');
+  var d=document.getElementById('exemptDoneDays');
+  if(h)h.textContent=exemptDec(tot.hours);
+  if(d)d.textContent=tot.filled+' of 7';
+}
 </script>
 </body>
 </html>

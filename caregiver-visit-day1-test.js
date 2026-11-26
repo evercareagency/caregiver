@@ -18,7 +18,7 @@ function sliceBetween(src, startMark, endMark){
 
 const home = sliceBetween(html, 'id="cgHomeView"', 'id="cgFormView"');
 const clock = sliceBetween(html, 'id="visitClockScreen"', 'id="visitDayScreen"');
-const day = sliceBetween(html, 'id="visitDayScreen"', 'id="callOffScreen"');
+const day = sliceBetween(html, 'id="visitDayScreen"', '<!-- EXEMPT WEEK');
 const visitJs = html.slice(html.lastIndexOf('var VISIT_OFFICE_DISPLAY'), html.lastIndexOf('</script>'));
 const form = sliceBetween(html, 'id="cgFormView"', 'id="cgSuccessView"');
 
