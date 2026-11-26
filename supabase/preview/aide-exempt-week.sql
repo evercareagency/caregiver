@@ -70,6 +70,8 @@ create table if not exists public.aide_manual_week_submits (
   fall_note text,
   change_answer text,
   change_note text,
+  caregiver_signature text,
+  client_signature text,
   submitted_at timestamptz not null default clock_timestamp(),
   constraint aide_manual_week_answers check (
     hospital in ('yes', 'no')
@@ -78,12 +80,18 @@ create table if not exists public.aide_manual_week_submits (
     and (hospital = 'no' or nullif(btrim(hospital_note), '') is not null)
     and (fall = 'no' or nullif(btrim(fall_note), '') is not null)
     and (change_answer = 'no' or nullif(btrim(change_note), '') is not null)
+    and (caregiver_signature is null or caregiver_signature like 'data:image/%')
+    and (client_signature is null or client_signature like 'data:image/%')
   ),
   constraint aide_manual_week_unique unique (aide_id, client_id, week_start)
 );
 
 comment on table public.aide_manual_week_submits is
-  'Office-only weekly answers. Not copied onto timesheets.';
+  'Office-only weekly answers and draw-only signatures. Not copied onto timesheets.';
+comment on column public.aide_manual_week_submits.caregiver_signature is
+  'Nullable caregiver finger drawing (data:image). Not a timesheet signature.';
+comment on column public.aide_manual_week_submits.client_signature is
+  'Nullable client finger drawing (data:image). Not a timesheet signature.';
 
 alter table public.aide_manual_days enable row level security;
 alter table public.aide_manual_week_submits enable row level security;
@@ -175,6 +183,8 @@ create trigger aide_manual_week_guard
   for each row
   execute function private.aide_manual_week_guard();
 
+drop function if exists public.aide_submit_exempt_week(uuid, date, text, text, text, text, text, text);
+
 create or replace function public.aide_submit_exempt_week(
   p_client_id uuid,
   p_week_start date,
@@ -183,7 +193,9 @@ create or replace function public.aide_submit_exempt_week(
   p_fall text,
   p_fall_note text,
   p_change text,
-  p_change_note text
+  p_change_note text,
+  p_caregiver_signature text default null,
+  p_client_signature text default null
 )
 returns jsonb
 language plpgsql
@@ -198,10 +210,12 @@ begin
   end if;
   insert into public.aide_manual_week_submits (
     aide_id, client_id, week_start,
-    hospital, hospital_note, fall, fall_note, change_answer, change_note
+    hospital, hospital_note, fall, fall_note, change_answer, change_note,
+    caregiver_signature, client_signature
   )
   select a.id, p_client_id, p_week_start,
-         p_hospital, p_hospital_note, p_fall, p_fall_note, p_change, p_change_note
+         p_hospital, p_hospital_note, p_fall, p_fall_note, p_change, p_change_note,
+         p_caregiver_signature, p_client_signature
   from public.aides a
   where a.profile_id = (select auth.uid())
     and coalesce(a.is_active, true)
@@ -218,8 +232,8 @@ begin
 end;
 $$;
 
-revoke all on function public.aide_submit_exempt_week(uuid, date, text, text, text, text, text, text) from public, anon;
-grant execute on function public.aide_submit_exempt_week(uuid, date, text, text, text, text, text, text) to authenticated;
+revoke all on function public.aide_submit_exempt_week(uuid, date, text, text, text, text, text, text, text, text) from public, anon;
+grant execute on function public.aide_submit_exempt_week(uuid, date, text, text, text, text, text, text, text, text) to authenticated;
 
-comment on function public.aide_submit_exempt_week(uuid, date, text, text, text, text, text, text) is
-  'Stores the three weekly answers. Does not write a timesheet. submitted_at is clock_timestamp().';
+comment on function public.aide_submit_exempt_week(uuid, date, text, text, text, text, text, text, text, text) is
+  'Stores the three weekly answers and the two draw signatures. Does not write a timesheet. submitted_at is clock_timestamp(). Signatures may be null.';

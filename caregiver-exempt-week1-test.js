@@ -17,7 +17,8 @@ function sliceBetween(src, startMark, endMark){
 }
 
 const week = sliceBetween(html, 'id="exemptWeekScreen"', 'id="exemptReportScreen"');
-const report = sliceBetween(html, 'id="exemptReportScreen"', 'id="exemptReadyScreen"');
+const report = sliceBetween(html, 'id="exemptReportScreen"', 'id="exemptSignScreen"');
+const sign = sliceBetween(html, 'id="exemptSignScreen"', 'id="exemptReadyScreen"');
 const ready = sliceBetween(html, 'id="exemptReadyScreen"', 'id="exemptDoneScreen"');
 const done = sliceBetween(html, 'id="exemptDoneScreen"', 'id="callOffScreen"');
 const js = sliceBetween(html, '// exempt-week1', '</script>');
@@ -42,7 +43,13 @@ assert.ok(done.includes('Timesheet submitted'));
 assert.ok(done.includes('Thursday, Nov 26 · 1:34 PM'));
 assert.ok(done.includes('Nothing really left this phone'));
 assert.ok(done.includes('MOCK-1126'));
-assert.ok(!/flagged|sent to the office/i.test(week + report + ready + done + js), 'no flagged or sent-to-the-office copy');
+assert.ok(sign.includes('Then the caregiver signs') && sign.includes('Then the client signs'), 'both signature cards');
+assert.ok(sign.includes('Sign here with your finger') && sign.includes('>Clear<'), 'draw pad and clear');
+assert.ok(sign.includes('data-locked="1"'), 'client pad starts locked');
+assert.ok(sign.includes('id="exemptSignGo"'), 'continue after both signatures');
+assert.ok(!/unable to sign/i.test(sign) && !/>Type</.test(sign), 'draw only');
+assert.ok(ready.includes('id="exemptReadySigs"') && done.includes('id="exemptDoneSigs"'), 'signature thumbnails');
+assert.ok(!/flagged|sent to the office/i.test(week + report + sign + ready + done + js), 'no flagged or sent-to-the-office copy');
 assert.ok(html.includes('exempt=1'), 'exempt preview flag');
 assert.ok(!js.includes('localStorage') && !js.includes('doFinalSubmit') && !js.includes('saveDayData') && !js.includes('sbStampTimesheetSigs'), 'preview does not save or paint a timesheet');
 assert.ok(form.includes('type="time" id="d${i}_in"') || html.includes('type="time" id="d${i}_in"'), 'timesheet time inputs stay on the timesheet');
@@ -51,6 +58,7 @@ assert.ok(sql.includes('NOT APPLIED'), 'sql is marked not applied');
 assert.ok(sql.includes('time_entry_mode') && sql.includes('exempt_manual') && sql.includes('clock_in'));
 assert.ok(sql.includes('exemption_reason') && sql.includes('exempt_effective_from'));
 assert.ok(sql.includes('aide_manual_days') && sql.includes('aide_submit_exempt_week'));
+assert.ok(sql.includes('caregiver_signature') && sql.includes('client_signature'), 'nullable signature columns');
 assert.ok(sql.includes('public.aides'), 'caregiver row is aides');
 assert.ok(sql.includes('not under supabase/migrations'), 'sql stays out of migrations');
 assert.ok(!/\b(alter table|update|insert into|delete from)\s+public\.timesheets\b/i.test(sql), 'sql does not write timesheets');
@@ -140,9 +148,55 @@ async function runBrowser(){
     assert.ok((await page.$eval('#exemptReportScreen', function(el){return el.innerText;})).indexOf('Did the member fall or get hurt this week?')>=0);
     await openExempt('q3');
     assert.ok((await page.$eval('#exemptReportScreen', function(el){return el.innerText;})).indexOf('Any change in how the member is doing this week?')>=0);
+    const sigDir = '/opt/cursor/artifacts/exempt-sign';
+    fs.mkdirSync(sigDir, {recursive:true});
+    await page.screenshot({path:path.join(sigDir, '01-q3.png')});
+    await openExempt('sign');
+    await page.waitForFunction(function(){
+      var go=document.getElementById('exemptSignGo');
+      var pad=document.getElementById('exemptClientPad');
+      return document.getElementById('exemptSignScreen').classList.contains('active') && go && go.disabled && pad && pad.dataset.locked==='1';
+    });
+    await page.screenshot({path:path.join(sigDir, '02-sign-empty.png')});
+    await page.evaluate(function(){
+      function mark(id, label){
+        var el=document.getElementById(id);
+        var r=el.getBoundingClientRect();
+        var d=document.createElement('div');
+        d.setAttribute('data-ann','1');
+        d.style.cssText='position:fixed;z-index:9999;border:4px solid #ff2a2a;border-radius:10px;pointer-events:none;box-shadow:0 0 0 3px #fff200;';
+        d.style.left=(r.left-6)+'px';
+        d.style.top=(r.top-6)+'px';
+        d.style.width=(r.width+12)+'px';
+        d.style.height=(r.height+12)+'px';
+        var lab=document.createElement('div');
+        lab.textContent=label;
+        lab.style.cssText='position:absolute;left:-4px;top:-30px;background:#ff2a2a;color:#fff;font:800 15px/1.2 sans-serif;padding:5px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 0 #fff200;';
+        d.appendChild(lab);
+        document.body.appendChild(d);
+      }
+      mark('exemptAideLock', 'Caregiver signs here');
+      mark('exemptClientLock', 'Client signs here');
+    });
+    await page.screenshot({path:path.join(sigDir, '02-sign-annotated.png')});
+    await openExempt('signed');
+    await page.waitForFunction(function(){
+      function inked(id){
+        var c=document.getElementById(id);
+        if(!c||!c.width)return false;
+        var data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+        for(var i=3;i<data.length;i+=24){if(data[i]>16)return true;}
+        return false;
+      }
+      var go=document.getElementById('exemptSignGo');
+      return go && !go.disabled && inked('exemptAidePad') && inked('exemptClientPad');
+    });
+    await page.screenshot({path:path.join(sigDir, '03-signed.png')});
     await openExempt('ready');
+    await page.waitForFunction(function(){return document.querySelectorAll('#exemptReadySigs img').length===2;});
     assert.strictEqual(await page.$eval('#exemptSubmitFinal', function(el){return el.disabled;}), false);
     assert.strictEqual(await page.$eval('#exemptReadyHours', function(el){return el.textContent;}), '38.00');
+    await page.screenshot({path:path.join(sigDir, '04-ready.png')});
 
     await openExempt('submitted');
     const doneText = await page.$eval('#exemptDoneScreen', function(el){return el.innerText;});
@@ -152,7 +206,9 @@ async function runBrowser(){
     assert.ok(doneText.indexOf('7 of 7')>=0);
     assert.ok(doneText.indexOf('Nothing really left this phone')>=0);
     assert.ok(!/flagged|sent to the office/i.test(doneText));
+    assert.strictEqual(await page.$$eval('#exemptDoneSigs img', function(list){return list.length;}), 2);
     await page.screenshot({path:path.join(outDir, '04-submitted.png')});
+    await page.screenshot({path:path.join(sigDir, '05-submitted.png')});
 
     await page.goto(base+'&exempt=0&screen=home', {waitUntil:'domcontentloaded', timeout:20000});
     await page.waitForFunction(function(){
@@ -218,8 +274,30 @@ async function runBrowser(){
     await page.waitForFunction(function(){return document.getElementById('exemptReportGo') && !document.getElementById('exemptReportGo').disabled;});
     await page.evaluate(function(){document.getElementById('exemptReportGo').click();});
     await page.waitForFunction(function(){
+      var go=document.getElementById('exemptSignGo');
+      var pad=document.getElementById('exemptClientPad');
+      return document.getElementById('exemptSignScreen').classList.contains('active') && go && go.disabled && pad && pad.dataset.locked==='1';
+    });
+    await page.evaluate(function(){
+      function stroke(id){
+        var c=document.getElementById(id);
+        var ctx=c.getContext('2d');
+        ctx.strokeStyle='#1a2744';ctx.lineWidth=4;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(16,60);ctx.lineTo(260,72);ctx.stroke();
+      }
+      stroke('exemptAidePad');
+      exemptCapturePad('aide');
+      stroke('exemptClientPad');
+      exemptCapturePad('client');
+    });
+    await page.waitForFunction(function(){
+      var go=document.getElementById('exemptSignGo');
+      return go && !go.disabled;
+    });
+    await page.evaluate(function(){document.getElementById('exemptSignGo').click();});
+    await page.waitForFunction(function(){
       var b=document.getElementById('exemptSubmitFinal');
-      return document.getElementById('exemptReadyScreen').classList.contains('active') && b && !b.disabled;
+      return document.getElementById('exemptReadyScreen').classList.contains('active') && b && !b.disabled && document.querySelectorAll('#exemptReadySigs img').length===2;
     });
     const notes = await page.$eval('#cg_notes', function(el){return el.value;});
     assert.strictEqual(notes, '', 'report answers do not land on the timesheet');
@@ -234,6 +312,7 @@ async function runBrowser(){
     const liveDone = await page.$eval('#exemptDoneScreen', function(el){return el.innerText;});
     assert.ok(liveDone.indexOf('22.00')>=0, liveDone);
     assert.ok(liveDone.indexOf('MOCK-1126')>=0);
+    assert.strictEqual(await page.$$eval('#exemptDoneSigs img', function(list){return list.length;}), 2);
     assert.strictEqual(await page.$eval('#cg_notes', function(el){return el.value;}), '');
     assert.ok(!errors.length, errors.join('\n'));
     console.log('caregiver-exempt-week1 browser checks ok');
