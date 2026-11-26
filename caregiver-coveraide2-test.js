@@ -38,8 +38,9 @@ assert.ok(!html.includes('rpc/admin_list_open_shifts'), 'admin list stays on Adm
 assert.ok(!html.includes('rpc/admin_record_call_off'), 'office record path stays on Admin');
 
 const home = html.slice(html.indexOf('id="cgHomeView"'), html.indexOf('id="cgFormView"'));
-assert.ok(home.includes('id="callOffHomeBtn"'), 'home call off stays');
-assert.ok(home.includes('openCallOff()'), 'home still opens call off');
+assert.ok(!home.includes('id="callOffHomeBtn"'), 'home call off button is gone');
+assert.ok(!home.includes('openCallOff()'), 'home does not open call off');
+assert.ok(home.includes('For all call-offs, call the office'), 'call-offs are a phone call');
 
 const account = html.slice(html.indexOf('id="moreScreen"'), html.indexOf('id="bottomNav"'));
 assert.ok(!account.includes('id="callOffMoreBtn"') && !account.includes('>Call off</button>'), 'account does not gain call off');

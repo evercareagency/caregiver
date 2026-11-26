@@ -49,7 +49,8 @@ assert.ok(!nav.includes('>Call off<'), 'call off stays off the nav');
 
 const home = html.slice(html.indexOf('id="cgHomeView"'), html.indexOf('id="cgFormView"'));
 assert.ok(!home.includes('id="aideChatHomeCard"') && !home.includes('id="aideChatHomeBtn"'), 'home messages card is gone');
-assert.ok(home.includes('id="callOffHomeBtn"'), 'home call off stays');
+assert.ok(!home.includes('id="callOffHomeBtn"'), 'home has no call-off button');
+assert.ok(home.includes('For all call-offs, call the office'), 'home tells the aide to call the office');
 assert.ok(home.includes("Back up this week's draft"), 'home backup stays');
 
 const screen = html.slice(html.indexOf('id="messagesScreen"'), html.indexOf('id="moreScreen"'));

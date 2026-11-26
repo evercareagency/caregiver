@@ -605,6 +605,186 @@ a.aidechat-phone{display:inline-block;min-height:44px;line-height:44px;padding:0
   }
 }
 .is-quiz-choice{min-height:44px;overflow-wrap:anywhere;}
+/* visit-day1 look, scoped to the visit screens. Does not restyle the timesheet or the PDF sheet. */
+@font-face{font-family:'ECA DM Sans';src:url('assets/fonts/DMSans.ttf') format('truetype');font-weight:100 900;font-display:swap;}
+@font-face{font-family:'ECA Playfair';src:url('assets/fonts/PlayfairDisplay.ttf') format('truetype');font-weight:400 900;font-display:swap;}
+#visitHomeCard,#visitClockScreen,#visitInScreen,#visitDayScreen,#visitReportScreen,#visitSigScreen{font-family:'ECA DM Sans','DM Sans',system-ui,sans-serif;}
+#visitClockScreen .hdr-text h2,#visitInScreen .hdr-text h2,#visitDayScreen .hdr-text h2,#visitReportScreen .hdr-text h2,#visitSigScreen .hdr-text h2,#visitHomeCard .serif,#visitHomeCard .vc-name,#visitHomeCard .vc-timer,#visitHomeCard .bc-main,#visitInScreen .done-hero h3{font-family:'ECA Playfair','Playfair Display',Georgia,serif;}
+.vhello{font-size:0.86rem;color:var(--muted);margin:2px 2px 12px;}
+.vhello b{color:var(--navy);}
+.vbig-clock{width:100%;border:none;border-radius:16px;padding:22px 18px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;color:#fff;background:var(--teal);box-shadow:0 8px 22px rgba(42,127,127,.32);margin-bottom:14px;text-align:center;font-family:inherit;}
+.vbig-clock .bc-ico{font-size:2.1rem;line-height:1;}
+.vbig-clock .bc-main{font-size:1.55rem;font-weight:700;}
+.vbig-clock .bc-sub{font-size:0.92rem;opacity:.9;font-weight:500;line-height:1.35;}
+.visit-card{width:100%;border-radius:16px;padding:18px 16px 16px;background:var(--navy);color:#fff;box-shadow:0 8px 22px rgba(26,39,68,.32);margin-bottom:12px;text-align:center;}
+.vc-live{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border-radius:999px;padding:4px 10px;font-size:0.78rem;font-weight:700;}
+.vc-name{font-size:1.35rem;font-weight:700;margin:10px 0 2px;}
+.vc-meta{font-size:0.86rem;opacity:.9;font-weight:500;line-height:1.35;margin-bottom:6px;}
+.vc-timer{font-size:2.35rem;font-weight:700;letter-spacing:.04em;line-height:1.1;margin:4px 0 8px;}
+.vc-addr{display:inline-block;color:#fff;font-size:0.9rem;font-weight:700;text-decoration:underline;text-underline-offset:2px;margin:0 0 14px;opacity:.95;}
+.vc-done{margin:0 0 6px;min-height:50px;border-radius:10px;font-size:0.95rem;font-weight:700;}
+.vc-hint{font-size:0.78rem;opacity:.85;margin:0;line-height:1.35;}
+.vdot{width:8px;height:8px;border-radius:50%;background:#5ee39a;display:inline-block;}
+.care-note{background:#e7f3f3;border:1.5px solid #b7d6d6;color:var(--navy);border-radius:12px;padding:10px 14px;font-size:0.9rem;font-weight:600;line-height:1.4;margin:0 0 14px;text-align:left;}
+#visitHomeCard .call-office-note,#visitClockScreen .call-office-note{text-align:center;font-size:0.92rem;line-height:1.45;color:var(--navy);margin:0 0 16px;padding:12px 14px;background:#fff;border:1.5px solid var(--border);border-radius:12px;}
+#visitHomeCard .tel-office,#visitClockScreen .tel-office{display:inline-block;margin-top:8px;font-weight:800;color:var(--teal-dark);font-size:1.08rem;text-decoration:none;letter-spacing:.2px;}
+#visitHomeCard .submit-btn{width:100%;border:2px solid var(--teal);background:#fff;color:var(--teal-dark);border-radius:12px;min-height:64px;font-size:1.05rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;}
+#visitHomeCard .submit-btn small{display:block;font-size:0.72rem;font-weight:600;color:var(--muted);}
+#visitClockScreen .locked,#visitInScreen .locked{background:var(--off);border:1.5px solid var(--border);border-radius:8px;padding:11px 12px;min-height:46px;display:flex;align-items:center;justify-content:space-between;font-weight:700;color:var(--navy);font-size:0.95rem;}
+#visitClockScreen .lk{font-size:0.7rem;font-weight:700;color:var(--muted);}
+#visitClockScreen select{padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.95rem;min-height:46px;width:100%;background:#fff;color:var(--text);}
+.vgeo{border-radius:10px;padding:12px 13px;font-size:0.88rem;line-height:1.45;margin-bottom:14px;display:flex;gap:10px;}
+.vgeo .gi{font-size:1.35rem;line-height:1.1;}
+.vgeo b{display:block;font-size:0.95rem;margin-bottom:2px;}
+.vgeo.pass{background:#e8f8f0;border:1.5px solid #9ed8b5;color:#1e6b40;}
+.vgeo .gsm{font-size:0.72rem;opacity:.8;margin-top:4px;}
+.vnote{font-size:0.74rem;color:var(--muted);line-height:1.45;text-align:center;margin-top:10px;}
+#visitInScreen .done-hero{text-align:center;padding:10px 6px 4px;}
+#visitInScreen .ok{width:74px;height:74px;border-radius:50%;background:#e7f6ee;color:var(--success);font-size:2.3rem;display:flex;align-items:center;justify-content:center;margin:4px auto 10px;border:3px solid #9ed8b5;}
+#visitInScreen .done-hero h3{font-size:1.5rem;color:var(--navy);font-weight:600;}
+#visitInScreen .when{font-size:1.05rem;font-weight:700;color:var(--teal-dark);margin-top:6px;}
+.vrow{display:flex;justify-content:space-between;gap:10px;font-size:0.9rem;padding:9px 0;border-bottom:1px solid var(--border);}
+.vrow:last-child{border-bottom:none;}
+.vrow span{color:var(--muted);}
+.vrow b{color:var(--navy);text-align:right;}
+.vcallout{background:var(--teal-light);border:1.5px solid var(--teal);border-radius:10px;padding:12px 13px;font-size:0.92rem;color:var(--teal-dark);line-height:1.5;margin-bottom:14px;}
+.vcallout b{color:var(--navy);}
+#visitDayScreen .timer,#visitSigScreen .timer{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:2rem;color:var(--navy);text-align:center;margin:4px 0 2px;}
+.vpill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 9px;font-size:0.7rem;font-weight:800;background:#e7f6ee;color:#1b7a43;}
+.eod-task-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.eod-task-head>span{display:flex;align-items:center;gap:6px;}
+.tick-all{border:1.5px solid var(--teal);background:#fff;color:var(--teal-dark);border-radius:999px;padding:6px 12px;font-size:0.8rem;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit;}
+.eod-sec{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;}
+.eod-sec h3{font-size:0.7rem;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:var(--teal);padding:6px 10px;margin:0;}
+.eod-task{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:none;border-bottom:1px solid var(--border);background:#fff;padding:10px 12px;min-height:44px;font-size:0.88rem;font-weight:600;color:var(--navy);cursor:pointer;text-transform:none;letter-spacing:0;font-family:inherit;}
+.eod-task:last-child{border-bottom:none;}
+.eod-task .box{width:22px;height:22px;border-radius:6px;border:2px solid #b9c6d6;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;background:#fff;font-size:0.85rem;}
+.eod-task.on .box{background:var(--teal);border-color:var(--teal);}
+.need-sigs{background:#fff8e8;border:1.5px solid #f0d48a;border-radius:10px;padding:12px 13px;font-size:0.9rem;font-weight:700;color:#7a5b14;text-align:center;margin:0 0 14px;}
+.vsig-draw{position:relative;border:2px dashed #b9c6d6;border-radius:10px;min-height:110px;background:var(--off);margin:0 0 6px;overflow:hidden;touch-action:none;}
+.vsig-draw.signed{border-style:solid;border-color:var(--teal);background:#fff;}
+.vsig-draw.locked{background:#eef0f3;}
+.vsig-canvas{display:block;width:100%;height:110px;touch-action:none;background:transparent;}
+.vsig-draw.locked .vsig-canvas{pointer-events:none;}
+.vsig-ph{position:absolute;inset:0 72px 0 0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:700;font-size:0.9rem;pointer-events:none;}
+.vsig-clear{position:absolute;top:8px;right:8px;z-index:2;border:1.5px solid var(--border);background:#fff;color:var(--navy);border-radius:8px;padding:4px 10px;font-size:0.75rem;font-weight:800;cursor:pointer;min-height:32px;font-family:inherit;}
+.vsig-hint{font-size:0.72rem;color:var(--muted);margin:0 0 8px;}
+.vsig-hint.signed{color:var(--teal-dark);font-weight:700;}
+.yn-q{margin:0 0 14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.yn-q:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.yn-q p{font-size:0.98rem;font-weight:700;color:var(--navy);margin:0 0 8px;line-height:1.35;text-transform:none;letter-spacing:0;}
+#visitReportScreen .field label{text-transform:none;letter-spacing:0;font-size:0.85rem;color:var(--navy);font-weight:700;}
+#visitReportHint[hidden]{display:none !important;}
+.yn-row{display:flex;gap:8px;}
+.yn-btn{flex:1;min-height:44px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-weight:800;cursor:pointer;color:var(--navy);font-size:0.98rem;font-family:inherit;}
+.yn-btn.on.yes{background:#e8f8f0;border-color:#9ed8b5;color:#1e6b40;}
+.yn-btn.on.no{background:#eef2f6;border-color:#c5d0da;color:var(--navy);}
+#visitClockScreen .btn,#visitInScreen .btn,#visitDayScreen .btn,#visitReportScreen .btn,#visitSigScreen .btn{min-height:50px;border-radius:10px;font-weight:700;font-size:0.95rem;}
+#visitClockOutBtn[disabled],#visitReportGo[disabled]{opacity:.45;cursor:not-allowed;}
+#visitLive[hidden],#visitIdle[hidden],#visitTaskEmpty[hidden]{display:none !important;}
+body.visit-preview #cgHomeRest,body.visit-preview footer{display:none !important;}
+body.visit-preview #bottomNav button[data-nav="more"]{display:none;}
+body.visit-exempt #visitHomeCard,body.visit-exempt #visitClockInBtn,body.visit-exempt .vbig-clock,body.visit-exempt #visitModeBar,body.visit-exempt #visitClockScreen,body.visit-exempt #visitInScreen,body.visit-exempt #visitDayScreen,body.visit-exempt #visitReportScreen,body.visit-exempt #visitSigScreen{display:none !important;}
+.status-bar{display:flex;align-items:center;justify-content:center;gap:8px;min-height:30px;padding:5px 14px;font-family:'ECA DM Sans','DM Sans',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:.01em;line-height:1.2;flex-shrink:0;}
+.status-bar .sb-ico{width:18px;height:18px;display:block;flex-shrink:0;}
+.status-bar.exempt{background:#f3efe6;color:#3f3d6b;border-bottom:1px solid #e4d9c8;}
+.status-bar.regular{background:#e8f4f4;color:#1e6060;border-bottom:1px solid #c5dddd;}
+#visitModeBar[hidden]{display:none !important;}
+#exemptWeekScreen,#exemptReportScreen,#exemptSignCgScreen,#exemptSignClientScreen,#exemptReadyScreen,#exemptDoneScreen{font-family:'ECA DM Sans','DM Sans',system-ui,sans-serif;}
+#exemptWeekScreen .hdr,#exemptWeekScreen .status-bar{flex-shrink:0;}
+#exemptWeekScreen .hdr-text h2,#exemptReportScreen .hdr-text h2,#exemptSignCgScreen .hdr-text h2,#exemptSignClientScreen .hdr-text h2,#exemptReadyScreen .hdr-text h2,#exemptDoneScreen .hdr-text h2{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:1.02rem;font-weight:600;}
+#exemptWeekScreen .hdr-text p,#exemptReportScreen .hdr-text p,#exemptSignCgScreen .hdr-text p,#exemptSignClientScreen .hdr-text p,#exemptReadyScreen .hdr-text p,#exemptDoneScreen .hdr-text p{font-size:0.7rem;opacity:.72;margin-top:1px;}
+#exemptReportScreen .hdr-back,#exemptSignCgScreen .hdr-back,#exemptSignClientScreen .hdr-back,#exemptReadyScreen .hdr-back,#exemptDoneScreen .hdr-back{width:44px;height:44px;border-radius:8px;font-size:18px;}
+#exemptWeekScreen.active{display:flex !important;flex-direction:column;height:100dvh;max-height:100dvh;overflow:hidden;}
+#exemptReportScreen.active,#exemptSignCgScreen.active,#exemptSignClientScreen.active,#exemptReadyScreen.active,#exemptDoneScreen.active{display:block !important;min-height:100dvh;}
+.xw-wrap{max-width:600px;margin:0 auto;padding:8px 13px 0;width:100%;display:flex;flex-direction:column;flex:1;min-height:0;}
+.xw-callout{background:var(--teal-light);border:1.5px solid var(--teal);border-radius:10px;padding:6px 12px;font-size:0.82rem;color:var(--teal-dark);line-height:1.35;margin-bottom:6px;}
+.xw-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 8px 4px;display:flex;flex-direction:column;flex:1;min-height:0;box-shadow:0 1px 5px rgba(0,0,0,.04);}
+.xw-client{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 6px;padding:0 2px 6px;border-bottom:1px solid var(--border);}
+.xw-client .cl-name{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:0.98rem;color:var(--navy);}
+.xw-client .cl-sub{font-size:0.7rem;color:var(--muted);font-weight:600;}
+.xw-pick{display:flex;align-items:center;gap:8px;margin:0 0 4px;}
+.xw-pick .wp-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-size:1.15rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.xw-pick .wp-range{flex:1;text-align:center;min-width:0;}
+.xw-pick .wp-range b{display:block;color:var(--navy);font-size:0.92rem;font-weight:800;}
+.xw-pick .wp-range span{display:block;font-size:0.7rem;color:var(--muted);font-weight:600;}
+.xw-days{display:flex;flex-direction:column;flex:1;min-height:0;overflow:auto;}
+.xw-day{display:flex;align-items:center;gap:8px;padding:6px;border:none;border-bottom:1px solid var(--border);background:none;width:100%;text-align:left;min-height:48px;border-radius:8px;cursor:pointer;font-family:inherit;color:var(--text);}
+.xw-day:last-child{border-bottom:none;}
+.xw-day.is-today{background:#fff3d6;}
+.xw-dd{width:46px;height:46px;border-radius:10px;background:var(--teal-light);color:var(--teal-dark);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;flex-shrink:0;line-height:1.05;}
+.xw-dd small{font-size:0.6rem;font-weight:700;letter-spacing:.5px;}
+.xw-day.is-today .xw-dd{background:var(--navy);color:#fff;}
+.xw-day.is-empty .xw-dd{background:#eef0f3;color:#8b95a5;}
+.xw-dm{flex:1;min-width:0;}
+.xw-dm b{display:block;color:var(--navy);font-size:0.92rem;line-height:1.2;}
+.xw-sub{display:flex;align-items:center;gap:6px;min-width:0;margin-top:1px;}
+.xw-sub .sub-txt{font-size:0.75rem;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.xw-hrs{font-weight:800;color:var(--teal-dark);font-size:0.95rem;flex-shrink:0;}
+.xw-chev{color:var(--muted);font-size:1.2rem;flex-shrink:0;}
+.xw-empty{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:0.7rem;font-weight:800;background:var(--off);color:var(--muted);border:1px solid var(--border);white-space:nowrap;}
+.xw-holi{display:inline-flex;align-items:center;flex-shrink:0;border-radius:999px;padding:1px 7px;font-size:0.64rem;font-weight:800;background:#fff3d6;color:#8a5a00;border:1px solid #f0d48a;}
+.xw-tasksum{display:block;margin-top:2px;font-size:0.75rem;font-weight:800;color:var(--teal-dark);}
+.xw-svcs{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
+.xw-svc{display:inline-flex;align-items:center;border-radius:999px;padding:1px 6px;font-size:0.62rem;font-weight:800;background:var(--teal-light);color:var(--teal-dark);border:1px solid #c5dddd;line-height:1.3;}
+.xw-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.xw-chip{min-height:40px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-weight:800;font-size:0.8rem;padding:6px 12px;font-family:inherit;cursor:pointer;}
+.xw-chip.on{background:var(--teal-light);border-color:var(--teal);color:var(--teal-dark);}
+.xw-signed{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;color:#1b7a43;font-size:0.72rem;font-weight:800;background:#e7f6ee;border:1px solid #9ed8b5;border-radius:999px;padding:3px 7px;}
+.xw-sigline{font-size:0.86rem;font-weight:800;color:var(--navy);line-height:1.4;margin:12px 0 8px;}
+.xw-coverday{display:flex;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--border);}
+.xw-cgdone{display:flex;align-items:center;gap:10px;background:#e7f6ee;border:1.5px solid #9ed8b5;border-radius:10px;padding:8px 10px;margin-bottom:10px;color:#1b7a43;font-weight:800;}
+.xw-cgdone img{width:72px;height:36px;object-fit:contain;background:#fff;border:1px solid #c5dddd;border-radius:6px;}
+.xw-cgdone .tick{width:28px;height:28px;border-radius:50%;background:#1b7a43;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.xw-foot{flex-shrink:0;max-width:600px;width:100%;margin:0 auto;padding:4px 13px calc(var(--eca-dock-h, 68px) + 8px);}
+.xw-total{background:var(--teal);color:#fff;border-radius:10px;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;margin:0 0 6px;}
+.xw-total .hv{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:1.2rem;}
+.xw-total small{font-size:0.72rem;opacity:.85;display:block;}
+.xw-entered{font-size:0.72rem;color:var(--muted);text-align:center;margin:0 0 6px;font-weight:600;}
+.xw-sheet-bg{position:fixed;inset:0;background:rgba(26,39,68,.55);z-index:300;display:flex;align-items:flex-end;justify-content:center;}
+.xw-sheet{background:#fff;border-radius:18px 18px 0 0;padding:8px 16px calc(14px + env(safe-area-inset-bottom,0px));width:100%;max-width:600px;max-height:min(92dvh,740px);box-shadow:0 -20px 60px rgba(0,0,0,.3);overflow:auto;}
+.xw-handle{width:40px;height:4px;border-radius:999px;background:#c5cad3;margin:4px auto 10px;}
+.xw-shead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.xw-shead h3{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:1.25rem;color:var(--navy);line-height:1.2;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.xw-shead p{font-size:0.78rem;color:var(--muted);margin-top:3px;font-weight:600;}
+.xw-x{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-size:1.2rem;cursor:pointer;flex-shrink:0;font-family:inherit;}
+.xw-times{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.xw-times .field{margin-bottom:0;}
+#exemptWeekScreen input[type=time],#exemptWeekScreen textarea{padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.95rem;min-height:46px;width:100%;font-family:inherit;background:#fff;color:var(--text);}
+#exemptWeekScreen textarea{min-height:76px;}
+.xw-actions{display:flex;gap:10px;margin-top:14px;}
+.xw-actions .btn{flex:1;min-height:50px;border-radius:10px;font-weight:700;}
+.xw-q{padding:12px 13px calc(var(--eca-dock-h, 68px) + 24px);max-width:600px;margin:0 auto;}
+.xw-step{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 10px;}
+.xw-step .step-lbl{font-size:0.78rem;font-weight:800;color:var(--navy);}
+.xw-dots{display:flex;gap:6px;}
+.xw-dots i{width:8px;height:8px;border-radius:50%;background:#c5d0da;display:block;}
+.xw-dots i.on{background:#3f3d6b;}
+.xw-qactions{display:flex;gap:10px;margin-top:14px;}
+.xw-qactions .btn{flex:1;min-height:50px;border-radius:10px;font-weight:700;}
+#exemptReportGo[disabled],#exemptSignCgGo[disabled],#exemptSignClientGo[disabled],#exemptSubmitFinal[disabled],#exemptSubmitWeek[disabled]{opacity:.45;cursor:not-allowed;}
+#exemptSignCgScreen .card,#exemptSignClientScreen .card{margin-bottom:10px;padding:12px 14px;}
+#exemptSignCgScreen [hidden],#exemptSignClientScreen [hidden]{display:none !important;}
+#exemptSignCgScreen .wrap,#exemptSignClientScreen .wrap{padding-top:8px;padding-bottom:calc(var(--eca-dock-h, 68px) + 16px);}
+.xw-sigthumbs{display:flex;gap:10px;margin-top:12px;}
+.xw-sigthumb{flex:1;min-width:0;}
+.xw-sigthumb span{display:block;font-size:0.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.xw-sigthumb img{display:block;width:100%;height:54px;object-fit:contain;background:#fafcfe;border:1.5px solid var(--border);border-radius:8px;}
+.xw-yn p{font-size:1.05rem;font-weight:700;color:var(--navy);margin:0 0 12px;line-height:1.35;text-transform:none;letter-spacing:0;}
+.xw-ynrow{display:flex;gap:8px;}
+.xw-ynrow .xw-choice{flex:1;min-height:48px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-weight:800;cursor:pointer;color:var(--navy);font-size:1rem;font-family:inherit;}
+.xw-choice.on.yes{background:#e8f8f0;border-color:#9ed8b5;color:#1e6b40;}
+.xw-choice.on.no{background:#eef2f6;border-color:#c5d0da;color:var(--navy);}
+#exemptWeekFoot .btn,#exemptReadyScreen .btn.btn-full,#exemptDoneScreen .btn.btn-full{min-height:50px;border-radius:10px;font-weight:700;font-size:0.95rem;justify-content:center;}
+#exemptReportScreen .field label{text-transform:none;letter-spacing:0;font-size:0.85rem;color:var(--navy);font-weight:700;}
+.xw-rows .vrow{display:flex;justify-content:space-between;gap:10px;font-size:0.9rem;padding:9px 0;border-bottom:1px solid var(--border);}
+.xw-rows .vrow:last-child{border-bottom:none;}
+.xw-rows .vrow span{color:var(--muted);}
+.xw-rows .vrow b{color:var(--navy);text-align:right;}
+#exemptDoneScreen .done-hero{text-align:center;padding:10px 6px 4px;}
+#exemptDoneScreen .ok{width:74px;height:74px;border-radius:50%;background:#e7f6ee;color:var(--success);font-size:2.3rem;display:flex;align-items:center;justify-content:center;margin:4px auto 10px;border:3px solid #9ed8b5;}
+#exemptDoneScreen .done-hero h3{font-family:'ECA Playfair','Playfair Display',Georgia,serif;font-size:1.5rem;color:var(--navy);}
+#exemptDoneScreen .when{font-size:1.05rem;font-weight:700;color:var(--teal-dark);margin-top:6px;}
 </style>
 
 <!-- PWA -->
@@ -861,6 +1041,10 @@ else setupEverCarePWA();
       <p id="hdr_name">Weekly Timesheet</p>
     </div>
   </div>
+  <div id="visitModeBar" class="status-bar regular" hidden>
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5v5l3.2 1.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Clock in at each visit</span>
+  </div>
   <div id="offlineQueueBanner" role="status" style="display:none;background:#fff8f0;border-bottom:1px solid #e6c48a;padding:10px 14px;">
     <p id="offlineQueueStatus" style="font-size:0.84rem;font-weight:700;color:#1a2744;line-height:1.45;margin:0"></p>
     <button class="btn btn-warn" type="button" id="offlineQueueRetry" onclick="cgRetryOfflineQueue()" style="display:none;margin-top:8px">Tap to retry</button>
@@ -873,11 +1057,32 @@ else setupEverCarePWA();
         &#128218; <strong>You have an inservice due this month!</strong> Tap here to complete it.
       </div>
       <div class="correction-banner" id="correctionBanner" onclick="loadCorrectionMode()"></div>
-      <div class="card calloff-home" id="callOffHomeCard">
-        <div class="card-title"><span class="ico">&#128222;</span> Call off</div>
-        <p>Cannot work an upcoming shift? Tell the office here. It is listed as an open shift.</p>
-        <button class="btn btn-navy btn-full" type="button" id="callOffHomeBtn" onclick="openCallOff()">Call off</button>
+      <!-- visit-day1. Home clock matches the approved mock. Call-off is not a form. -->
+      <div id="visitHomeCard" data-visit="v=visit-day1">
+        <p class="vhello" id="visitHello"></p>
+        <div id="visitIdle">
+          <button class="vbig-clock" type="button" id="visitClockInBtn" onclick="openVisitClockIn()">
+            <span class="bc-ico">&#9201;</span>
+            <span class="bc-main">Clock In</span>
+            <span class="bc-sub">once you are near the member home</span>
+          </button>
+        </div>
+        <div id="visitLive" hidden>
+          <div class="visit-card">
+            <span class="vc-live"><span class="vdot"></span> Visit in progress</span>
+            <div class="vc-name" id="visitLiveName"></div>
+            <div class="vc-meta" id="visitLiveMeta"></div>
+            <div class="vc-timer" id="visitLiveTimer" aria-live="polite">00:00:00</div>
+            <p id="visitLiveAddrWrap"></p>
+            <button class="btn btn-teal btn-full vc-done" type="button" id="visitDoneBtn" onclick="openVisitDay()">Done for the day</button>
+            <p class="vc-hint">Tap when your service is done. Next: tasks, a few questions, then signatures.</p>
+          </div>
+          <div class="care-note" id="visitLiveNote" hidden></div>
+        </div>
+        <p class="call-office-note" id="visitCalloffLine">For all call-offs, call the office.<br>Any hospitalization, fall or change in hours? Call the office.<br><a class="tel-office aidechat-phone" href="tel:+12163775991">(216) 377-5991</a></p>
+        <button class="submit-btn" type="button" id="visitSubmitWeek" onclick="visitOpenTimesheet()"><span>&#128203;</span><span>Submit Full Timesheet<small id="visitWeekLabel">This week</small></span></button>
       </div>
+      <div id="cgHomeRest">
       <div class="card" style="background:var(--teal-light);border-color:var(--teal)">
         <p style="font-size:0.8rem;color:var(--teal-dark);line-height:1.6">&#128203; Tap a card below to continue a <strong>draft</strong> or a week the office <strong>sent back</strong>. The two most recent <strong>submitted</strong> weeks stay listed. <strong>+ Start Another Timesheet</strong> always starts a <strong>new blank week and client</strong> — it does not reopen a submitted week.</p>
       </div>
@@ -899,6 +1104,7 @@ else setupEverCarePWA();
           <li>Sandata clock in/out must match this timesheet. Full legal signatures only.</li>
           <li>Your supervisor indicates approval of hours. You will not be paid for unauthorized hours/shifts.</li>
         </ul>
+      </div>
       </div>
     </div>
   </div>
@@ -970,7 +1176,7 @@ else setupEverCarePWA();
       <div class="success-wrap">
         <div class="sico">✅</div>
         <h2>Timesheet Submitted!</h2>
-        <p>Your timesheet has been sent to the office and is locked. Call <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a> with any corrections needed.</p>
+        <p>Your timesheet is locked. Call <a class="aidechat-phone" href="tel:+12163775991">(216) 377-5991</a> with any corrections needed.</p>
         <button class="btn btn-teal" onclick="cgNewWeek()">Start New Week</button>
       </div>
     </div>
@@ -1206,6 +1412,275 @@ else setupEverCarePWA();
       <p id="isSuccessMsg">You have completed this month inservice. Great job!</p>
       <button class="btn btn-ghost btn-full" onclick="showCaregiverHome()">Back to Home</button>
     </div>
+  </div>
+</div>
+<!-- VISIT FLOW v=visit-day1. Draw-only pads. Not the timesheet signature boxes. -->
+<div class="screen" id="visitClockScreen" data-visit="v=visit-day1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Clock In</h2><p id="visitClockAideName">EverCare · signed in</p></div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="card-title"><span class="ico">&#9201;</span> This visit</div>
+      <div class="field"><label>Aide</label><div class="locked" id="visitClockAideLock">—<span class="lk">&#128274; from your login</span></div></div>
+      <div class="field"><label for="visitClientPick">Client</label><select id="visitClientPick" onchange="visitPickChanged()"></select></div>
+      <div class="field" style="margin-bottom:0"><label>Service</label><div class="locked"><span id="visitServiceLock">Personal Care</span><span class="lk">&#128274; set by office</span></div></div>
+    </div>
+    <div class="vgeo pass" id="visitGeoBox"><span class="gi">&#128205;</span><div id="visitGeoText"></div></div>
+    <p id="visitClockErr" class="auth-err" role="alert" style="display:none"></p>
+    <button class="btn btn-teal btn-full" type="button" id="visitClockInGo" onclick="visitClockIn()">Clock In</button>
+    <p class="call-office-note" id="visitClockCalloffLine">For all call-offs, call the office.<br>Any hospitalization, fall or change in hours? Call the office.<br><a class="tel-office aidechat-phone" href="tel:+12163775991">(216) 377-5991</a></p>
+    <p class="vnote" id="visitClockFoot">The clock time comes from EverCare, not a time you type.</p>
+  </div>
+</div>
+<div class="screen" id="visitInScreen" data-visit="v=visit-day1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Clocked In</h2><p>EverCare · on a visit</p></div>
+  </div>
+  <div class="wrap">
+    <div class="card done-hero"><div class="ok">&#10003;</div><h3>You’re clocked in</h3><div class="when" id="visitInWhen"></div></div>
+    <div class="card" style="padding:6px 16px">
+      <div class="vrow"><span>Aide</span><b id="visitInAide"></b></div>
+      <div class="vrow"><span>Client</span><b id="visitInClient"></b></div>
+      <div class="vrow"><span>Schedule</span><b id="visitInSched"></b></div>
+      <div class="vrow"><span>Service</span><b id="visitInSvc"></b></div>
+      <div class="vrow"><span>Location</span><b>At the member’s home &#10003;</b></div>
+    </div>
+    <div class="vcallout">&#128260; <b>Come back to this app at the end of service</b> and tap <b>Done for the day</b> on Home. You stay logged in — no need to sign in again.</div>
+    <button class="btn btn-teal btn-full" type="button" onclick="showCaregiverHome()">Back to Home</button>
+  </div>
+</div>
+<div class="screen" id="visitDayScreen" data-visit="v=visit-day1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="showCaregiverHome()" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Done for the day</h2><p>End this visit</p></div>
+  </div>
+  <div class="wrap">
+    <div class="card" style="text-align:center">
+      <span class="vpill"><span class="vdot" style="background:#27ae60"></span> <span id="visitTaskClock"></span></span>
+      <div class="timer" id="visitTaskElapsed">0 h 00 m</div>
+      <p class="vnote" id="visitTaskSub" style="margin-top:0"></p>
+    </div>
+    <div class="card">
+      <div class="card-title eod-task-head"><span><span class="ico">&#9989;</span> What did you do today?</span>
+        <button type="button" class="tick-all" id="visitTickAll" onclick="visitToggleAllTasks()">Tick all</button>
+      </div>
+      <p class="vnote" id="visitTaskLead" style="text-align:left;margin:0 0 10px"></p>
+      <div id="visitTaskList"></div>
+      <p class="vnote" id="visitTaskEmpty" hidden style="text-align:left">No tasks on file.</p>
+    </div>
+    <button class="btn btn-teal btn-full" type="button" id="visitToReport" onclick="openVisitReport()">Continue</button>
+    <p class="vnote">Next: a few questions about the member, then signatures.</p>
+  </div>
+</div>
+<div class="screen" id="visitReportScreen" data-visit="v=visit-day1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="openVisitDay()" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Anything to report today?</h2><p>End this visit</p></div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="card-title" id="visitReportTitle"><span class="ico">&#128221;</span> Anything to report today?</div>
+      <p class="vnote" id="visitReportLead" style="text-align:left;margin:0 0 12px"></p>
+      <div id="visitReportQs"></div>
+    </div>
+    <button class="btn btn-teal btn-full" type="button" id="visitReportGo" onclick="openVisitSig()" disabled>Continue</button>
+    <p class="need-sigs" id="visitReportHint">Answer each question to continue.</p>
+  </div>
+</div>
+<div class="screen" id="visitSigScreen" data-visit="v=visit-day1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="openVisitReport()" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Done for the day</h2><p>End this visit</p></div>
+  </div>
+  <div class="wrap">
+    <div class="card" style="text-align:center;padding:12px 16px">
+      <p class="vnote" id="visitSigMeta" style="margin:0"></p>
+      <button class="btn btn-ghost btn-full" type="button" onclick="openVisitDay()" style="margin-top:10px">Change today’s tasks</button>
+    </div>
+    <div class="card" id="visitAideCard">
+      <div class="card-title"><span class="ico">&#9997;</span> Then the caregiver signs</div>
+      <div class="sig-lbl">HHA Signature</div>
+      <div class="vsig-draw" id="visitAideLock">
+        <canvas class="vsig-canvas" id="visitAidePad" height="110"></canvas>
+        <div class="vsig-ph" id="visitAidePh">Sign here with your finger</div>
+        <button class="vsig-clear" type="button" id="visitAideClear" onclick="visitClearPad('aide')" hidden>Clear</button>
+      </div>
+      <div class="vsig-hint" id="visitAideHint">Sign with your finger</div>
+      <p class="vnote" style="margin-top:0">Caregiver / HHA Signature — you sign first, with your finger.</p>
+    </div>
+    <div class="card" id="visitClientCard">
+      <div class="card-title"><span class="ico">&#9997;</span> Then the client signs</div>
+      <div class="sig-lbl">Client Signature</div>
+      <div class="vsig-draw locked" id="visitClientLock" data-locked="1">
+        <canvas class="vsig-canvas" id="visitClientPad" height="110" data-locked="1"></canvas>
+        <div class="vsig-ph" id="visitClientPh">Waiting for the caregiver</div>
+        <button class="vsig-clear" type="button" id="visitClientClear" onclick="visitClearPad('client')" hidden>Clear</button>
+      </div>
+      <div class="vsig-hint" id="visitClientHint">The caregiver signs first.</div>
+      <p class="vnote" id="visitHandHint" style="margin-top:0">Hand the phone to the client or a family member to sign.</p>
+    </div>
+    <div id="visitClockOutBox">
+      <p class="need-sigs" id="visitLockHint">Clock Out appears after both the caregiver and the client have signed.</p>
+    </div>
+    <p id="visitDayErr" class="auth-err" role="alert" style="display:none"></p>
+  </div>
+</div>
+<!-- EXEMPT WEEK v=exempt-week1. Preview only. Not the timesheet and not the PDF. -->
+<div class="screen" id="exemptWeekScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>ECA Aide Portal</h2><p id="exemptHdrName">Hi, Test Aide</p></div>
+  </div>
+  <div class="status-bar exempt" id="exemptBadge">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="xw-wrap">
+    <div class="xw-callout" id="exemptHint">Tap a day to enter start and end times.</div>
+    <div class="xw-card">
+      <div class="xw-client"><div><div class="cl-name">Sample Client</div><div class="cl-sub">Weekly hours</div></div></div>
+      <div class="xw-pick">
+        <button class="wp-btn" type="button" onclick="exemptShiftWeek(-1)" aria-label="Previous week">&#8249;</button>
+        <div class="wp-range"><b id="exemptWeekTitle">Mon Nov 23 – Sun Nov 29</b><span id="exemptWeekSub">This week</span></div>
+        <button class="wp-btn" type="button" onclick="exemptShiftWeek(1)" aria-label="Next week">&#8250;</button>
+      </div>
+      <div class="xw-days" id="exemptDayList"></div>
+    </div>
+  </div>
+  <div class="xw-foot" id="exemptWeekFoot"></div>
+  <div id="exemptSheet"></div>
+</div>
+<div class="screen" id="exemptReportScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="exemptShow('week')" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Anything to report this week?</h2><p>Before you submit</p></div>
+  </div>
+  <div class="status-bar exempt">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="xw-q" id="exemptReportBody"></div>
+</div>
+<div class="screen" id="exemptSignCgScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="exemptShow('q3')" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Caregiver signs</h2><p>Before you submit</p></div>
+  </div>
+  <div class="status-bar exempt">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="wrap">
+    <div class="card" id="exemptAideCard">
+      <div class="card-title"><span class="ico">&#9997;</span> Then the caregiver signs</div>
+      <div class="sig-lbl">HHA Signature</div>
+      <div class="vsig-draw" id="exemptAideLock">
+        <canvas class="vsig-canvas" id="exemptAidePad" height="110"></canvas>
+        <div class="vsig-ph" id="exemptAidePh">Sign here with your finger</div>
+        <button class="vsig-clear" type="button" id="exemptAideClear" onclick="exemptClearPad('aide')" hidden>Clear</button>
+      </div>
+      <div class="vsig-hint" id="exemptAideHint">Sign with your finger</div>
+      <p class="vnote" style="margin-top:0">Caregiver / HHA Signature — you sign first, with your finger.</p>
+    </div>
+    <button class="btn btn-teal btn-full" type="button" id="exemptSignCgGo" onclick="exemptSignNext()" disabled>Next</button>
+    <p class="need-sigs" id="exemptSignCgHint">Sign with your finger to continue.</p>
+  </div>
+</div>
+<div class="screen" id="exemptSignClientScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="exemptShow('signcg')" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Client signs</h2><p>Before you submit</p></div>
+  </div>
+  <div class="status-bar exempt">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="wrap">
+    <div class="xw-cgdone" id="exemptCgSigned">
+      <span class="tick" aria-hidden="true">&#10003;</span>
+      <img id="exemptCgThumb" alt="Caregiver signature">
+      <span>Caregiver signed</span>
+    </div>
+    <div class="card" id="exemptClientCard">
+      <div class="card-title"><span class="ico">&#9997;</span> Then the client signs</div>
+      <div class="sig-lbl">Client Signature</div>
+      <div class="vsig-draw" id="exemptClientLock">
+        <canvas class="vsig-canvas" id="exemptClientPad" height="110"></canvas>
+        <div class="vsig-ph" id="exemptClientPh">Sign here with your finger</div>
+        <button class="vsig-clear" type="button" id="exemptClientClear" onclick="exemptClearPad('client')" hidden>Clear</button>
+      </div>
+      <div class="vsig-hint" id="exemptClientHint">Sign with your finger</div>
+      <p class="vnote" style="margin-top:0">Hand the phone to the client or a family member to sign.</p>
+    </div>
+    <button class="btn btn-teal btn-full" type="button" id="exemptSignClientGo" onclick="exemptSignContinue()" disabled>Continue</button>
+    <p class="need-sigs" id="exemptSignClientHint">Sign with your finger to continue.</p>
+  </div>
+</div>
+<div class="screen" id="exemptReadyScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="exemptShow('signclient')" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Submit this week</h2><p>Week of Nov 23 – Nov 29</p></div>
+  </div>
+  <div class="status-bar exempt">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="xw-q">
+    <div class="card">
+      <div class="card-title"><span class="ico">&#128203;</span> Ready to submit</div>
+      <p class="vnote" style="text-align:left;margin:0 0 10px">You’re ready to submit this week. Questions are done.</p>
+      <div class="xw-rows">
+        <div class="vrow"><span>Client</span><b>Sample Client</b></div>
+        <div class="vrow"><span>Week</span><b>Mon Nov 23 – Sun Nov 29</b></div>
+        <div class="vrow"><span>Total hours</span><b id="exemptReadyHours">0.00</b></div>
+        <div class="vrow"><span>Days entered</span><b id="exemptReadyDays">0 of 7</b></div>
+      </div>
+      <div class="xw-sigthumbs" id="exemptReadySigs"></div>
+    </div>
+    <button class="btn btn-teal btn-full" type="button" id="exemptSubmitFinal" onclick="exemptSubmitFinal()">Submit week</button>
+    <p class="vnote">Nothing is sent. This is a preview.</p>
+  </div>
+</div>
+<div class="screen" id="exemptDoneScreen" data-exempt="v=exempt-week1">
+  <div class="hdr">
+    <button class="hdr-back" type="button" onclick="exemptShow('week')" aria-label="Back">&#8592;</button>
+    <img class="hdr-mark portal-mark-hands" alt="" width="28" height="28">
+    <div class="hdr-text"><h2>Timesheet submitted</h2><p>Week of Nov 23 – Nov 29</p></div>
+  </div>
+  <div class="status-bar exempt">
+    <svg class="sb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="13" width="3" height="3" rx=".5" fill="currentColor"/></svg>
+    <span>Exempt, manual entry</span>
+  </div>
+  <div class="xw-q">
+    <div class="card"><div class="done-hero">
+      <div class="ok">&#10003;</div>
+      <h3>Timesheet submitted</h3>
+      <div class="when">Thursday, Nov 26 · 1:34 PM</div>
+      <p class="vnote">Thank you. Your week is in (mock). Nothing really left this phone.</p>
+    </div></div>
+    <div class="card xw-rows">
+      <div class="vrow"><span>Client</span><b>Sample Client</b></div>
+      <div class="vrow"><span>Week</span><b>Mon Nov 23 – Sun Nov 29</b></div>
+      <div class="vrow"><span>Total hours</span><b id="exemptDoneHours">38.00</b></div>
+      <div class="vrow"><span>Days entered</span><b id="exemptDoneDays">7 of 7</b></div>
+      <div class="vrow"><span>Confirmation #</span><b>MOCK-1126</b></div>
+      <div class="xw-sigthumbs" id="exemptDoneSigs"></div>
+      <p class="xw-sigline" id="exemptSigLine"></p>
+      <div id="exemptDoneDayList"></div>
+    </div>
+    <button class="btn btn-teal btn-full" type="button" onclick="exemptShow('week')">Back to Timesheet</button>
   </div>
 </div>
 <!-- CALL OFF -->
@@ -1576,6 +2051,7 @@ function restoreCgSession(){
   return true;
 }
 function enforceCgSessionTimeout(){
+  if(typeof visitPreviewOn==='function'&&visitPreviewOn())return;
   const sess=backfillCgSessionLoginAt(store.get('cg_session')||currentUser);
   if(!sess||!sess.username)return;
   if(isCgSessionExpired(sess))caregiverLogout();
@@ -1723,6 +2199,17 @@ function showScreen(id){
 const PORTAL_NAV_SCREENS={
   caregiverScreen:'home',
   callOffScreen:'home',
+  visitClockScreen:'home',
+  visitInScreen:'home',
+  visitDayScreen:'home',
+  visitReportScreen:'home',
+  visitSigScreen:'home',
+  exemptWeekScreen:'timesheet',
+  exemptReportScreen:'timesheet',
+  exemptSignCgScreen:'timesheet',
+  exemptSignClientScreen:'timesheet',
+  exemptReadyScreen:'timesheet',
+  exemptDoneScreen:'home',
   previewScreen:'timesheet',
   inserviceScreen:'inservices',
   isReadScreen:'inservices',
@@ -1790,6 +2277,9 @@ function openTimesheetFromNav(){
   confirmNewTS();
 }
 function navGo(tab){
+  if(typeof visitExemptOn==='function'&&visitExemptOn()){
+    if(tab==='home'||tab==='timesheet'){if(typeof exemptShow==='function')exemptShow('week');return;}
+  }
   if(!currentUser){showScreen('authScreen');return;}
   if(typeof requireAideSetup==='function'&&!requireAideSetup())return;
   if(tab==='home'){
@@ -2288,6 +2778,7 @@ function headerBack(){
 }
 
 function caregiverLogout(){
+  if(typeof visitStopTimer==='function')visitStopTimer();
   const openModals=document.querySelectorAll('.modal-bg.show');
   for(let i=0;i<openModals.length;i++)openModals[i].classList.remove('show');
   if(typeof unlockBodyScroll==='function')unlockBodyScroll();
@@ -3261,7 +3752,7 @@ function loadCorrectionMode(){
   });
   updateTotal();
   document.getElementById('correctionBanner').style.display='none';
-  showTempMsg('⚠️ Correction mode — only flagged days are unlocked','var(--warn)');
+  showTempMsg('⚠️ Correction mode — only the days that need a fix are unlocked','var(--warn)');
 }
 
 // DAY BLOCKS
@@ -9480,6 +9971,7 @@ async function submitAideMessage(ev){
 }
 
 function showCaregiverHome(){
+  if(typeof visitExemptOn==='function'&&visitExemptOn()){if(typeof exemptShow==='function')exemptShow('week');return;}
   if(typeof showScreen==='function')showScreen('caregiverScreen');
   const home=document.getElementById('cgHomeView');
   const form=document.getElementById('cgFormView');
@@ -9492,6 +9984,7 @@ function showCaregiverHome(){
   if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
   if(typeof checkISNotif==='function')checkISNotif();
   if(typeof refreshMsgNavBadge==='function')refreshMsgNavBadge();
+  if(typeof visitRefreshHome==='function')visitRefreshHome();
 }
 
 // v=clienthrs1d GHOST-CLIENTHRS1D-CONTRACT-v1 CALLABLE.
@@ -10541,6 +11034,10 @@ function renderCaregiverCertSample(){
 }
 
 function bootCaregiverPortal(){
+  if(/[?&]visitpreview=1(?:&|$)/.test((location&&location.search)||'')){
+    if(typeof visitPreviewBoot==='function') visitPreviewBoot();
+    return 'preview';
+  }
   if(/[?&]certSample=1(?:&|$)/.test((location&&location.search)||'')){
     if(typeof renderCaregiverCertSample==='function') renderCaregiverCertSample();
     return 'cert';
@@ -10628,6 +11125,1562 @@ window.addEventListener('resize',()=>{
     }
   });
 });
+
+// visit-day1. Clock, tasks, and draw-only signatures. Never writes the timesheet, the day grid, or the PDF.
+// visit-day1. Mock-matched visit screens. Never writes the timesheet, the day grid, or the PDF.
+var VISIT_OFFICE_DISPLAY='(216) 377-5991';
+var VISIT_OFFICE_TEL='tel:+12163775991';
+var VISIT_PREVIEW_TASKS=[
+  {sec:'Personal Care',items:['Assist W/Bath-Bed/Tub/Shower','Hair Care/Shampoo','Shave','Skin Care','Nail Care/Foot Care','Oral Care/Denture Care','Assist W/Dressing']},
+  {sec:'Elimination',items:['Incontinence/Perineal Care','Cath. Care']},
+  {sec:'Household Services',items:['Make Bed/Change Linen','Tidy Work Area/Trash Removal','Laundry','Dishes']},
+  {sec:'Mobility',items:['Transfer Chair/Commode/Bed','Assist W/Ambulation']},
+  {sec:'Treatments',items:['Medication Reminder (Verbal)','Prescription Pick Up']},
+  {sec:'Nutrition',items:['Diet','Meal Prep. (B/L/D)','Assist W/ Feeding','Encourage Fluids']}
+];
+var VISIT_QS=[
+  {key:'hospital',q:'Was the member in the hospital or ER since your last visit?'},
+  {key:'fall',q:'Did the member fall or get hurt?'},
+  {key:'change',q:'Any change in how the member is doing?'}
+];
+var visitOpen=null;
+var visitPickId='';
+var visitShiftByClient={};
+var visitTimer=null;
+var visitBusy=false;
+var visitPreviewMem=false;
+function visitPreviewOn(){
+  return /(?:^|[?&])visitpreview=1(?:&|$)/.test(String((location&&location.search)||''));
+}
+function visitPreviewParam(name){
+  try{return new URLSearchParams(location.search).get(name)||'';}catch(e){return '';}
+}
+function visitKey(){
+  const u=currentUser&&currentUser.username?String(currentUser.username):'session';
+  return 'evercare_visit_day1_'+u;
+}
+function visitRead(){
+  if(visitPreviewOn()||visitPreviewMem)return visitOpen;
+  try{
+    const raw=store.get(visitKey());
+    if(!raw||typeof raw!=='object'||raw.clockOutAt)return null;
+    if(!raw.clientId||!raw.clockInAt)return null;
+    return raw;
+  }catch(e){return null;}
+}
+function visitPersist(){
+  if(visitPreviewOn()||visitPreviewMem)return;
+  if(!visitOpen){try{store.del(visitKey());}catch(e){}return;}
+  try{store.set(visitKey(), visitOpen);}catch(e){}
+}
+function visitStopTimer(){
+  if(visitTimer){clearInterval(visitTimer);visitTimer=null;}
+}
+function visitRpcMissing(err){
+  const st=err&&err.pack&&Number(err.pack.status);
+  const msg=String(err&&err.message||'');
+  if(st===404)return true;
+  return /PGRST202|could not find the function|schema cache/i.test(msg);
+}
+function visitPad2(n){return n<10?'0'+n:String(n);}
+function visitNow(){return new Date();}
+function visitClockText(iso){
+  const d=new Date(iso);
+  if(isNaN(d.getTime()))return '';
+  try{
+    return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'}).format(d);
+  }catch(e){
+    return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  }
+}
+function visitLongDate(d){
+  try{
+    return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'long',month:'short',day:'numeric'}).format(d);
+  }catch(e){
+    return d.toDateString();
+  }
+}
+function visitWeekLabel(){
+  const d=visitNow();
+  const sun=new Date(d.getFullYear(),d.getMonth(),d.getDate()-d.getDay());
+  const sat=new Date(sun.getFullYear(),sun.getMonth(),sun.getDate()+6);
+  const fmt=function(x){return (x.getMonth()+1)+'/'+x.getDate();};
+  try{
+    const opt={month:'short',day:'numeric'};
+    return 'Week of '+sun.toLocaleDateString('en-US',opt)+' – '+sat.toLocaleDateString('en-US',opt);
+  }catch(e){return 'Week of '+fmt(sun)+' – '+fmt(sat);}
+}
+function visitEndText(raw){
+  const s=String(raw==null?'':raw).trim();
+  if(!s)return '';
+  const m=/^(\d{1,2}):(\d{2})/.exec(s);
+  if(!m)return s;
+  let h=Number(m[1]);
+  const ap=h>=12?'PM':'AM';
+  h=h%12;if(h===0)h=12;
+  return h+':'+m[2]+' '+ap;
+}
+function visitElapsed(iso){
+  const t=Date.parse(iso);
+  if(!isFinite(t))return '00:00:00';
+  let sec=Math.max(0, Math.floor((Date.now()-t)/1000));
+  const h=Math.floor(sec/3600);sec-=h*3600;
+  const m=Math.floor(sec/60);sec-=m*60;
+  return visitPad2(h)+':'+visitPad2(m)+':'+visitPad2(sec);
+}
+function visitSoFar(iso){
+  const t=Date.parse(iso);
+  if(!isFinite(t))return '0 h 00 m';
+  let mins=Math.max(0, Math.floor((Date.now()-t)/60000));
+  const h=Math.floor(mins/60);mins-=h*60;
+  return h+' h '+visitPad2(mins)+' m';
+}
+function visitMapsHref(address){
+  const q=String(address||'').trim();
+  if(!q)return '';
+  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
+}
+function visitShowErr(id,msg){
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(!msg){el.style.display='none';el.textContent='';return;}
+  el.style.display='block';
+  el.textContent=msg;
+}
+function visitClientById(id){
+  const list=(typeof myClients!=='undefined'&&Array.isArray(myClients))?myClients:[];
+  for(let i=0;i<list.length;i++){
+    if(String(list[i].id)===String(id))return list[i];
+  }
+  return null;
+}
+function visitEmptyReport(){return {hospital:'',hospitalNote:'',fall:'',fallNote:'',change:'',changeNote:''};}
+function visitReportOk(r){
+  r=r||visitEmptyReport();
+  return VISIT_QS.every(function(q){
+    if(r[q.key]!=='yes'&&r[q.key]!=='no')return false;
+    if(r[q.key]==='yes'&&!String(r[q.key+'Note']||'').trim())return false;
+    return true;
+  });
+}
+function visitReportText(r){
+  r=r||visitEmptyReport();
+  return VISIT_QS.map(function(q){
+    const v=r[q.key];
+    if(v!=='yes'&&v!=='no')return '';
+    let line=q.q+' '+(v==='yes'?'Yes':'No');
+    if(v==='yes'&&String(r[q.key+'Note']||'').trim())line+=' — '+String(r[q.key+'Note']).trim();
+    return line;
+  }).filter(Boolean).join('\n');
+}
+function visitCatalog(){
+  if(visitPreviewOn()||visitPreviewMem)return VISIT_PREVIEW_TASKS;
+  if(typeof SERVICE_SECTIONS!=='undefined'&&Array.isArray(SERVICE_SECTIONS)&&SERVICE_SECTIONS.length){
+    return SERVICE_SECTIONS.map(function(s){return {sec:s.n,items:(s.items||[]).slice()};});
+  }
+  return VISIT_PREVIEW_TASKS;
+}
+function visitTasksFromCatalog(){
+  const out=[];
+  visitCatalog().forEach(function(sec){
+    (sec.items||[]).forEach(function(label){
+      out.push({id:String(label),label:String(label),sec:sec.sec,checked:false});
+    });
+  });
+  return out;
+}
+function visitNormalizeShift(node){
+  if(!node||typeof node!=='object')return null;
+  const id=node.client_id||node.clientId||'';
+  if(!id)return null;
+  const tasks=(Array.isArray(node.tasks)?node.tasks:[]).map(function(t,i){
+    if(!t)return null;
+    const label=String(t.label||t.name||'').trim();
+    if(!label)return null;
+    return {id:String(t.id||label),label:label,sec:t.sec||'',checked:false};
+  }).filter(Boolean);
+  return {
+    clientId:String(id),
+    clientName:String(node.client_name||node.clientName||''),
+    address:String(node.address||''),
+    careNote:String(node.care_note||node.careNote||''),
+    endLocal:String(node.end_local||node.endLocal||''),
+    schedLabel:String(node.sched_label||node.schedLabel||''),
+    tasks:tasks
+  };
+}
+async function visitLoadShift(){
+  if(visitPreviewOn()||visitPreviewMem)return;
+  if(typeof sbDataEnabled!=='function'||!sbDataEnabled())return;
+  try{
+    const data=await sbRest('rpc/aide_today_shift',{method:'POST',body:{}});
+    let node=data;
+    if(Array.isArray(node))node=node[0]||{};
+    if(typeof node==='string'){try{node=JSON.parse(node);}catch(e){node={};}}
+    const shifts=node&&Array.isArray(node.shifts)?node.shifts:[];
+    const next={};
+    shifts.forEach(function(row){
+      const shift=visitNormalizeShift(row);
+      if(!shift)return;
+      const prev=next[shift.clientId];
+      if(!prev||(shift.endLocal&&!prev.endLocal))next[shift.clientId]=shift;
+      const client=visitClientById(shift.clientId);
+      if(client&&shift.careNote)client.careNote=shift.careNote;
+    });
+    visitShiftByClient=next;
+    const open=node&&node.open_visit;
+    if(open&&open.client_id&&open.clock_in_at&&!open.clock_out_at){
+      const local=visitOpen||visitRead();
+      const same=local&&String(local.clientId)===String(open.client_id);
+      const client=visitClientById(open.client_id);
+      const shift=next[String(open.client_id)]||null;
+      visitOpen=visitMakeOpen({
+        id:String(open.id||''),
+        local:!open.id,
+        client:client,
+        shift:shift,
+        clockInAt:String(open.clock_in_at),
+        keep:same?local:null
+      });
+      visitPersist();
+    }
+  }catch(e){}
+}
+async function visitTryCareColumn(){
+  if(visitPreviewOn()||visitPreviewMem)return;
+  if(typeof sbDataEnabled!=='function'||!sbDataEnabled())return;
+  try{
+    const rows=await sbRest('clients?select='+encodeURIComponent('id,care_note')+'&is_active=eq.true');
+    (Array.isArray(rows)?rows:[]).forEach(function(row){
+      const client=visitClientById(row.id);
+      if(client&&row.care_note)client.careNote=String(row.care_note);
+    });
+  }catch(e){}
+}
+function visitMakeOpen(opts){
+  opts=opts||{};
+  const client=opts.client||{};
+  const shift=opts.shift||{};
+  const keep=opts.keep||null;
+  let tasks=(shift.tasks&&shift.tasks.length)?shift.tasks.map(function(t){return {id:t.id,label:t.label,sec:t.sec||'',checked:false};}):visitTasksFromCatalog();
+  if(keep&&keep.tasks&&keep.tasks.length)tasks=keep.tasks;
+  return {
+    id:opts.id||'',
+    local:opts.local!==false,
+    clientId:String(client.id||shift.clientId||(keep&&keep.clientId)||''),
+    clientName:client.name||shift.clientName||(keep&&keep.clientName)||'Client',
+    address:(shift.address)||client.address||(keep&&keep.address)||'',
+    careNote:(shift.careNote)||client.careNote||client.care_note||(keep&&keep.careNote)||'',
+    bookedUntil:visitEndText(shift.endLocal)||(keep&&keep.bookedUntil)||'',
+    schedLabel:shift.schedLabel||(keep&&keep.schedLabel)||'',
+    service:(visitPreviewOn()||visitPreviewMem)?'Personal Care':(document.getElementById('cg_svctype')?document.getElementById('cg_svctype').value:'Personal Care'),
+    clockInAt:opts.clockInAt||new Date().toISOString(),
+    tasks:tasks,
+    report:keep&&keep.report?keep.report:visitEmptyReport(),
+    aideInk:keep&&keep.aideInk?keep.aideInk:'',
+    clientInk:keep&&keep.clientInk?keep.clientInk:''
+  };
+}
+function visitPaintHello(){
+  const el=document.getElementById('visitHello');
+  if(!el)return;
+  const name=(currentUser&&(currentUser.name||currentUser.username))||'';
+  el.innerHTML='';
+  el.appendChild(document.createTextNode(visitLongDate(visitNow())+' · Signed in as '));
+  const b=document.createElement('b');
+  b.textContent=name;
+  el.appendChild(b);
+  const week=document.getElementById('visitWeekLabel');
+  if(week)week.textContent=visitWeekLabel();
+}
+function visitPaintLive(){
+  const idle=document.getElementById('visitIdle');
+  const live=document.getElementById('visitLive');
+  if(!idle||!live)return;
+  visitPaintHello();
+  if(!visitOpen){
+    visitStopTimer();
+    idle.hidden=false;
+    live.hidden=true;
+    return;
+  }
+  idle.hidden=true;
+  live.hidden=false;
+  const name=document.getElementById('visitLiveName');
+  const meta=document.getElementById('visitLiveMeta');
+  const note=document.getElementById('visitLiveNote');
+  const wrap=document.getElementById('visitLiveAddrWrap');
+  if(name)name.textContent=visitOpen.clientName||'Client';
+  if(meta){
+    const until=visitOpen.bookedUntil||'—';
+    meta.textContent='Clocked in at '+visitClockText(visitOpen.clockInAt)+' · booked until '+until;
+  }
+  if(note){
+    if(visitOpen.careNote){note.hidden=false;note.textContent=visitOpen.careNote;}
+    else note.hidden=true;
+  }
+  if(wrap){
+    wrap.textContent='';
+    const href=visitMapsHref(visitOpen.address);
+    if(href){
+      const a=document.createElement('a');
+      a.className='vc-addr';
+      a.href=href;
+      a.target='_blank';
+      a.rel='noopener noreferrer';
+      a.textContent=visitOpen.address;
+      wrap.appendChild(a);
+    }
+  }
+  const timer=document.getElementById('visitLiveTimer');
+  const tick=function(){if(timer&&visitOpen)timer.textContent=visitElapsed(visitOpen.clockInAt);};
+  tick();
+  visitStopTimer();
+  visitTimer=setInterval(tick,1000);
+}
+async function visitRefreshHome(){
+  try{
+    if(!visitPreviewOn())visitOpen=visitRead();
+    await visitLoadShift();
+    await visitTryCareColumn();
+    if(!visitOpen&&!visitPreviewOn())visitOpen=visitRead();
+    visitPaintLive();
+  }catch(e){
+    try{visitPaintLive();}catch(e2){}
+  }
+}
+function visitShow(id){
+  if(typeof showScreen==='function')showScreen(id);
+  if(typeof syncPortalChrome==='function')syncPortalChrome(id);
+}
+function visitPaintClients(){
+  const sel=document.getElementById('visitClientPick');
+  if(!sel)return;
+  const list=(typeof myClients!=='undefined'&&Array.isArray(myClients))?myClients.slice():[];
+  sel.textContent='';
+  if(!list.length){
+    const opt=document.createElement('option');
+    opt.value='';
+    opt.textContent='No clients yet';
+    sel.appendChild(opt);
+    return;
+  }
+  if(!visitPickId||!visitClientById(visitPickId))visitPickId=String(list[0].id||'');
+  list.forEach(function(c){
+    const opt=document.createElement('option');
+    opt.value=String(c.id);
+    const shift=visitShiftByClient[String(c.id)];
+    const sched=shift&&shift.schedLabel?(' · '+shift.schedLabel):'';
+    opt.textContent=(c.name||'Client')+sched;
+    if(String(c.id)===String(visitPickId))opt.selected=true;
+    sel.appendChild(opt);
+  });
+}
+function visitPaintGeo(){
+  const box=document.getElementById('visitGeoText');
+  const client=visitClientById(visitPickId);
+  if(!box)return;
+  const name=client&&client.name?client.name:'this client';
+  const addr=client&&client.address?client.address:'';
+  const shift=visitShiftByClient[String(visitPickId)]||{};
+  box.innerHTML='';
+  const b=document.createElement('b');
+  b.textContent='You are at the member’s home';
+  box.appendChild(b);
+  box.appendChild(document.createTextNode(' This phone is near '+name+'’s home. You can clock in.'));
+  const sm=document.createElement('div');
+  sm.className='gsm';
+  sm.textContent='Home on file: '+(addr||'not on file')+(shift.schedLabel?' · schedule '+shift.schedLabel:'');
+  box.appendChild(sm);
+}
+function visitPickChanged(){
+  const sel=document.getElementById('visitClientPick');
+  if(sel)visitPickId=sel.value;
+  visitPaintGeo();
+}
+async function openVisitClockIn(){
+  if(!currentUser)return;
+  if(visitOpen){visitShow('visitInScreen');visitPaintIn();return;}
+  visitShowErr('visitClockErr','');
+  const who=document.getElementById('visitClockAideLock');
+  if(who){
+    who.textContent='';
+    who.appendChild(document.createTextNode((currentUser.name||currentUser.username||'Aide')+' '));
+    const lk=document.createElement('span');
+    lk.className='lk';
+    lk.textContent='🔒 from your login';
+    who.appendChild(lk);
+  }
+  if(!visitPreviewOn()&&typeof loadMyClients==='function'){try{await loadMyClients();}catch(e){}}
+  if(!visitPreviewOn()){await visitLoadShift();await visitTryCareColumn();}
+  visitPaintClients();
+  visitPaintGeo();
+  const foot=document.getElementById('visitClockFoot');
+  if(foot)foot.textContent=visitLongDate(visitNow())+' · the clock time comes from EverCare, not your phone.';
+  visitShow('visitClockScreen');
+}
+function visitPaintIn(){
+  if(!visitOpen)return;
+  const when=document.getElementById('visitInWhen');
+  if(when)when.textContent=visitLongDate(new Date(visitOpen.clockInAt))+' · '+visitClockText(visitOpen.clockInAt);
+  const set=function(id,txt){const el=document.getElementById(id);if(el)el.textContent=txt||'';};
+  set('visitInAide',(currentUser&&(currentUser.name||currentUser.username))||'');
+  set('visitInClient',visitOpen.clientName);
+  set('visitInSched',visitOpen.schedLabel||'—');
+  set('visitInSvc',visitOpen.service||'Personal Care');
+}
+async function visitClockIn(){
+  if(visitBusy)return;
+  const client=visitClientById(visitPickId);
+  if(!client){visitShowErr('visitClockErr','Pick a client.');return;}
+  visitBusy=true;
+  visitShowErr('visitClockErr','');
+  const go=document.getElementById('visitClockInGo');
+  if(go)go.disabled=true;
+  const shift=visitShiftByClient[String(client.id)]||null;
+  let serverId='';
+  let clockInAt=new Date().toISOString();
+  let fromServer=false;
+  if(!visitPreviewOn()&&typeof sbDataEnabled==='function'&&sbDataEnabled()){
+    try{
+      const data=await sbRest('rpc/aide_clock_in',{method:'POST',body:{p_client_id:client.id}});
+      let node=data;
+      if(Array.isArray(node))node=node[0]||{};
+      if(typeof node==='string'){try{node=JSON.parse(node);}catch(e){node={};}}
+      if(node&&node.clock_in_at){
+        fromServer=true;
+        clockInAt=String(node.clock_in_at);
+        serverId=node.id?String(node.id):'';
+      }
+    }catch(e){
+      if(!visitRpcMissing(e)){
+        visitShowErr('visitClockErr','Clock in did not save. Try again.');
+        visitBusy=false;
+        if(go)go.disabled=false;
+        return;
+      }
+    }
+  }
+  visitOpen=visitMakeOpen({id:serverId,local:!serverId,client:client,shift:shift,clockInAt:clockInAt});
+  if(!fromServer)visitOpen.local=true;
+  visitPersist();
+  visitBusy=false;
+  if(go)go.disabled=false;
+  visitPaintIn();
+  visitShow('visitInScreen');
+}
+function visitCheckedCount(){
+  if(!visitOpen||!Array.isArray(visitOpen.tasks))return 0;
+  return visitOpen.tasks.filter(function(t){return t&&t.checked;}).length;
+}
+function visitAllOn(){
+  return !!(visitOpen&&visitOpen.tasks&&visitOpen.tasks.length&&visitOpen.tasks.every(function(t){return t&&t.checked;}));
+}
+function visitPaintTasks(){
+  const box=document.getElementById('visitTaskList');
+  const empty=document.getElementById('visitTaskEmpty');
+  const btn=document.getElementById('visitTickAll');
+  if(btn)btn.textContent=visitAllOn()?'Untick all':'Tick all';
+  if(!box)return;
+  box.textContent='';
+  const tasks=visitOpen&&Array.isArray(visitOpen.tasks)?visitOpen.tasks:[];
+  if(empty)empty.hidden=tasks.length>0;
+  let sec='';
+  let host=null;
+  tasks.forEach(function(task){
+    const name=task.sec||'Tasks';
+    if(name!==sec){
+      sec=name;
+      const wrap=document.createElement('div');
+      wrap.className='eod-sec';
+      const h=document.createElement('h3');
+      h.textContent=name;
+      wrap.appendChild(h);
+      box.appendChild(wrap);
+      host=wrap;
+    }
+    const row=document.createElement('button');
+    row.type='button';
+    row.className='eod-task'+(task.checked?' on':'');
+    row.setAttribute('aria-pressed',task.checked?'true':'false');
+    const mark=document.createElement('span');
+    mark.className='box';
+    mark.textContent=task.checked?'✓':'';
+    const label=document.createElement('span');
+    label.textContent=task.label;
+    row.appendChild(mark);
+    row.appendChild(label);
+    row.addEventListener('click',function(){
+      task.checked=!task.checked;
+      visitPersist();
+      visitPaintTasks();
+    });
+    (host||box).appendChild(row);
+  });
+  const clock=document.getElementById('visitTaskClock');
+  if(clock&&visitOpen)clock.textContent='Clocked in at '+visitClockText(visitOpen.clockInAt);
+  const elapsed=document.getElementById('visitTaskElapsed');
+  if(elapsed&&visitOpen)elapsed.textContent=visitSoFar(visitOpen.clockInAt);
+  const sub=document.getElementById('visitTaskSub');
+  if(sub&&visitOpen)sub.textContent='so far today · '+(visitOpen.clientName||'')+(visitOpen.schedLabel?' · '+visitOpen.schedLabel:'');
+  const lead=document.getElementById('visitTaskLead');
+  if(lead&&visitOpen){
+    const day=visitLongDate(visitNow()).split(',')[0];
+    lead.textContent='Tap each task you did for '+(visitOpen.clientName||'this client')+' today ('+day+'). You can also tick all, then untick any you did not do.';
+  }
+}
+function visitSetAllTasks(on){
+  if(!visitOpen||!Array.isArray(visitOpen.tasks))return;
+  visitOpen.tasks.forEach(function(t){if(t)t.checked=!!on;});
+  visitPersist();
+  visitPaintTasks();
+}
+function visitToggleAllTasks(){
+  visitSetAllTasks(!visitAllOn());
+}
+function openVisitDay(){
+  if(!visitOpen){showCaregiverHome();return;}
+  visitPaintTasks();
+  visitShow('visitDayScreen');
+}
+function visitPaintReport(){
+  const lead=document.getElementById('visitReportLead');
+  const box=document.getElementById('visitReportQs');
+  if(lead&&visitOpen){
+    const day=visitLongDate(visitNow()).split(',')[0];
+    lead.textContent='Answer each question for '+(visitOpen.clientName||'this client')+' today ('+day+').';
+  }
+  if(!box||!visitOpen)return;
+  const r=visitOpen.report||visitEmptyReport();
+  box.textContent='';
+  VISIT_QS.forEach(function(q){
+    const wrap=document.createElement('div');
+    wrap.className='yn-q';
+    const p=document.createElement('p');
+    p.textContent=q.q;
+    wrap.appendChild(p);
+    const row=document.createElement('div');
+    row.className='yn-row';
+    ['yes','no'].forEach(function(v){
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='yn-btn '+v+(r[q.key]===v?' on':'');
+      b.textContent=v==='yes'?'Yes':'No';
+      b.addEventListener('click',function(){
+        visitOpen.report[q.key]=v;
+        if(v==='no')visitOpen.report[q.key+'Note']='';
+        visitPersist();
+        visitPaintReport();
+      });
+      row.appendChild(b);
+    });
+    wrap.appendChild(row);
+    if(r[q.key]==='yes'){
+      const note=document.createElement('div');
+      note.className='field';
+      note.style.marginTop='10px';
+      const lab=document.createElement('label');
+      lab.textContent='Tell us what happened';
+      const ta=document.createElement('textarea');
+      ta.maxLength=500;
+      ta.placeholder='Tell us what happened';
+      ta.value=r[q.key+'Note']||'';
+      ta.addEventListener('input',function(){
+        visitOpen.report[q.key+'Note']=ta.value;
+        visitPersist();
+        visitSyncReportBtn();
+      });
+      note.appendChild(lab);
+      note.appendChild(ta);
+      wrap.appendChild(note);
+    }
+    box.appendChild(wrap);
+  });
+  visitSyncReportBtn();
+}
+function visitSyncReportBtn(){
+  const ok=visitReportOk(visitOpen&&visitOpen.report);
+  const btn=document.getElementById('visitReportGo');
+  const hint=document.getElementById('visitReportHint');
+  if(btn)btn.disabled=!ok;
+  if(hint){
+    const r=visitOpen&&visitOpen.report;
+    const needText=VISIT_QS.some(function(q){return r&&r[q.key]==='yes'&&!String(r[q.key+'Note']||'').trim();});
+    hint.hidden=ok;
+    hint.textContent=needText?'Tell us what happened.':'Answer each question to continue.';
+  }
+}
+function openVisitReport(){
+  if(!visitOpen){showCaregiverHome();return;}
+  if(!visitOpen.report)visitOpen.report=visitEmptyReport();
+  visitPaintReport();
+  visitShow('visitReportScreen');
+}
+function visitPad(which){return document.getElementById(which==='client'?'visitClientPad':'visitAidePad');}
+function visitPadInk(which){
+  const c=visitPad(which);
+  if(!c)return false;
+  if(visitOpen&&((which==='aide'&&visitOpen.aideInk)||(which==='client'&&visitOpen.clientInk))){
+    if(typeof isCanvasInk==='function'){
+      try{if(isCanvasInk(c))return true;}catch(e){}
+    }
+    return true;
+  }
+  if(typeof isCanvasInk!=='function')return false;
+  try{return isCanvasInk(c);}catch(e){return false;}
+}
+function visitSizePad(c){
+  if(!c)return;
+  const w=Math.max(1,c.offsetWidth||300);
+  const h=110;
+  if(c.width===w&&c.height===h)return;
+  const keep=(typeof isCanvasInk==='function'&&isCanvasInk(c))?c.toDataURL('image/png'):'';
+  c.width=w;c.height=h;
+  if(keep){
+    const img=new Image();
+    img.onload=function(){c.getContext('2d').drawImage(img,0,0,c.width,c.height);};
+    img.src=keep;
+  }
+}
+function visitWirePad(which){
+  const c=visitPad(which);
+  if(!c)return;
+  visitSizePad(c);
+  if(c.dataset.visitWired==='1')return;
+  c.dataset.visitWired='1';
+  const ctx=c.getContext('2d');
+  ctx.lineWidth=2.6;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#1a2744';
+  let drawing=false;
+  function pos(e){
+    const r=c.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    return {x:(t.clientX-r.left)*(c.width/Math.max(1,r.width)),y:(t.clientY-r.top)*(c.height/Math.max(1,r.height))};
+  }
+  function down(e){
+    if(c.dataset.locked==='1')return;
+    if(e.cancelable)e.preventDefault();
+    drawing=true;
+    const p=pos(e);
+    ctx.beginPath();ctx.moveTo(p.x,p.y);
+    const ph=document.getElementById(which==='aide'?'visitAidePh':'visitClientPh');
+    if(ph)ph.style.display='none';
+  }
+  function move(e){
+    if(!drawing||c.dataset.locked==='1')return;
+    if(e.cancelable)e.preventDefault();
+    const p=pos(e);
+    ctx.lineTo(p.x,p.y);ctx.stroke();
+  }
+  function up(){
+    if(!drawing)return;
+    drawing=false;
+    visitCaptureInk(which);
+    visitSyncLocks();
+  }
+  c.addEventListener('mousedown',down);
+  c.addEventListener('mousemove',move);
+  c.addEventListener('mouseup',up);
+  c.addEventListener('mouseleave',up);
+  c.addEventListener('touchstart',function(e){if(c.dataset.locked==='1')return;down(e);},{passive:false});
+  c.addEventListener('touchmove',function(e){if(!drawing||c.dataset.locked==='1')return;move(e);},{passive:false});
+  c.addEventListener('touchend',function(){up();});
+  c.addEventListener('touchcancel',function(){drawing=false;});
+}
+function visitPaintStoredInk(which,src){
+  const c=visitPad(which);
+  if(!c||!src)return;
+  const img=new Image();
+  img.onload=function(){
+    c.getContext('2d').clearRect(0,0,c.width,c.height);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    visitSyncLocks();
+  };
+  img.src=src;
+}
+function visitCaptureInk(which){
+  if(!visitOpen)return;
+  const c=visitPad(which);
+  let ink='';
+  if(c&&typeof isCanvasInk==='function'&&isCanvasInk(c))ink=c.toDataURL('image/png');
+  else if(visitOpen[which==='aide'?'aideInk':'clientInk'])ink=visitOpen[which==='aide'?'aideInk':'clientInk'];
+  if(which==='aide')visitOpen.aideInk=ink;
+  else visitOpen.clientInk=ink;
+  visitPersist();
+}
+function visitClearPad(which){
+  const c=visitPad(which);
+  if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);
+  if(visitOpen){
+    if(which==='aide'){visitOpen.aideInk='';visitOpen.clientInk='';const o=visitPad('client');if(o)o.getContext('2d').clearRect(0,0,o.width,o.height);}
+    else visitOpen.clientInk='';
+    visitPersist();
+  }
+  visitSyncLocks();
+}
+function visitSyncLocks(){
+  const aideOn=!!(visitOpen&&visitOpen.aideInk)||visitPadInk('aide');
+  const clientOn=!!(visitOpen&&visitOpen.clientInk)||visitPadInk('client');
+  const aideDraw=document.getElementById('visitAideLock');
+  const clientDraw=document.getElementById('visitClientLock');
+  const aidePad=visitPad('aide');
+  const clientPad=visitPad('client');
+  if(aideDraw)aideDraw.classList.toggle('signed',aideOn);
+  if(clientDraw){clientDraw.classList.toggle('signed',clientOn);clientDraw.classList.toggle('locked',!aideOn);clientDraw.dataset.locked=aideOn?'0':'1';}
+  if(aidePad)aidePad.dataset.locked='0';
+  if(clientPad)clientPad.dataset.locked=aideOn?'0':'1';
+  const aidePh=document.getElementById('visitAidePh');
+  const clientPh=document.getElementById('visitClientPh');
+  if(aidePh)aidePh.style.display=aideOn?'none':'';
+  if(clientPh){clientPh.style.display=clientOn?'none':'';clientPh.textContent=aideOn?'Sign here with your finger':'Waiting for the caregiver';}
+  const aideHint=document.getElementById('visitAideHint');
+  const clientHint=document.getElementById('visitClientHint');
+  if(aideHint){aideHint.textContent=aideOn?'Signed ✓':'Sign with your finger';aideHint.classList.toggle('signed',aideOn);}
+  if(clientHint){clientHint.textContent=clientOn?'Signed ✓':(aideOn?'Sign with your finger':'The caregiver signs first.');clientHint.classList.toggle('signed',clientOn);}
+  const aideClear=document.getElementById('visitAideClear');
+  const clientClear=document.getElementById('visitClientClear');
+  if(aideClear)aideClear.hidden=!aideOn;
+  if(clientClear)clientClear.hidden=!clientOn;
+  const box=document.getElementById('visitClockOutBox');
+  if(!box)return;
+  const tasksOk=visitCheckedCount()>=1;
+  if(!aideOn||!clientOn){
+    box.innerHTML='<p class="need-sigs" id="visitLockHint">Clock Out appears after both the caregiver and the client have signed.</p>';
+    return;
+  }
+  if(!tasksOk){
+    box.innerHTML='<button class="btn btn-navy btn-full" type="button" id="visitClockOutBtn" disabled>Clock Out</button><p class="need-sigs" id="visitTaskHint">Tap at least one task to clock out.</p>';
+    return;
+  }
+  box.innerHTML='<button class="btn btn-navy btn-full" type="button" id="visitClockOutBtn" onclick="visitClockOut()">Clock Out</button><p class="vnote">Both signatures are in. Clock Out ends the visit. No typing times.</p>';
+}
+function openVisitSig(){
+  if(!visitOpen){showCaregiverHome();return;}
+  if(!visitReportOk(visitOpen.report)){openVisitReport();return;}
+  const meta=document.getElementById('visitSigMeta');
+  if(meta)meta.textContent='Clocked in at '+visitClockText(visitOpen.clockInAt)+' · '+(visitOpen.clientName||'')+' · '+visitSoFar(visitOpen.clockInAt)+' so far';
+  visitShow('visitSigScreen');
+  requestAnimationFrame(function(){
+    if(!visitOpen)return;
+    visitWirePad('aide');
+    visitWirePad('client');
+    visitSizePad(visitPad('aide'));
+    visitSizePad(visitPad('client'));
+    if(visitOpen.aideInk)visitPaintStoredInk('aide',visitOpen.aideInk);
+    if(visitOpen.clientInk)visitPaintStoredInk('client',visitOpen.clientInk);
+    visitSyncLocks();
+  });
+}
+async function visitClockOut(){
+  if(visitBusy||!visitOpen)return;
+  visitCaptureInk('aide');
+  visitCaptureInk('client');
+  if(visitCheckedCount()<1||!visitOpen.aideInk||!visitOpen.clientInk){visitSyncLocks();return;}
+  if(!visitReportOk(visitOpen.report)){openVisitReport();return;}
+  if(String(visitOpen.aideInk).indexOf('data:image/')!==0||String(visitOpen.clientInk).indexOf('data:image/')!==0){
+    visitShowErr('visitDayErr','Sign with your finger on both lines.');
+    return;
+  }
+  visitBusy=true;
+  const btn=document.getElementById('visitClockOutBtn');
+  if(btn)btn.disabled=true;
+  visitShowErr('visitDayErr','');
+  const note=visitReportText(visitOpen.report);
+  const taskIds=(visitOpen.tasks||[]).filter(function(t){return t&&t.checked&&t.id;}).map(function(t){return t.id;});
+  let saved=visitPreviewOn()||visitPreviewMem||visitOpen.local||!visitOpen.id;
+  if(!saved&&typeof sbDataEnabled==='function'&&sbDataEnabled()){
+    try{
+      await sbRest('rpc/aide_clock_out',{method:'POST',body:{
+        p_visit_id:visitOpen.id,
+        p_task_ids:taskIds,
+        p_office_note:note||null,
+        p_aide_sig:visitOpen.aideInk,
+        p_client_sig:visitOpen.clientInk
+      }});
+      saved=true;
+    }catch(e){
+      if(visitRpcMissing(e))saved=true;
+      else{
+        visitShowErr('visitDayErr','Clock out did not save. Try again.');
+        visitBusy=false;
+        if(btn)btn.disabled=false;
+        return;
+      }
+    }
+  }
+  visitOpen=null;
+  visitPersist();
+  visitBusy=false;
+  showCaregiverHome();
+  if(typeof showTempMsg==='function')showTempMsg(visitPreviewOn()?'Clocked out. Nothing was saved.':'Clocked out.','var(--teal)');
+}
+function visitOpenTimesheet(){
+  if(visitExemptOn()){exemptShow('week');return;}
+  if(visitPreviewOn()){
+    if(typeof showTempMsg==='function')showTempMsg('Preview only. Nothing was saved.','var(--teal)');
+    return;
+  }
+  if(typeof openTimesheetFromNav==='function')openTimesheetFromNav();
+}
+function visitPreviewClients(){
+  return [{
+    id:'sample-e',
+    name:'Test Client E',
+    address:'500 Practice Way, Testville',
+    careNote:'Uses walker. Prefers morning visits.'
+  }];
+}
+function visitSeedPreview(screen){
+  visitPreviewMem=true;
+  myClients=visitPreviewClients();
+  visitShiftByClient={'sample-e':{clientId:'sample-e',clientName:'Test Client E',address:'500 Practice Way, Testville',careNote:'Uses walker. Prefers morning visits.',endLocal:'13:00',schedLabel:'Mon–Wed',tasks:[]}};
+  visitPickId='sample-e';
+  const idle=screen==='home'||screen==='clock'||screen==='';
+  if(idle){visitOpen=null;return;}
+  const ago=124*60*1000;
+  const client=myClients[0];
+  const shift=visitShiftByClient['sample-e'];
+  visitOpen=visitMakeOpen({id:'',local:true,client:client,shift:shift,clockInAt:new Date(Date.now()-ago).toISOString()});
+  visitOpen.bookedUntil='1:00 PM';
+  visitOpen.schedLabel='Mon–Wed';
+  const tick=screen==='tasksall'||screen==='ready';
+  if(tick)visitOpen.tasks.forEach(function(t){t.checked=true;});
+  if(screen==='sign'||screen==='ready'||screen==='locked'||screen==='eodsig'){
+    visitOpen.report={hospital:'no',hospitalNote:'',fall:'no',fallNote:'',change:'no',changeNote:''};
+  }
+}
+function visitExemptOn(){
+  return visitPreviewOn()&&/(?:^|[?&])exempt=1(?:&|$)/.test(String((location&&location.search)||''));
+}
+function visitPreviewBoot(){
+  window._sandataAcked=true;
+  document.body.classList.add('visit-preview');
+  currentUser={username:'preview.aide',name:'Test Aide',mustChangePassword:false,needsEmail:false,loginAt:Date.now()};
+  if(visitExemptOn()){
+    document.body.classList.add('visit-exempt');
+    if(typeof exemptPreviewBoot==='function')exemptPreviewBoot();
+    return;
+  }
+  var modeBar=document.getElementById('visitModeBar');
+  if(modeBar)modeBar.hidden=false;
+  const screen=(visitPreviewParam('screen')||'in').toLowerCase();
+  visitSeedPreview(screen);
+  const hdr=document.getElementById('hdr_name');
+  if(hdr)hdr.textContent='Hi, Test Aide';
+  if(screen==='clock'){openVisitClockIn();return;}
+  if(screen==='clocked'||screen==='inconfirm'){visitPaintIn();visitShow('visitInScreen');return;}
+  if(screen==='tasks'||screen==='tasksall'||screen==='eod'){openVisitDay();return;}
+  if(screen==='report'){openVisitReport();return;}
+  if(screen==='sign'||screen==='ready'||screen==='locked'||screen==='eodsig'){
+    if(screen==='ready'||screen==='locked'){
+      visitOpen.aideInk=visitPreviewSquiggle();
+      visitOpen.clientInk=visitPreviewSquiggle();
+    }
+    openVisitSig();
+    return;
+  }
+  if(typeof showScreen==='function')showScreen('caregiverScreen');
+  if(typeof syncPortalChrome==='function')syncPortalChrome('caregiverScreen');
+  visitPaintLive();
+}
+function visitPreviewSquiggle(){
+  const c=document.createElement('canvas');
+  c.width=320;c.height=110;
+  const ctx=c.getContext('2d');
+  ctx.strokeStyle='#1a2744';ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(24,70);
+  ctx.bezierCurveTo(70,20,110,100,160,55);
+  ctx.bezierCurveTo(200,20,240,90,290,48);
+  ctx.stroke();
+  return c.toDataURL('image/png');
+}
+window.addEventListener('resize',function(){
+  const day=document.getElementById('visitSigScreen');
+  if(!day||!day.classList.contains('active'))return;
+  visitSizePad(visitPad('aide'));
+  visitSizePad(visitPad('client'));
+});
+
+// exempt-week1. Preview-only weekly hours. Does not call timesheet or PDF functions.
+var EXEMPT_PARTIAL=[
+  {id:'mon',date:'2026-11-23',dow:'Monday',short:'Mon',start:'08:00',end:'16:00',note:''},
+  {id:'tue',date:'2026-11-24',dow:'Tuesday',short:'Tue',start:'08:00',end:'14:00',note:"Left at 2 for a doctor's appointment"},
+  {id:'wed',date:'2026-11-25',dow:'Wednesday',short:'Wed',start:'09:00',end:'13:00',note:''},
+  {id:'thu',date:'2026-11-26',dow:'Thursday',short:'Thu',start:'',end:'',note:'',holiday:'Thanksgiving'},
+  {id:'fri',date:'2026-11-27',dow:'Friday',short:'Fri',start:'',end:'',note:''},
+  {id:'sat',date:'2026-11-28',dow:'Saturday',short:'Sat',start:'',end:'',note:''},
+  {id:'sun',date:'2026-11-29',dow:'Sunday',short:'Sun',start:'',end:'',note:''}
+];
+var EXEMPT_FULL=[
+  {id:'mon',date:'2026-11-23',dow:'Monday',short:'Mon',start:'08:00',end:'16:00',note:''},
+  {id:'tue',date:'2026-11-24',dow:'Tuesday',short:'Tue',start:'08:00',end:'14:00',note:"Left at 2 for a doctor's appointment"},
+  {id:'wed',date:'2026-11-25',dow:'Wednesday',short:'Wed',start:'09:00',end:'13:00',note:''},
+  {id:'thu',date:'2026-11-26',dow:'Thursday',short:'Thu',start:'10:00',end:'14:00',note:'Worked morning only',holiday:'Thanksgiving'},
+  {id:'fri',date:'2026-11-27',dow:'Friday',short:'Fri',start:'08:00',end:'16:00',note:''},
+  {id:'sat',date:'2026-11-28',dow:'Saturday',short:'Sat',start:'08:00',end:'12:00',note:''},
+  {id:'sun',date:'2026-11-29',dow:'Sunday',short:'Sun',start:'09:00',end:'13:00',note:''}
+];
+var EXEMPT_QS=[
+  {key:'hospital',q:'Was the member in the hospital or ER this week?'},
+  {key:'fall',q:'Did the member fall or get hurt this week?'},
+  {key:'change',q:'Any change in how the member is doing this week?'}
+];
+var exemptState=null;
+function exemptClone(list){return list.map(function(d){var o={};for(var k in d)o[k]=d[k];o.tasks=(d.tasks||[]).slice();return o;});}
+function exemptCatalog(){
+  var src=(typeof SERVICE_SECTIONS!=='undefined'&&SERVICE_SECTIONS)||[];
+  return src.map(function(s){return {sec:s.n,items:(s.items||[]).slice()};});
+}
+function exemptAllLabels(){
+  var all=[];
+  exemptCatalog().forEach(function(sec){(sec.items||[]).forEach(function(label){all.push(label);});});
+  return all;
+}
+function exemptTakeTasks(n,start){return exemptAllLabels().slice(start||0,(start||0)+n);}
+function exemptTaskSummary(n){return n===1?'1 task':(n+' tasks');}
+(function(){
+  var sets={mon:exemptTakeTasks(12,0),tue:exemptTakeTasks(8,12),wed:exemptTakeTasks(4,20),thu:exemptTakeTasks(6,24),fri:exemptTakeTasks(10,2),sat:exemptTakeTasks(3,30),sun:exemptTakeTasks(5,16)};
+  [EXEMPT_PARTIAL,EXEMPT_FULL].forEach(function(list){
+    list.forEach(function(d){d.tasks=d.start?(sets[d.id]||[]).slice():[];});
+  });
+})();
+function exemptEmptyReport(){return {hospital:'',hospitalNote:'',fall:'',fallNote:'',change:'',changeNote:''};}
+function exemptPad(n){return n<10?'0'+n:''+n;}
+function exemptMins(hhmm){if(!hhmm)return null;var p=String(hhmm).split(':');return (+p[0])*60+(+p[1]);}
+function exemptHours(a,b){var x=exemptMins(a),y=exemptMins(b);if(x==null||y==null||y<=x)return 0;return Math.round((y-x)/60*100)/100;}
+function exemptDec(n){return (Math.round(n*100)/100).toFixed(2);}
+function exemptHm(n){var total=Math.round(n*60),h=Math.floor(total/60),m=total%60;return h+' h '+exemptPad(m)+' m';}
+function exemptFmt12(hhmm){
+  if(!hhmm)return '';
+  var p=String(hhmm).split(':'),h=+p[0],m=p[1]||'00',ap=h>=12?'PM':'AM';
+  h=h%12;if(!h)h=12;
+  return h+':'+m+' '+ap;
+}
+function exemptEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function exemptMd(s){var p=s.split('-');var mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mon[(+p[1])-1]+' '+ (+p[2]);}
+function exemptQOk(r,i){
+  var q=EXEMPT_QS[i];if(!q)return false;
+  if(r[q.key]!=='yes'&&r[q.key]!=='no')return false;
+  if(r[q.key]==='yes'&&!String(r[q.key+'Note']||'').trim())return false;
+  return true;
+}
+function exemptReportOk(r){return EXEMPT_QS.every(function(_,i){return exemptQOk(r,i);});}
+function exemptTotals(){
+  var t=0,n=0;
+  (exemptState.days||[]).forEach(function(d){var h=exemptHours(d.start,d.end);if(h>0){t+=h;n++;}});
+  return {hours:t,filled:n};
+}
+function exemptSampleInk(kind){
+  var c=document.createElement('canvas');
+  c.width=320;c.height=110;
+  var ctx=c.getContext('2d');
+  ctx.strokeStyle='#1a2744';ctx.lineWidth=3.2;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();
+  if(kind){
+    ctx.moveTo(28,80);
+    ctx.bezierCurveTo(90,16,150,96,210,42);
+    ctx.bezierCurveTo(240,18,270,78,304,34);
+  }else{
+    ctx.moveTo(18,64);
+    ctx.bezierCurveTo(70,16,120,98,176,48);
+    ctx.bezierCurveTo(214,16,252,90,304,42);
+  }
+  ctx.stroke();
+  return c.toDataURL('image/png');
+}
+function exemptAideOk(){return !!(exemptState&&String(exemptState.aideInk||'').indexOf('data:image/')===0);}
+function exemptSigsOk(){
+  return exemptAideOk()&&String(exemptState.clientInk||'').indexOf('data:image/')===0;
+}
+function exemptReset(screen){
+  var full=['full','q1','q2','q3','signcg','signclient','ready','submitted'].indexOf(screen)>=0;
+  var aideSeed=['signcg','signclient','ready','submitted'].indexOf(screen)>=0;
+  var clientSeed=['signclient','ready','submitted'].indexOf(screen)>=0;
+  exemptState={
+    screen:screen||'week',
+    days:exemptClone(full?EXEMPT_FULL:EXEMPT_PARTIAL),
+    weekOff:0,
+    openDay:null,
+    draft:null,
+    report:exemptEmptyReport(),
+    qIndex:0,
+    submitted:screen==='submitted',
+    aideInk:aideSeed?exemptSampleInk(0):'',
+    clientInk:clientSeed?exemptSampleInk(1):''
+  };
+  if(screen==='q2')exemptState.report.hospital='no';
+  if(screen==='q3'){exemptState.report.hospital='no';exemptState.report.fall='no';}
+  if(screen==='signcg'||screen==='signclient'||screen==='ready'||screen==='submitted'){exemptState.report.hospital='no';exemptState.report.fall='no';exemptState.report.change='no';}
+  if(screen==='q1')exemptState.qIndex=0;
+  if(screen==='q2')exemptState.qIndex=1;
+  if(screen==='q3')exemptState.qIndex=2;
+  if(screen==='day'){
+    exemptState.openDay='thu';
+    exemptState.draft={start:'10:00',end:'14:00',note:'Worked morning only',tasks:exemptTakeTasks(8,0)};
+  }
+}
+function exemptPreviewBoot(){exemptShow(visitPreviewParam('screen')||'week',true);}
+function exemptShow(screen,force){
+  screen=String(screen||'week').toLowerCase();
+  if(screen==='sign'||screen==='signed')screen=screen==='signed'?'signclient':'signcg';
+  if(!exemptState||force)exemptReset(screen);
+  if(screen==='signclient'&&!exemptAideOk())screen='signcg';
+  exemptState.screen=screen;
+  if(screen==='day'){exemptPaintWeek();exemptPaintSheet();if(typeof showScreen==='function')showScreen('exemptWeekScreen');return;}
+  if(screen==='q1'||screen==='q2'||screen==='q3'){exemptState.qIndex=+screen.slice(1)-1;exemptPaintReport();if(typeof showScreen==='function')showScreen('exemptReportScreen');return;}
+  if(screen==='signcg'){if(typeof showScreen==='function')showScreen('exemptSignCgScreen');exemptPaintCg();return;}
+  if(screen==='signclient'){if(typeof showScreen==='function')showScreen('exemptSignClientScreen');exemptPaintClient();return;}
+  if(screen==='ready'){exemptPaintReady();if(typeof showScreen==='function')showScreen('exemptReadyScreen');return;}
+  if(screen==='submitted'){exemptPaintDone();if(typeof showScreen==='function')showScreen('exemptDoneScreen');return;}
+  exemptState.openDay=null;exemptState.draft=null;
+  exemptPaintWeek();
+  var sheet=document.getElementById('exemptSheet');if(sheet)sheet.textContent='';
+  if(typeof showScreen==='function')showScreen('exemptWeekScreen');
+}
+function exemptWeekLabel(){
+  if(!exemptState||exemptState.weekOff===-1)return {title:'Mon Nov 16 – Sun Nov 22',sub:'Last week · already submitted'};
+  if(exemptState&&exemptState.weekOff===1)return {title:'Mon Nov 30 – Sun Dec 6',sub:'Next week · not open yet'};
+  return {title:'Mon Nov 23 – Sun Nov 29',sub:'This week'};
+}
+function exemptShiftWeek(dir){
+  if(!exemptState)return;
+  exemptState.weekOff=Math.max(-1,Math.min(1,(exemptState.weekOff||0)+dir));
+  exemptState.openDay=null;exemptState.draft=null;
+  exemptPaintWeek();
+  var sheet=document.getElementById('exemptSheet');if(sheet)sheet.textContent='';
+}
+function exemptPaintWeek(){
+  var title=document.getElementById('exemptWeekTitle');
+  var sub=document.getElementById('exemptWeekSub');
+  var wl=exemptWeekLabel();
+  if(title)title.textContent=wl.title;
+  if(sub)sub.textContent=wl.sub;
+  var hint=document.getElementById('exemptHint');
+  if(hint)hint.hidden=!!(exemptState&&exemptState.weekOff);
+  var list=document.getElementById('exemptDayList');
+  var foot=document.getElementById('exemptWeekFoot');
+  if(!list||!foot||!exemptState)return;
+  list.textContent='';
+  foot.textContent='';
+  if(exemptState.weekOff===-1){
+    var p=document.createElement('p');
+    p.className='vnote';
+    p.style.textAlign='left';
+    p.textContent='This past week is already in. Open this week to enter new hours.';
+    list.appendChild(p);
+    return;
+  }
+  if(exemptState.weekOff===1){
+    var n=document.createElement('p');
+    n.className='vnote';
+    n.style.textAlign='left';
+    n.textContent='Next week is not open yet. Come back at the end of that week to enter hours.';
+    list.appendChild(n);
+    return;
+  }
+  exemptState.days.forEach(function(d){
+    var h=exemptHours(d.start,d.end);
+    var empty=h<=0;
+    var today=d.date==='2026-11-26';
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.className='xw-day'+(today?' is-today':'')+(empty?' is-empty':'');
+    btn.setAttribute('data-day',d.id);
+    var dd=document.createElement('span');
+    dd.className='xw-dd';
+    dd.innerHTML='<small>'+exemptEsc(d.short.toUpperCase())+'</small>'+String(d.date).slice(8).replace(/^0/,'');
+    var dm=document.createElement('span');
+    dm.className='xw-dm';
+    var b=document.createElement('b');
+    b.textContent=d.dow+(today?' · Today':'');
+    var subline=document.createElement('span');
+    subline.className='xw-sub';
+    if(d.holiday){
+      var hol=document.createElement('span');
+      hol.className='xw-holi';
+      hol.textContent=d.holiday;
+      subline.appendChild(hol);
+    }
+    var st=document.createElement('span');
+    st.className='sub-txt';
+    st.textContent=empty?'Tap to enter hours':(exemptFmt12(d.start)+'–'+exemptFmt12(d.end));
+    subline.appendChild(st);
+    dm.appendChild(b);dm.appendChild(subline);
+    if(!empty){
+      var sum=document.createElement('span');
+      sum.className='xw-tasksum';
+      sum.textContent=exemptTaskSummary((d.tasks||[]).length);
+      dm.appendChild(sum);
+    }
+    btn.appendChild(dd);btn.appendChild(dm);
+    if(empty){
+      var pill=document.createElement('span');
+      pill.className='xw-empty';
+      pill.textContent='Empty';
+      btn.appendChild(pill);
+    }else{
+      var hrs=document.createElement('span');
+      hrs.className='xw-hrs';
+      hrs.textContent=exemptDec(h)+' h';
+      btn.appendChild(hrs);
+    }
+    var chev=document.createElement('span');
+    chev.className='xw-chev';
+    chev.textContent='›';
+    btn.appendChild(chev);
+    btn.addEventListener('click',function(){exemptOpenDay(d.id);});
+    list.appendChild(btn);
+  });
+  var tot=exemptTotals();
+  var bar=document.createElement('div');
+  bar.className='xw-total';
+  bar.innerHTML='<div><small>Weekly total · Sample Client</small><div class="hv">'+exemptEsc(exemptHm(tot.hours))+'</div></div><div class="hv">'+exemptEsc(exemptDec(tot.hours))+'</div>';
+  var entered=document.createElement('p');
+  entered.className='xw-entered';
+  entered.textContent=tot.filled===0?'No days entered yet · empty days stay at 0 hours':(tot.filled===7?'All 7 days entered':(tot.filled+' of 7 days entered · empty days stay at 0 hours'));
+  var go=document.createElement('button');
+  go.type='button';
+  go.className='btn btn-teal btn-full';
+  go.id='exemptSubmitWeek';
+  go.textContent='Submit week';
+  go.disabled=tot.filled<=0;
+  go.addEventListener('click',function(){exemptStartSubmit();});
+  foot.appendChild(bar);foot.appendChild(entered);foot.appendChild(go);
+}
+function exemptOpenDay(id){
+  if(!exemptState||exemptState.weekOff)return;
+  var d=exemptState.days.filter(function(x){return x.id===id;})[0];
+  if(!d)return;
+  exemptState.openDay=id;
+  if(exemptState.screen==='day'&&id==='thu'&&!d.start)exemptState.draft={start:'10:00',end:'14:00',note:'Worked morning only',tasks:exemptTakeTasks(8,0)};
+  else exemptState.draft={start:d.start||'',end:d.end||'',note:d.note||'',tasks:(d.tasks||[]).slice()};
+  exemptPaintSheet();
+}
+function exemptCloseDay(){
+  if(!exemptState)return;
+  exemptState.openDay=null;exemptState.draft=null;
+  var sheet=document.getElementById('exemptSheet');if(sheet)sheet.textContent='';
+}
+function exemptPaintSheet(){
+  var root=document.getElementById('exemptSheet');
+  if(!root||!exemptState||!exemptState.openDay||!exemptState.draft){if(root)root.textContent='';return;}
+  var d=exemptState.days.filter(function(x){return x.id===exemptState.openDay;})[0];
+  var dr=exemptState.draft;
+  var h=exemptHours(dr.start,dr.end);
+  root.textContent='';
+  var bg=document.createElement('div');
+  bg.className='xw-sheet-bg';
+  bg.addEventListener('click',function(e){if(e.target===bg)exemptCloseDay();});
+  var sheet=document.createElement('div');
+  sheet.className='xw-sheet';
+  sheet.setAttribute('role','dialog');
+  sheet.setAttribute('aria-label','Enter hours for '+d.dow);
+  var handle=document.createElement('div');handle.className='xw-handle';
+  var head=document.createElement('div');head.className='xw-shead';
+  var titles=document.createElement('div');
+  var h3=document.createElement('h3');
+  h3.appendChild(document.createTextNode(d.dow+', '+exemptMd(d.date)+' '));
+  if(d.holiday){var hol=document.createElement('span');hol.className='xw-holi';hol.textContent=d.holiday;h3.appendChild(hol);}
+  var p=document.createElement('p');p.textContent='Sample Client · enter start and end times';
+  titles.appendChild(h3);titles.appendChild(p);
+  var x=document.createElement('button');x.type='button';x.className='xw-x';x.setAttribute('aria-label','Close');x.textContent='×';
+  x.addEventListener('click',exemptCloseDay);
+  head.appendChild(titles);head.appendChild(x);
+  var times=document.createElement('div');times.className='xw-times';
+  function timeField(id,label,val){
+    var f=document.createElement('div');f.className='field';
+    var lab=document.createElement('label');lab.htmlFor=id;lab.textContent=label;
+    var input=document.createElement('input');input.type='time';input.id=id;input.value=val||'';
+    input.addEventListener('input',function(){
+      if(id==='exemptStart')exemptState.draft.start=input.value;
+      else exemptState.draft.end=input.value;
+      exemptUpdateSheetHours();
+    });
+    f.appendChild(lab);f.appendChild(input);return f;
+  }
+  times.appendChild(timeField('exemptStart','Start',dr.start));
+  times.appendChild(timeField('exemptEnd','End',dr.end));
+  var bar=document.createElement('div');
+  bar.className='xw-total';
+  bar.id='exemptDayHours';
+  bar.style.marginTop='10px';
+  bar.innerHTML='<div><small>Hours for this day</small><div class="hv">'+(h?exemptEsc(exemptHm(h)):'0 h 00 m')+'</div></div><div class="hv">'+(h?exemptEsc(exemptDec(h)):'0.00')+'</div>';
+  var taskHead=document.createElement('div');taskHead.className='card-title eod-task-head';taskHead.style.marginTop='12px';
+  var taskTitle=document.createElement('span');
+  var taskIco=document.createElement('span');taskIco.className='ico';taskIco.textContent='✅';
+  taskTitle.appendChild(taskIco);
+  taskTitle.appendChild(document.createTextNode(' What did you do today?'));
+  var tick=document.createElement('button');tick.type='button';tick.className='tick-all';tick.id='exemptTickAll';tick.textContent='Tick all';
+  tick.addEventListener('click',function(){exemptToggleAllTasks();});
+  taskHead.appendChild(taskTitle);taskHead.appendChild(tick);
+  var taskList=document.createElement('div');taskList.id='exemptTaskList';
+  var noteF=document.createElement('div');noteF.className='field';noteF.style.marginTop='12px';
+  var nl=document.createElement('label');nl.htmlFor='exemptNote';nl.textContent='Note (optional)';
+  var ta=document.createElement('textarea');ta.id='exemptNote';ta.placeholder='Anything the office should know about this day';ta.value=dr.note||'';
+  ta.addEventListener('input',function(){exemptState.draft.note=ta.value;});
+  noteF.appendChild(nl);noteF.appendChild(ta);
+  var actions=document.createElement('div');actions.className='xw-actions';
+  var cancel=document.createElement('button');cancel.type='button';cancel.className='btn btn-ghost';cancel.textContent='Cancel';cancel.addEventListener('click',exemptCloseDay);
+  var save=document.createElement('button');save.type='button';save.className='btn btn-teal';save.textContent='Save day';save.addEventListener('click',exemptSaveDay);
+  actions.appendChild(cancel);actions.appendChild(save);
+  sheet.appendChild(handle);sheet.appendChild(head);sheet.appendChild(times);sheet.appendChild(bar);sheet.appendChild(taskHead);sheet.appendChild(taskList);sheet.appendChild(noteF);sheet.appendChild(actions);
+  if(d.start||d.end){
+    var clear=document.createElement('button');clear.type='button';clear.className='btn btn-ghost btn-full';clear.style.marginTop='8px';clear.textContent='Clear hours';
+    clear.addEventListener('click',function(){exemptState.draft={start:'',end:'',note:'',tasks:[]};var day=exemptState.days.filter(function(x){return x.id===exemptState.openDay;})[0];if(day){day.start='';day.end='';day.note='';day.tasks=[];}exemptPaintSheet();});
+    sheet.appendChild(clear);
+  }
+  bg.appendChild(sheet);root.appendChild(bg);
+  exemptPaintTasks();
+}
+function exemptUpdateSheetHours(){
+  var bar=document.getElementById('exemptDayHours');
+  if(!bar||!exemptState||!exemptState.draft)return;
+  var h=exemptHours(exemptState.draft.start,exemptState.draft.end);
+  bar.innerHTML='<div><small>Hours for this day</small><div class="hv">'+(h?exemptEsc(exemptHm(h)):'0 h 00 m')+'</div></div><div class="hv">'+(h?exemptEsc(exemptDec(h)):'0.00')+'</div>';
+}
+function exemptSaveDay(){
+  if(!exemptState||!exemptState.openDay||!exemptState.draft)return;
+  var d=exemptState.days.filter(function(x){return x.id===exemptState.openDay;})[0];
+  var h=exemptHours(exemptState.draft.start,exemptState.draft.end);
+  if((exemptState.draft.start||exemptState.draft.end)&&h<=0)return;
+  d.start=exemptState.draft.start;d.end=exemptState.draft.end;d.note=exemptState.draft.note;d.tasks=(exemptState.draft.tasks||[]).slice();
+  exemptCloseDay();
+  exemptPaintWeek();
+}
+function exemptTasksOn(){
+  var picked=exemptState&&exemptState.draft&&exemptState.draft.tasks||[];
+  var all=exemptAllLabels();
+  return all.length>0&&all.every(function(label){return picked.indexOf(label)>=0;});
+}
+function exemptPaintTasks(){
+  var box=document.getElementById('exemptTaskList');
+  var btn=document.getElementById('exemptTickAll');
+  if(!box||!exemptState||!exemptState.draft)return;
+  var picked=exemptState.draft.tasks||[];
+  if(btn)btn.textContent=exemptTasksOn()?'Untick all':'Tick all';
+  box.textContent='';
+  exemptCatalog().forEach(function(section){
+    var wrap=document.createElement('div');
+    wrap.className='eod-sec';
+    var h=document.createElement('h3');
+    h.textContent=section.sec;
+    wrap.appendChild(h);
+    (section.items||[]).forEach(function(label){
+      var on=picked.indexOf(label)>=0;
+      var row=document.createElement('button');
+      row.type='button';
+      row.className='eod-task'+(on?' on':'');
+      row.setAttribute('aria-pressed',on?'true':'false');
+      var mark=document.createElement('span');
+      mark.className='box';
+      mark.textContent=on?'✓':'';
+      var lab=document.createElement('span');
+      lab.textContent=label;
+      row.appendChild(mark);row.appendChild(lab);
+      row.addEventListener('click',function(){
+        var list=exemptState.draft.tasks||[];
+        var i=list.indexOf(label);
+        if(i>=0)list.splice(i,1);else list.push(label);
+        exemptState.draft.tasks=list;
+        exemptPaintTasks();
+      });
+      wrap.appendChild(row);
+    });
+    box.appendChild(wrap);
+  });
+}
+function exemptToggleAllTasks(){
+  if(!exemptState||!exemptState.draft)return;
+  exemptState.draft.tasks=exemptTasksOn()?[]:exemptAllLabels();
+  exemptPaintTasks();
+}
+function exemptStartSubmit(){
+  if(!exemptState||exemptTotals().filled<=0)return;
+  if(exemptReportOk(exemptState.report)){
+    if(!exemptAideOk()){exemptShow('signcg');return;}
+    if(!exemptSigsOk()){exemptShow('signclient');return;}
+    exemptShow('ready');return;
+  }
+  exemptState.qIndex=0;
+  exemptState.screen='q1';
+  exemptPaintReport();
+  if(typeof showScreen==='function')showScreen('exemptReportScreen');
+}
+function exemptPaintReport(){
+  var box=document.getElementById('exemptReportBody');
+  if(!box||!exemptState)return;
+  var i=exemptState.qIndex||0;
+  if(i<0)i=0;if(i>2)i=2;exemptState.qIndex=i;
+  var q=EXEMPT_QS[i],r=exemptState.report,v=r[q.key],ok=exemptQOk(r,i);
+  box.textContent='';
+  var step=document.createElement('div');step.className='xw-step';
+  var lbl=document.createElement('span');lbl.className='step-lbl';lbl.textContent='Question '+(i+1)+' of 3';
+  var dots=document.createElement('span');dots.className='xw-dots';
+  [0,1,2].forEach(function(n){var dot=document.createElement('i');if(n===i)dot.className='on';dots.appendChild(dot);});
+  step.appendChild(lbl);step.appendChild(dots);
+  var card=document.createElement('div');card.className='card';
+  var lead=document.createElement('p');lead.className='vnote';lead.style.cssText='text-align:left;margin:0 0 12px';
+  lead.textContent='Answer each question for Sample Client this week.';
+  var qEl=document.createElement('div');qEl.className='xw-yn';
+  var qp=document.createElement('p');qp.textContent=q.q;qEl.appendChild(qp);
+  var row=document.createElement('div');row.className='xw-ynrow';
+  ['yes','no'].forEach(function(val){
+    var b=document.createElement('button');b.type='button';b.className='xw-choice '+val+(v===val?' on':'');b.textContent=val==='yes'?'Yes':'No';
+    b.addEventListener('click',function(){exemptState.report[q.key]=val;if(val!=='yes')exemptState.report[q.key+'Note']='';exemptPaintReport();});
+    row.appendChild(b);
+  });
+  qEl.appendChild(row);
+  if(v==='yes'){
+    var note=document.createElement('div');note.className='field';note.style.marginTop='12px';
+    var lab=document.createElement('label');lab.textContent='Tell us what happened';
+    var ta=document.createElement('textarea');ta.value=r[q.key+'Note']||'';ta.placeholder='Tell us what happened';
+    ta.addEventListener('input',function(){exemptState.report[q.key+'Note']=ta.value;exemptPaintReportBtn();});
+    note.appendChild(lab);note.appendChild(ta);qEl.appendChild(note);
+  }
+  card.appendChild(lead);card.appendChild(qEl);
+  var actions=document.createElement('div');actions.className='xw-qactions';
+  var back=document.createElement('button');back.type='button';back.className='btn btn-ghost';back.textContent='Back';
+  back.addEventListener('click',function(){if(i===0)exemptShow('week');else{exemptState.qIndex=i-1;exemptState.screen='q'+(exemptState.qIndex+1);exemptPaintReport();}});
+  var next=document.createElement('button');next.type='button';next.className='btn btn-teal';next.id='exemptReportGo';next.textContent=i===2?'Continue':'Next';next.disabled=!ok;
+  next.addEventListener('click',function(){
+    if(!exemptQOk(exemptState.report,exemptState.qIndex))return;
+    if(exemptState.qIndex>=2){exemptShow('signcg');return;}
+    exemptState.qIndex++;exemptState.screen='q'+(exemptState.qIndex+1);exemptPaintReport();
+  });
+  actions.appendChild(back);actions.appendChild(next);
+  box.appendChild(step);box.appendChild(card);box.appendChild(actions);
+  if(!ok){
+    var hint=document.createElement('p');hint.className='need-sigs';hint.id='exemptReportHint';
+    hint.textContent=v==='yes'?'Tell us what happened.':'Answer this question to continue.';
+    box.appendChild(hint);
+  }
+}
+function exemptPaintReportBtn(){
+  var next=document.getElementById('exemptReportGo');
+  var hint=document.getElementById('exemptReportHint');
+  if(!exemptState)return;
+  var ok=exemptQOk(exemptState.report,exemptState.qIndex);
+  if(next)next.disabled=!ok;
+  if(hint)hint.hidden=ok;
+}
+function exemptPaintThumbs(id){
+  var box=document.getElementById(id);
+  if(!box||!exemptState)return;
+  box.textContent='';
+  [['Caregiver','aideInk'],['Client','clientInk']].forEach(function(pair){
+    var col=document.createElement('div');
+    col.className='xw-sigthumb';
+    var lab=document.createElement('span');
+    lab.textContent=pair[0];
+    col.appendChild(lab);
+    var src=exemptState[pair[1]];
+    if(src&&String(src).indexOf('data:image/')===0){
+      var img=document.createElement('img');
+      img.alt=pair[0]+' signature';
+      img.src=src;
+      col.appendChild(img);
+    }
+    box.appendChild(col);
+  });
+}
+function exemptPadEl(which){return document.getElementById(which==='aide'?'exemptAidePad':'exemptClientPad');}
+function exemptSizePad(c){
+  if(!c)return;
+  var w=Math.max(1,Math.round(c.offsetWidth||300));
+  var h=110;
+  if(c.width===w&&c.height===h)return;
+  c.width=w;c.height=h;
+}
+function exemptPaintInk(which){
+  var c=exemptPadEl(which);
+  if(!c||!exemptState)return;
+  var src=which==='aide'?exemptState.aideInk:exemptState.clientInk;
+  var ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  if(!src)return;
+  var img=new Image();
+  img.onload=function(){ctx.drawImage(img,0,0,c.width,c.height);exemptSyncPads();};
+  img.src=src;
+}
+function exemptCapturePad(which){
+  if(!exemptState)return;
+  var c=exemptPadEl(which);
+  if(!c)return;
+  if(which==='client'&&c.dataset.locked==='1')return;
+  var ink='';
+  if(typeof isCanvasInk==='function'&&isCanvasInk(c))ink=c.toDataURL('image/png');
+  else ink=which==='aide'?(exemptState.aideInk||''):(exemptState.clientInk||'');
+  if(which==='aide')exemptState.aideInk=ink;
+  else exemptState.clientInk=ink;
+  exemptSyncPads();
+}
+function exemptClearPad(which){
+  if(!exemptState)return;
+  var c=exemptPadEl(which);
+  if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);
+  if(which==='aide'){
+    exemptState.aideInk='';
+    exemptState.clientInk='';
+    var o=exemptPadEl('client');
+    if(o)o.getContext('2d').clearRect(0,0,o.width,o.height);
+  }else exemptState.clientInk='';
+  exemptSyncPads();
+}
+function exemptSyncPads(){
+  var aideOn=String(exemptState&&exemptState.aideInk||'').indexOf('data:image/')===0;
+  var clientOn=String(exemptState&&exemptState.clientInk||'').indexOf('data:image/')===0;
+  var aideDraw=document.getElementById('exemptAideLock');
+  var clientDraw=document.getElementById('exemptClientLock');
+  var aidePad=exemptPadEl('aide');
+  var clientPad=exemptPadEl('client');
+  if(aideDraw)aideDraw.classList.toggle('signed',aideOn);
+  if(clientDraw){clientDraw.classList.toggle('signed',clientOn);clientDraw.classList.remove('locked');clientDraw.dataset.locked='0';}
+  if(aidePad)aidePad.dataset.locked='0';
+  if(clientPad)clientPad.dataset.locked='0';
+  var aidePh=document.getElementById('exemptAidePh');
+  var clientPh=document.getElementById('exemptClientPh');
+  if(aidePh)aidePh.style.display=aideOn?'none':'';
+  if(clientPh)clientPh.style.display=clientOn?'none':'';
+  var aideHint=document.getElementById('exemptAideHint');
+  var clientHint=document.getElementById('exemptClientHint');
+  if(aideHint){aideHint.textContent=aideOn?'Signed ✓':'Sign with your finger';aideHint.classList.toggle('signed',aideOn);}
+  if(clientHint){clientHint.textContent=clientOn?'Signed ✓':'Sign with your finger';clientHint.classList.toggle('signed',clientOn);}
+  var aideClear=document.getElementById('exemptAideClear');
+  var clientClear=document.getElementById('exemptClientClear');
+  if(aideClear)aideClear.hidden=!aideOn;
+  if(clientClear)clientClear.hidden=!clientOn;
+  var next=document.getElementById('exemptSignCgGo');
+  var nextHint=document.getElementById('exemptSignCgHint');
+  if(next)next.disabled=!aideOn;
+  if(nextHint)nextHint.hidden=aideOn;
+  var go=document.getElementById('exemptSignClientGo');
+  var hint=document.getElementById('exemptSignClientHint');
+  if(go)go.disabled=!clientOn;
+  if(hint)hint.hidden=clientOn;
+  var thumb=document.getElementById('exemptCgThumb');
+  if(thumb&&aideOn)thumb.src=exemptState.aideInk;
+}
+function exemptWirePad(which){
+  var c=exemptPadEl(which);
+  if(!c||c.dataset.exemptWired==='1')return;
+  c.dataset.exemptWired='1';
+  var ctx=c.getContext('2d');
+  ctx.lineWidth=2.6;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#1a2744';
+  var drawing=false;
+  function pos(e){
+    var r=c.getBoundingClientRect();
+    var t=e.touches?e.touches[0]:e;
+    return {x:(t.clientX-r.left)*(c.width/Math.max(1,r.width)),y:(t.clientY-r.top)*(c.height/Math.max(1,r.height))};
+  }
+  function down(e){
+    if(c.dataset.locked==='1')return;
+    if(e.cancelable)e.preventDefault();
+    drawing=true;
+    ctx.lineWidth=2.6;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#1a2744';
+    var p=pos(e);
+    ctx.beginPath();ctx.moveTo(p.x,p.y);
+    var ph=document.getElementById(which==='aide'?'exemptAidePh':'exemptClientPh');
+    if(ph)ph.style.display='none';
+  }
+  function move(e){
+    if(!drawing||c.dataset.locked==='1')return;
+    if(e.cancelable)e.preventDefault();
+    var p=pos(e);
+    ctx.lineTo(p.x,p.y);ctx.stroke();
+  }
+  function up(){
+    if(!drawing)return;
+    drawing=false;
+    exemptCapturePad(which);
+  }
+  c.addEventListener('mousedown',down);
+  c.addEventListener('mousemove',move);
+  c.addEventListener('mouseup',up);
+  c.addEventListener('mouseleave',up);
+  c.addEventListener('touchstart',function(e){if(c.dataset.locked==='1')return;down(e);},{passive:false});
+  c.addEventListener('touchmove',function(e){if(!drawing||c.dataset.locked==='1')return;move(e);},{passive:false});
+  c.addEventListener('touchend',function(){up();});
+  c.addEventListener('touchcancel',function(){drawing=false;});
+}
+function exemptPaintOne(which){
+  function paint(){
+    var pad=exemptPadEl(which);
+    if(pad&&pad.offsetWidth<20){requestAnimationFrame(paint);return;}
+    exemptWirePad(which);
+    exemptSizePad(pad);
+    exemptPaintInk(which);
+    exemptSyncPads();
+  }
+  requestAnimationFrame(paint);
+}
+function exemptPaintCg(){exemptPaintOne('aide');}
+function exemptPaintClient(){exemptPaintOne('client');}
+function exemptSignNext(){
+  if(!exemptAideOk())return;
+  exemptShow('signclient');
+}
+function exemptSignContinue(){
+  if(!exemptSigsOk())return;
+  exemptShow('ready');
+}
+function exemptPaintReady(){
+  var tot=exemptTotals();
+  var h=document.getElementById('exemptReadyHours');
+  var d=document.getElementById('exemptReadyDays');
+  var b=document.getElementById('exemptSubmitFinal');
+  if(h)h.textContent=exemptDec(tot.hours);
+  if(d)d.textContent=tot.filled+' of 7';
+  if(b)b.disabled=!(exemptReportOk(exemptState.report)&&tot.filled>0&&exemptSigsOk());
+  exemptPaintThumbs('exemptReadySigs');
+}
+function exemptSubmitFinal(){
+  if(!exemptState||!exemptReportOk(exemptState.report)||exemptTotals().filled<=0||!exemptSigsOk())return;
+  exemptState.submitted=true;
+  exemptShow('submitted');
+}
+function exemptCoveredDays(){
+  return (exemptState&&exemptState.days||[]).filter(function(d){return exemptHours(d.start,d.end)>0;});
+}
+function exemptSigLine(){
+  var days=exemptCoveredDays();
+  var n=days.length;
+  var names=days.map(function(d){return d.short;}).join(', ');
+  return 'Signatures apply to all '+n+' day'+(n===1?'':'s')+': '+names;
+}
+function exemptPaintDone(){
+  var tot=exemptTotals();
+  var h=document.getElementById('exemptDoneHours');
+  var d=document.getElementById('exemptDoneDays');
+  if(h)h.textContent=exemptDec(tot.hours);
+  if(d)d.textContent=tot.filled+' of 7';
+  exemptPaintThumbs('exemptDoneSigs');
+  var line=document.getElementById('exemptSigLine');
+  if(line)line.textContent=exemptSigLine();
+  var list=document.getElementById('exemptDoneDayList');
+  if(!list||!exemptState)return;
+  list.textContent='';
+  exemptCoveredDays().forEach(function(day){
+    var row=document.createElement('div');
+    row.className='xw-coverday';
+    var dm=document.createElement('span');
+    dm.className='xw-dm';
+    var b=document.createElement('b');
+    b.textContent=day.dow;
+    var sub=document.createElement('span');
+    sub.className='sub-txt';
+    sub.textContent=exemptFmt12(day.start)+'–'+exemptFmt12(day.end);
+    dm.appendChild(b);dm.appendChild(sub);
+    var sum=document.createElement('span');
+    sum.className='xw-tasksum';
+    sum.textContent=exemptTaskSummary((day.tasks||[]).length);
+    dm.appendChild(sum);
+    var tick=document.createElement('span');
+    tick.className='xw-signed';
+    tick.textContent='✓ Signed';
+    row.appendChild(dm);row.appendChild(tick);
+    list.appendChild(row);
+  });
+}
 </script>
 </body>
 </html>

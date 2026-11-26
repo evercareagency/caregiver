@@ -56,9 +56,9 @@ assert.ok(!submit.includes('AIDE_CALL_OFF_RPC_CALLABLE'), 'submit is not behind 
 assert.ok(!submit.includes('set_password') && !submit.includes('password'), 'call off does not touch passwords');
 
 const home = html.slice(html.indexOf('id="cgHomeView"'), html.indexOf('id="cgFormView"'));
-assert.ok(home.includes('id="callOffHomeBtn"'), 'home call off action');
-assert.ok(home.includes('openCallOff()'), 'home action opens call off');
-assert.ok(home.includes('>Call off</button>'), 'home button label');
+assert.ok(!home.includes('id="callOffHomeBtn"'), 'home does not offer call off');
+assert.ok(!home.includes('openCallOff()'), 'home does not open the call-off screen');
+assert.ok(home.includes('For all call-offs, call the office'), 'home says to call the office');
 assert.ok(home.includes('id="cgBackupBtn"'), 'home backup control stays');
 
 const screen = html.slice(html.indexOf('id="callOffScreen"'), html.indexOf('id="moreScreen"'));
